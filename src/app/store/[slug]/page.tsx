@@ -44,6 +44,7 @@ import { calculateOrderTax } from '@/lib/gstCalculator';
 import { buildUpiPaymentUri } from '@/lib/upiQr';
 import { PostOrderSocialModal } from '@/components/storefront/PostOrderSocialModal';
 import { trackConversion } from '@/components/analytics/GoogleAnalytics';
+import { getTableRoomLabel } from '@/lib/categories';
 
 export default function PublicStorePage({ params }: { params: { slug: string } }) {
   const router = useRouter();
@@ -64,11 +65,29 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
   const [guestPhone, setGuestPhone] = useState<string>('');
   const [showPhoneField, setShowPhoneField] = useState<boolean>(false);
   const [guestAddress, setGuestAddress] = useState<string>('');
+  const [tableOrRoomNumber, setTableOrRoomNumber] = useState<string>('');
   const [guestNotes, setGuestNotes] = useState<string>('');
   const [fulfilmentMethod, setFulfilmentMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash' | 'online'>('upi');
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+
+  // Dynamic label for Table / Room Number as configured by business owner
+  const tableRoomConfig = getTableRoomLabel(
+    business?.settings?.orderSettings,
+    business?.category || business?.type
+  );
+
+  // Read URL query parameters for ?room=... or ?table=...
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const prefill = (sp.get('room') || sp.get('table') || '').trim();
+      if (prefill) {
+        setTableOrRoomNumber(prefill);
+      }
+    }
+  }, []);
 
   // Post-Order Social & Review Modal State
   const [placedOrder, setPlacedOrder] = useState<{ tokenNumber: string; trackingId: string } | null>(null);
@@ -229,6 +248,8 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
         name: guestName.trim() || 'Guest Customer',
         phone: guestPhone.trim() || undefined,
         address: fulfilmentMethod === 'delivery' ? guestAddress : undefined,
+        tableNumber: tableOrRoomNumber.trim() || undefined,
+        roomNumber: tableOrRoomNumber.trim() || undefined,
         notes: guestNotes,
       },
       items,
@@ -650,6 +671,26 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
                       </button>
                     </div>
                   )}
+
+                  {/* Optional Table / Room Number Field */}
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-800 text-xs">
+                        {tableRoomConfig.fieldLabel}
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={tableOrRoomNumber}
+                      onChange={(e) => setTableOrRoomNumber(e.target.value)}
+                      placeholder={tableRoomConfig.placeholder}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                    />
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Leave blank when ordering takeaway, delivery, or if not applicable.
+                    </p>
+                  </div>
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Fulfilment Method</label>

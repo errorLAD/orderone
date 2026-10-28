@@ -36,6 +36,7 @@ import { calculateOrderTax } from '@/lib/gstCalculator';
 import { buildUpiPaymentUri } from '@/lib/upiQr';
 import { PostOrderSocialModal } from '@/components/storefront/PostOrderSocialModal';
 import { trackConversion } from '@/components/analytics/GoogleAnalytics';
+import { getTableRoomLabel } from '@/lib/categories';
 
 export default function PublicMenuPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
@@ -63,8 +64,9 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const [guestName, setGuestName] = useState<string>('');
   const [guestPhone, setGuestPhone] = useState<string>('');
   const [showPhoneField, setShowPhoneField] = useState<boolean>(false);
-  const [tableNumber, setTableNumber] = useState<string>('Table 1');
+  const [tableNumber, setTableNumber] = useState<string>('');
   const [roomNumber, setRoomNumber] = useState<string>('');
+  const [tableOrRoomNumber, setTableOrRoomNumber] = useState<string>('');
   const [guestNotes, setGuestNotes] = useState<string>('');
   const [fulfilmentMethod, setFulfilmentMethod] = useState<'dine_in' | 'takeaway'>('dine_in');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash'>('cash');
@@ -78,18 +80,23 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
     roomNumber
   );
 
+  // Dynamic label for Table / Room Number as configured by business owner
+  const tableRoomConfig = getTableRoomLabel(
+    business?.settings?.orderSettings,
+    business?.category || business?.type
+  );
+
   // Read URL query parameters for ?room=... or ?table=...
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
       const r = sp.get('room');
-      if (r) {
-        setRoomNumber(r.trim());
-        setFulfilmentMethod('dine_in');
-      }
       const t = sp.get('table');
-      if (t) {
-        setTableNumber(t.trim());
+      const prefill = (r || t || '').trim();
+      if (prefill) {
+        setTableOrRoomNumber(prefill);
+        setRoomNumber(r ? r.trim() : prefill);
+        setTableNumber(t ? t.trim() : prefill);
         setFulfilmentMethod('dine_in');
       }
     }
@@ -254,11 +261,6 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       return;
     }
 
-    if (isHotel && fulfilmentMethod === 'dine_in' && !roomNumber.trim()) {
-      setOrderError('Please provide your room number for in-room dining delivery.');
-      return;
-    }
-
     setSubmittingOrder(true);
     setOrderError(null);
 
@@ -269,14 +271,17 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       addOnIds: cart[item.product.id]?.addOnIds,
     }));
 
+    // Optional Table / Room Number
+    const finalTableRoom = (tableOrRoomNumber || roomNumber || tableNumber).trim() || undefined;
+
     const orderPayload = {
       businessId: business.id,
       sourceType: 'menu' as const, // STRICTLY MENU ORDER
       customer: {
         name: guestName.trim() || 'Guest Customer',
         phone: guestPhone.trim() || undefined,
-        tableNumber: isHotel && roomNumber.trim() ? roomNumber.trim() : (fulfilmentMethod === 'dine_in' ? tableNumber : undefined),
-        roomNumber: isHotel && roomNumber.trim() ? roomNumber.trim() : undefined,
+        tableNumber: finalTableRoom,
+        roomNumber: finalTableRoom,
         notes: guestNotes,
       },
       items,
@@ -442,27 +447,31 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       className="min-h-screen flex flex-col font-sans transition-colors"
       style={{ backgroundColor: activeColors.background, color: activeColors.text }}
     >
-      {/* Hotel In-Room Dining Top Indicator */}
-      {isHotel && (
+      {/* Table / Room Indicator Banner */}
+      {(tableOrRoomNumber || isHotel) && (
         <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-orange-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-xs sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <span className="text-base">🏨</span>
+            <span className="text-base">{isHotel ? '🏨' : '🍽️'}</span>
             <span>
-              {roomNumber ? (
-                <>Delivering In-Room Dining to <strong className="font-extrabold underline decoration-white/60">Room {roomNumber}</strong></>
+              {tableOrRoomNumber ? (
+                <>Delivering to <strong className="font-extrabold underline decoration-white/60">{tableRoomConfig.label}: {tableOrRoomNumber}</strong></>
               ) : (
-                <>Hotel In-Room Dining & Room Service</>
+                <>{isHotel ? 'Hotel In-Room Dining & Room Service' : 'Table Dine-In & Ordering'}</>
               )}
             </span>
           </div>
           <button
             onClick={() => {
-              const next = prompt('Enter your Hotel Room Number:', roomNumber || '');
-              if (next !== null && next.trim()) setRoomNumber(next.trim());
+              const next = prompt(`Enter ${tableRoomConfig.label} (or leave empty to clear):`, tableOrRoomNumber || '');
+              if (next !== null) {
+                setTableOrRoomNumber(next.trim());
+                setRoomNumber(next.trim());
+                setTableNumber(next.trim());
+              }
             }}
             className="text-[11px] bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-md text-white font-bold transition-colors"
           >
-            {roomNumber ? 'Change Room' : 'Set Room #'}
+            {tableOrRoomNumber ? 'Change' : `Set ${tableRoomConfig.label}`}
           </button>
         </div>
       )}
@@ -696,103 +705,64 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
                     </div>
                   )}
 
-                  {isHotel ? (
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Room Service Delivery</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFulfilmentMethod('dine_in')}
-                          className={cn(
-                            'p-2.5 rounded-lg border text-left font-bold transition-all text-xs',
-                            fulfilmentMethod === 'dine_in'
-                              ? 'bg-amber-50 border-amber-500 text-amber-900'
-                              : 'bg-white border-slate-200 text-slate-600'
-                          )}
-                        >
-                          🛏️ Deliver to Room
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFulfilmentMethod('takeaway')}
-                          className={cn(
-                            'p-2.5 rounded-lg border text-left font-bold transition-all text-xs',
-                            fulfilmentMethod === 'takeaway'
-                              ? 'bg-amber-50 border-amber-500 text-amber-900'
-                              : 'bg-white border-slate-200 text-slate-600'
-                          )}
-                        >
-                          🥡 Pickup at Counter
-                        </button>
-                      </div>
-
-                      {fulfilmentMethod === 'dine_in' && (
-                        <div className="mt-3">
-                          <label className="block font-bold text-slate-700 mb-1">
-                            Hotel Room Number *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={roomNumber}
-                            onChange={(e) => setRoomNumber(e.target.value)}
-                            placeholder="e.g. 101, 204, Suite-A"
-                            className="w-full px-3 py-2 border border-amber-300 rounded-lg font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-                          />
-                          <p className="text-[11px] text-slate-500 mt-1">
-                            Fresh food will be prepared and delivered directly to your room door.
-                          </p>
-                        </div>
-                      )}
+                  {/* Dining / Fulfilment Option */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1 text-xs">
+                      {isHotel ? 'Service Option' : 'Dining Option'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFulfilmentMethod('dine_in')}
+                        className={cn(
+                          'p-2.5 rounded-xl border text-left font-bold transition-all text-xs flex items-center gap-1.5',
+                          fulfilmentMethod === 'dine_in'
+                            ? 'bg-orange-50 border-orange-500 text-orange-950 ring-1 ring-orange-500/30'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        )}
+                      >
+                        <span>{isHotel ? '🛏️ In-Room Delivery' : '🍽️ Dine-In'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFulfilmentMethod('takeaway')}
+                        className={cn(
+                          'p-2.5 rounded-xl border text-left font-bold transition-all text-xs flex items-center gap-1.5',
+                          fulfilmentMethod === 'takeaway'
+                            ? 'bg-orange-50 border-orange-500 text-orange-950 ring-1 ring-orange-500/30'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        )}
+                      >
+                        <span>🥡 Takeaway / Pickup</span>
+                      </button>
                     </div>
-                  ) : (
-                    <div>
-                      <label className="block font-bold text-slate-700 mb-1">Dining Option</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setFulfilmentMethod('dine_in')}
-                          className={cn(
-                            'p-2.5 rounded-lg border text-left font-bold transition-all',
-                            fulfilmentMethod === 'dine_in'
-                              ? 'bg-orange-50 border-orange-500 text-orange-900'
-                              : 'bg-white border-slate-200 text-slate-600'
-                          )}
-                        >
-                          🍽️ Dine-In (Table)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFulfilmentMethod('takeaway')}
-                          className={cn(
-                            'p-2.5 rounded-lg border text-left font-bold transition-all',
-                            fulfilmentMethod === 'takeaway'
-                              ? 'bg-orange-50 border-orange-500 text-orange-900'
-                              : 'bg-white border-slate-200 text-slate-600'
-                          )}
-                        >
-                          🥡 Takeaway / Parcel
-                        </button>
-                      </div>
+                  </div>
 
-                      {fulfilmentMethod === 'dine_in' && (
-                        <div className="mt-2.5">
-                          <label className="block font-bold text-slate-700 mb-1">Select Table Number *</label>
-                          <select
-                            value={tableNumber}
-                            onChange={(e) => setTableNumber(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white"
-                          >
-                            {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6', 'Table 7', 'Table 8'].map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                  {/* Optional Table / Room Number Field */}
+                  <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-800 text-xs">
+                        {tableRoomConfig.fieldLabel}
+                      </label>
+                      <span className="text-[10px] text-slate-400 font-medium">Optional</span>
                     </div>
-                  )}
+                    <input
+                      type="text"
+                      value={tableOrRoomNumber}
+                      onChange={(e) => {
+                        setTableOrRoomNumber(e.target.value);
+                        setRoomNumber(e.target.value);
+                        setTableNumber(e.target.value);
+                      }}
+                      placeholder={tableRoomConfig.placeholder}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                    />
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      {isHotel
+                        ? 'Enter your hotel room number (or leave blank if picking up from counter).'
+                        : 'Enter your table or room number (leave blank for takeaway or if not applicable).'}
+                    </p>
+                  </div>
 
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">Cooking Instructions (Optional)</label>

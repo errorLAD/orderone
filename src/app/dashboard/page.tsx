@@ -951,7 +951,11 @@ export default function DashboardPage() {
                     <div>
                       <p className="font-bold text-slate-800">{ord.customer.name || 'Guest'}</p>
                       <p className="text-[10px] text-slate-500">
-                        {ord.customer.tableNumber ? `🍽️ ${ord.customer.tableNumber}` : ord.fulfilmentMethod}
+                        {ord.customer.roomNumber
+                          ? `🛏️ Room ${ord.customer.roomNumber}`
+                          : ord.customer.tableNumber
+                          ? `🍽️ ${/^(table|room)\b/i.test(ord.customer.tableNumber) ? ord.customer.tableNumber : `Table ${ord.customer.tableNumber}`}`
+                          : ord.fulfilmentMethod}
                       </p>
                     </div>
                     <span className="font-black text-slate-900 text-sm">{formatINR(ord.total)}</span>
@@ -1021,7 +1025,11 @@ export default function DashboardPage() {
                       <td className="p-3">
                         <div className="font-semibold text-slate-800">{ord.customer.name || 'Guest'}</div>
                         <div className="text-[10px] text-slate-500">
-                          {ord.customer.tableNumber ? `🍽️ ${ord.customer.tableNumber}` : ord.fulfilmentMethod}
+                          {ord.customer.roomNumber
+                            ? `🛏️ Room ${ord.customer.roomNumber}`
+                            : ord.customer.tableNumber
+                            ? `🍽️ ${/^(table|room)\b/i.test(ord.customer.tableNumber) ? ord.customer.tableNumber : `Table ${ord.customer.tableNumber}`}`
+                            : ord.fulfilmentMethod}
                         </div>
                       </td>
                       <td className="p-3 max-w-[200px] truncate text-slate-600">

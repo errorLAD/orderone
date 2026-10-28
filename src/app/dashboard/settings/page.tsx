@@ -60,6 +60,8 @@ export default function BusinessSettingsPage() {
   const [deliveryFee, setDeliveryFee] = useState('30');
   const [enableDelivery, setEnableDelivery] = useState(true);
   const [autoAcceptOrders, setAutoAcceptOrders] = useState(false);
+  const [tableRoomLabelMode, setTableRoomLabelMode] = useState<'table' | 'room' | 'table_or_room'>('table_or_room');
+  const [customTableRoomLabel, setCustomTableRoomLabel] = useState('');
 
   useEffect(() => {
     if (currentBusiness) {
@@ -84,6 +86,11 @@ export default function BusinessSettingsPage() {
       setDeliveryFee(String(currentBusiness.settings.orderSettings.deliveryFee || 30));
       setEnableDelivery(currentBusiness.settings.orderSettings.enableDelivery);
       setAutoAcceptOrders(currentBusiness.settings.orderSettings.autoAcceptOrders);
+      setTableRoomLabelMode(
+        currentBusiness.settings.orderSettings.tableRoomLabelMode ||
+        (currentBusiness.type === 'hotel' ? 'room' : 'table_or_room')
+      );
+      setCustomTableRoomLabel(currentBusiness.settings.orderSettings.customTableRoomLabel || '');
     }
   }, [currentBusiness]);
 
@@ -118,6 +125,8 @@ export default function BusinessSettingsPage() {
             enableTakeaway: true,
             enableDineIn: true,
             autoAcceptOrders,
+            tableRoomLabelMode,
+            customTableRoomLabel: customTableRoomLabel.trim() || undefined,
           },
           tokenPrefixStore,
           tokenPrefixMenu,
@@ -536,6 +545,86 @@ export default function BusinessSettingsPage() {
             <label htmlFor="autoAccept" className="font-semibold text-slate-700">
               Auto-Accept new orders immediately upon checkout
             </label>
+          </div>
+        </div>
+
+        {/* Table / Room Number Checkout Field Configuration */}
+        <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm">Table / Room Number Field (Checkout)</h3>
+              <p className="text-slate-500 text-xs">
+                Configure how the optional seating or room location field is labeled for customers during checkout.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => setTableRoomLabelMode('table_or_room')}
+              className={cn(
+                'p-3 rounded-xl border text-left transition-all',
+                tableRoomLabelMode === 'table_or_room'
+                  ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600/20'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              )}
+            >
+              <div className="font-bold text-xs text-slate-900 mb-0.5">Table / Room Number</div>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Flexible label. Recommended for multi-purpose spaces or dual restaurant & lodge operations.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTableRoomLabelMode('table')}
+              className={cn(
+                'p-3 rounded-xl border text-left transition-all',
+                tableRoomLabelMode === 'table'
+                  ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600/20'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              )}
+            >
+              <div className="font-bold text-xs text-slate-900 mb-0.5">Table Number</div>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Recommended for restaurants, cafes, bakeries, and bars with dining tables.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTableRoomLabelMode('room')}
+              className={cn(
+                'p-3 rounded-xl border text-left transition-all',
+                tableRoomLabelMode === 'room'
+                  ? 'border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600/20'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              )}
+            >
+              <div className="font-bold text-xs text-slate-900 mb-0.5">Room Number</div>
+              <p className="text-[11px] text-slate-500 leading-snug">
+                Recommended for hotels, resorts, and homestays offering in-room dining delivery.
+              </p>
+            </button>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div>
+              <span className="font-bold text-slate-700">Customer Checkout Preview: </span>
+              <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200 font-bold text-indigo-700">
+                {customTableRoomLabel.trim()
+                  ? `${customTableRoomLabel.trim()} (Optional)`
+                  : tableRoomLabelMode === 'room'
+                  ? 'Room No. (Optional)'
+                  : tableRoomLabelMode === 'table'
+                  ? 'Table No. (Optional)'
+                  : 'Table / Room No. (Optional)'}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400">
+              Customers can always leave this blank for takeaway or delivery.
+            </span>
           </div>
         </div>
 

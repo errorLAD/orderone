@@ -10,11 +10,12 @@ const createOrderSchema = z.object({
     name: z.string().optional().or(z.literal('')).default('Guest Customer'),
     phone: z.string().optional().or(z.literal('')),
     email: z.string().email().optional().or(z.literal('')),
-    address: z.string().optional(),
-    tableNumber: z.string().optional(),
-    roomNumber: z.string().optional(),
-    floorNumber: z.string().optional(),
-    notes: z.string().optional(),
+    address: z.string().optional().or(z.literal('')),
+    tableNumber: z.string().optional().or(z.literal('')),
+    roomNumber: z.string().optional().or(z.literal('')),
+    tableOrRoomNumber: z.string().optional().or(z.literal('')),
+    floorNumber: z.string().optional().or(z.literal('')),
+    notes: z.string().optional().or(z.literal('')),
   }),
   items: z
     .array(
@@ -31,9 +32,10 @@ const createOrderSchema = z.object({
   fulfillmentType: z.enum(['pickup', 'delivery', 'dine_in', 'takeaway']).optional(),
   paymentMethod: z.enum(['upi', 'cash', 'card', 'online', 'counter']).optional().default('cash'),
   paymentStatus: z.enum(['pending', 'paid', 'failed', 'pay_at_counter', 'pending_verification']).optional(),
-  tableNumber: z.string().optional(),
-  roomNumber: z.string().optional(),
-  floorNumber: z.string().optional(),
+  tableNumber: z.string().optional().or(z.literal('')),
+  roomNumber: z.string().optional().or(z.literal('')),
+  tableOrRoomNumber: z.string().optional().or(z.literal('')),
+  floorNumber: z.string().optional().or(z.literal('')),
 });
 
 export async function POST(req: NextRequest) {
@@ -113,15 +115,43 @@ export async function POST(req: NextRequest) {
       resolvedPaymentStatus = 'pending';
     }
 
-    const effectiveRoomNumber = validatedData.customer.roomNumber || validatedData.roomNumber;
-    const effectiveFloorNumber = validatedData.customer.floorNumber || validatedData.floorNumber;
+    // Resolve Table / Room Number safely (optional for takeaway, delivery, or counter orders)
+    const rawTableRoom =
+      validatedData.customer.tableNumber ||
+      validatedData.customer.roomNumber ||
+      validatedData.customer.tableOrRoomNumber ||
+      validatedData.tableNumber ||
+      validatedData.roomNumber ||
+      validatedData.tableOrRoomNumber;
+    const effectiveTableRoom = rawTableRoom && String(rawTableRoom).trim() ? String(rawTableRoom).trim() : undefined;
+
+    const isHotelBusiness =
+      business.category === 'hotel' ||
+      business.type === 'hotel' ||
+      business.settings?.orderSettings?.tableRoomLabelMode === 'room';
+
+    let resolvedRoomNumber: string | undefined = undefined;
+    let resolvedTableNumber: string | undefined = undefined;
+
+    if (effectiveTableRoom) {
+      if (isHotelBusiness || validatedData.customer.roomNumber || validatedData.roomNumber) {
+        resolvedRoomNumber = effectiveTableRoom;
+        resolvedTableNumber = effectiveTableRoom;
+      } else {
+        resolvedTableNumber = effectiveTableRoom;
+      }
+    }
+
+    const rawFloor = validatedData.customer.floorNumber || validatedData.floorNumber;
+    const effectiveFloorNumber = rawFloor && String(rawFloor).trim() ? String(rawFloor).trim() : undefined;
 
     const orderInput: CreateOrderInput = {
       businessId: validatedData.businessId,
       sourceType: validatedData.sourceType,
       customer: {
         ...validatedData.customer,
-        roomNumber: effectiveRoomNumber,
+        tableNumber: resolvedTableNumber,
+        roomNumber: resolvedRoomNumber,
         floorNumber: effectiveFloorNumber,
       },
       items: validatedData.items,
@@ -129,7 +159,7 @@ export async function POST(req: NextRequest) {
       fulfillmentType: method as any,
       paymentMethod: validatedData.paymentMethod as any,
       paymentStatus: resolvedPaymentStatus as any,
-      tableNumber: validatedData.tableNumber || validatedData.customer.tableNumber || effectiveRoomNumber,
+      tableNumber: resolvedTableNumber,
     };
 
     const order = await createOrder(orderInput);

@@ -171,8 +171,8 @@ export function OrderAlertOverlay() {
                           {order.customer?.roomNumber
                             ? `In-Room Dining ${order.customer.floorNumber ? `(Floor ${order.customer.floorNumber})` : ''}`
                             : isFoodBiz 
-                            ? (isStore ? 'Takeout Merch' : `Kitchen Ticket ${order.customer?.tableNumber ? `• Table #${order.customer.tableNumber}` : ''}`)
-                            : (isStore ? 'Online Storefront' : 'Counter Inquiry')}
+                            ? (isStore ? 'Takeout Merch' : `Kitchen Ticket ${order.customer?.tableNumber ? `• ${/^(table|room)\b/i.test(order.customer.tableNumber) ? order.customer.tableNumber : `Table #${order.customer.tableNumber}`}` : ''}`)
+                            : (isStore ? (order.customer?.tableNumber ? `Store • ${order.customer.tableNumber}` : 'Online Storefront') : 'Counter Inquiry')}
                         </span>
                       </div>
 

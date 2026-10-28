@@ -870,3 +870,54 @@ export function getTokenDisplayConfig(category?: string | null): TokenDisplayCon
   const normalized = normalizeCategoryKey(category);
   return TOKEN_DISPLAY_CONFIGS[normalized] || TOKEN_DISPLAY_CONFIGS.hardware;
 }
+
+export interface TableRoomLabelConfig {
+  label: string;
+  fieldLabel: string;
+  placeholder: string;
+  badgePrefix: string;
+}
+
+export function getTableRoomLabel(
+  orderSettings?: { tableRoomLabelMode?: 'table' | 'room' | 'table_or_room'; customTableRoomLabel?: string } | null,
+  businessCategory?: string | null
+): TableRoomLabelConfig {
+  if (orderSettings?.customTableRoomLabel?.trim()) {
+    const custom = orderSettings.customTableRoomLabel.trim();
+    return {
+      label: custom,
+      fieldLabel: `${custom} (Optional)`,
+      placeholder: `e.g. 4, 101, Patio (leave blank if not needed)`,
+      badgePrefix: custom,
+    };
+  }
+
+  const mode = orderSettings?.tableRoomLabelMode;
+  const normalizedCategory = normalizeCategoryKey(businessCategory);
+  const isHotel = normalizedCategory === 'hotel';
+
+  if (mode === 'room' || (!mode && isHotel)) {
+    return {
+      label: 'Room Number',
+      fieldLabel: 'Room No. (Optional)',
+      placeholder: 'e.g. 101, 204, Suite-A (leave blank if not needed)',
+      badgePrefix: '🛏️ Room',
+    };
+  }
+
+  if (mode === 'table' || (!mode && ['restaurant', 'cafe', 'bakery', 'juice_chaat'].includes(normalizedCategory))) {
+    return {
+      label: 'Table Number',
+      fieldLabel: 'Table No. (Optional)',
+      placeholder: 'e.g. Table 4, Patio 2, T-12 (leave blank if not needed)',
+      badgePrefix: '🍽️ Table',
+    };
+  }
+
+  return {
+    label: 'Table / Room Number',
+    fieldLabel: 'Table / Room No. (Optional)',
+    placeholder: 'e.g. Table 4, Room 101 (leave blank if not needed)',
+    badgePrefix: '📍 Table/Room',
+  };
+}

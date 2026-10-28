@@ -988,16 +988,21 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   cachedDb.orders.unshift(newOrder);
 
   // Generate Notification for Owner/Staff Dashboard
-  const isHotelOrder = Boolean(input.customer.roomNumber || business.type === 'hotel' || business.category === 'hotel');
-  const notificationTitle = isHotelOrder && input.customer.roomNumber
-    ? `New Room Service Order #${tokenNumber} (Room ${input.customer.roomNumber})`
+  const tableOrRoom = (input.customer.tableNumber || input.customer.roomNumber || '').trim();
+  const isHotel = business.type === 'hotel' || business.category === 'hotel';
+  const locationTag = tableOrRoom
+    ? (/^(table|room)\b/i.test(tableOrRoom) ? tableOrRoom : (isHotel ? `Room ${tableOrRoom}` : `Table ${tableOrRoom}`))
+    : '';
+
+  const notificationTitle = locationTag
+    ? `New Order #${tokenNumber} (${locationTag})`
     : input.sourceType === 'store'
     ? `New Store Order #${tokenNumber}`
     : `New Kitchen Menu Order #${tokenNumber}`;
 
-  const notificationMessage = isHotelOrder && input.customer.roomNumber
-    ? `Room ${input.customer.roomNumber}${input.customer.floorNumber ? ` (Floor ${input.customer.floorNumber})` : ''} • ${input.customer.name || 'Guest'} ordered ₹${total.toFixed(2)}`
-    : `${input.customer.name} placed an order of ₹${total.toFixed(2)} (${input.fulfilmentMethod})`;
+  const notificationMessage = locationTag
+    ? `${locationTag} • ${input.customer.name || 'Guest'} ordered ₹${total.toFixed(2)} (${input.fulfilmentMethod})`
+    : `${input.customer.name || 'Guest'} placed an order of ₹${total.toFixed(2)} (${input.fulfilmentMethod})`;
 
   const notification: NotificationItem = {
     id: generateId('notif'),

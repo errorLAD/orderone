@@ -112,6 +112,8 @@ export interface BusinessSettings {
     autoAcceptOrders: boolean;
     showCustomerPhone?: boolean;
     requireCustomerPhone?: boolean;
+    tableRoomLabelMode?: 'table' | 'room' | 'table_or_room';
+    customTableRoomLabel?: string;
   };
   tokenPrefixStore: string; // e.g. "S-"
   tokenPrefixMenu: string;  // e.g. "M-"

@@ -137,9 +137,12 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
               🛏️ Delivering to Room {order.customer?.roomNumber}
               {order.customer?.floorNumber ? ` (Floor ${order.customer.floorNumber})` : ''}
             </div>
-          ) : order.tableNumber ? (
+          ) : (order.tableNumber || order.customer?.tableNumber) ? (
             <div className="inline-block mt-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200">
-              🍽️ {order.tableNumber}
+              {(() => {
+                const val = (order.tableNumber || order.customer?.tableNumber || '').trim();
+                return /^(table|room)\b/i.test(val) ? `🍽️ ${val}` : `🍽️ Table ${val}`;
+              })()}
             </div>
           ) : null}
 

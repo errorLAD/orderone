@@ -262,7 +262,7 @@ export default function MenuOrdersPage() {
                             </span>
                           ) : order.customer.tableNumber ? (
                             <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">
-                              🍽️ {order.customer.tableNumber}
+                              🍽️ {/^(table|room)\b/i.test(order.customer.tableNumber) ? order.customer.tableNumber : `Table ${order.customer.tableNumber}`}
                             </span>
                           ) : null}
                         </div>
@@ -356,7 +356,7 @@ export default function MenuOrdersPage() {
                     </span>
                   ) : selectedOrder.customer.tableNumber ? (
                     <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
-                      🍽️ {selectedOrder.customer.tableNumber}
+                      🍽️ {/^(table|room)\b/i.test(selectedOrder.customer.tableNumber) ? selectedOrder.customer.tableNumber : `Table ${selectedOrder.customer.tableNumber}`}
                     </span>
                   ) : null}
                 </div>
@@ -556,7 +556,7 @@ export default function MenuOrdersPage() {
                   </span>
                 ) : selectedOrder.customer.tableNumber ? (
                   <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
-                    🍽️ {selectedOrder.customer.tableNumber}
+                    🍽️ {/^(table|room)\b/i.test(selectedOrder.customer.tableNumber) ? selectedOrder.customer.tableNumber : `Table ${selectedOrder.customer.tableNumber}`}
                   </span>
                 ) : null}
               </div>

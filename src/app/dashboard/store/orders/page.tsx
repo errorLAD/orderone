@@ -259,11 +259,18 @@ export default function StoreOrdersPage() {
                         {order.tokenNumber}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-slate-900">
-                          {order.customer.name}
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs font-bold text-slate-900">
+                            {order.customer.name}
+                          </div>
+                          {(order.customer.tableNumber || order.customer.roomNumber) && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              {order.customer.roomNumber ? `Room ${order.customer.roomNumber}` : order.customer.tableNumber}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-500">
-                          {order.customer.phone} • {formatDate(order.createdAt)}
+                          {order.customer.phone || 'No phone'} • {formatDate(order.createdAt)}
                         </div>
                       </div>
                     </div>
@@ -339,8 +346,15 @@ export default function StoreOrdersPage() {
 
               {/* Customer Info */}
               <div className="space-y-1 text-xs">
-                <p className="font-bold text-slate-800">{selectedOrder.customer.name}</p>
-                <p className="text-slate-500">{selectedOrder.customer.phone}</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-800">{selectedOrder.customer.name}</p>
+                  {(selectedOrder.customer.tableNumber || selectedOrder.customer.roomNumber) && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                      📍 {selectedOrder.customer.roomNumber ? `Room ${selectedOrder.customer.roomNumber}` : selectedOrder.customer.tableNumber}
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-500">{selectedOrder.customer.phone || 'No phone'}</p>
                 {selectedOrder.customer.address && (
                   <p className="text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100 text-[11px]">
                     📍 {selectedOrder.customer.address}
@@ -521,8 +535,15 @@ export default function StoreOrdersPage() {
 
             {/* Customer Info */}
             <div className="space-y-1 text-xs">
-              <p className="font-bold text-slate-800">{selectedOrder.customer.name}</p>
-              <p className="text-slate-500">{selectedOrder.customer.phone}</p>
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-slate-800">{selectedOrder.customer.name}</p>
+                {(selectedOrder.customer.tableNumber || selectedOrder.customer.roomNumber) && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                    📍 {selectedOrder.customer.roomNumber ? `Room ${selectedOrder.customer.roomNumber}` : selectedOrder.customer.tableNumber}
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-500">{selectedOrder.customer.phone || 'No phone'}</p>
               {selectedOrder.customer.address && (
                 <p className="text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[11px]">
                   📍 {selectedOrder.customer.address}
