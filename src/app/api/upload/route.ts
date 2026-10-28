@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth';
 import { getSupabaseClient } from '@/lib/supabase';
+import { pgQuery } from '@/lib/postgres';
 import fs from 'fs';
 import path from 'path';
 
@@ -84,14 +85,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Reliable Local Storage in public/uploads/${cleanFolder}
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', cleanFolder);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    // 2. Persist directly to Supabase PostgreSQL uploaded_media table (Safe for Vercel/serverless EROFS)
+    const base64Data = buffer.toString('base64');
+    const mediaId = `media_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    await pgQuery(
+      `INSERT INTO public.uploaded_media (id, filename, folder, mime_type, file_size, data)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data`,
+      [mediaId, uniqueFilename, cleanFolder, file.type, file.size, base64Data]
+    );
 
-    const targetFilePath = path.join(uploadDir, uniqueFilename);
-    fs.writeFileSync(targetFilePath, buffer);
+    // 3. Optional local filesystem cache (attempted only if environment permits, silently ignored on EROFS serverless)
+    try {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', cleanFolder);
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const targetFilePath = path.join(uploadDir, uniqueFilename);
+      fs.writeFileSync(targetFilePath, buffer);
+    } catch (fsErr) {
+      // In serverless environments (Vercel, AWS Lambda), filesystem is read-only. Media is safely served via PostgreSQL.
+    }
 
     const publicUrl = `/uploads/${cleanFolder}/${uniqueFilename}`;
 
@@ -99,7 +113,7 @@ export async function POST(req: NextRequest) {
       success: true,
       url: publicUrl,
       filename: uniqueFilename,
-      storage: 'local',
+      storage: 'database',
       size: file.size,
       mimeType: file.type,
     });
@@ -121,16 +135,22 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Image URL is required' }, { status: 400 });
     }
 
-    // If local file path
+    // Delete from Supabase PostgreSQL storage
+    const filename = url.split('/').pop();
+    if (filename) {
+      await pgQuery(`DELETE FROM public.uploaded_media WHERE filename = $1`, [filename]);
+    }
+
+    // Attempt deleting from local cache if file exists
     if (url.startsWith('/uploads/')) {
       const relativePath = url.replace(/^\//, '');
       const localFilePath = path.join(process.cwd(), 'public', relativePath);
-      if (fs.existsSync(localFilePath)) {
-        try {
+      try {
+        if (fs.existsSync(localFilePath)) {
           fs.unlinkSync(localFilePath);
-        } catch (e) {
-          console.warn('Failed to delete local file:', e);
         }
+      } catch (e) {
+        // Silently ignore filesystem error in read-only environments
       }
     }
 
