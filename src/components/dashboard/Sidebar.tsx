@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -14,16 +14,16 @@ import {
   CreditCard,
   Settings,
   ShieldCheck,
-  ChevronRight,
+  ChevronDown,
   Sparkles,
   ExternalLink,
   Layers,
-  Wrench,
-  Boxes,
   Share2,
   Building2,
   Palette,
   X,
+  Lock,
+  Clock,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -42,12 +42,13 @@ interface NavItem {
   badge?: string | null;
   badgeClass?: string;
   external?: boolean;
+  isLocked?: boolean;
 }
 
 interface NavSection {
+  id: string;
   title: string;
-  badgeText?: string;
-  badgeClass?: string;
+  collapsible?: boolean;
   items: NavItem[];
 }
 
@@ -63,245 +64,253 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     currentBusiness?.subscription?.planId === 'plan_gold' ||
     currentBusiness?.subscription?.planId === 'plan_diamond';
 
-  // Dynamic module section labels based on category
-  const getStoreSectionConfig = () => {
-    return {
-      title: 'Store Module (Retail)',
-      badgeText: 'Store',
-      badgeClass: 'bg-sky-100 text-sky-800 border-sky-200',
-      catalogName: 'Store Catalog & Stock',
-      categoriesName: 'Categories',
-      ordersName: 'Store Orders',
-      tokensName: 'Store Tokens & Queue',
-    };
+  // Section collapse state (remembered in localStorage for user convenience)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('orderone_sidebar_collapsed');
+      if (saved) {
+        setCollapsedSections(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, []);
+
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [sectionId]: !prev[sectionId] };
+      try {
+        localStorage.setItem('orderone_sidebar_collapsed', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
   };
 
+  // Dynamic module operations configuration based on category
   const getMenuSectionConfig = () => {
     switch (catConfig.id) {
       case 'restaurant':
         return {
           title: 'Kitchen & Dining Operations',
-          badgeText: 'Dining',
-          badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
-          catalogName: 'Food Menu & Recipes',
           ordersName: 'Kitchen Orders & KOT',
           tokensName: 'Table & Token Queue',
+          catalogName: 'Food Menu & Recipes',
+          categoriesName: 'Menu Categories',
         };
       case 'cafe':
         return {
           title: 'Barista & Cafe Counter',
-          badgeText: 'Barista',
-          badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
-          catalogName: 'Beverages & Bites Menu',
-          ordersName: 'Barista & Cafe Orders',
+          ordersName: 'Barista Orders',
           tokensName: 'Pickup Calling Tokens',
+          catalogName: 'Beverages & Bites Menu',
+          categoriesName: 'Menu Categories',
         };
       case 'bakery':
         return {
-          title: 'Bakery & Fresh Bakes',
-          badgeText: 'Bakery',
-          badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
-          catalogName: 'Cakes, Breads & Pastries',
+          title: 'Bakery Operations',
           ordersName: 'Bakery & Cake Orders',
           tokensName: 'Pre-Order Pickup Tokens',
+          catalogName: 'Cakes, Breads & Pastries',
+          categoriesName: 'Bakery Categories',
         };
       case 'juice_chaat':
         return {
-          title: 'Juice & Chaat Counter',
-          badgeText: 'Counter',
-          badgeClass: 'bg-lime-100 text-lime-800 border-lime-200',
-          catalogName: 'Juices, Shakes & Snacks',
+          title: 'Live Counter Operations',
           ordersName: 'Live Counter Orders',
           tokensName: 'Rapid Token Calling',
+          catalogName: 'Juices & Chaat Menu',
+          categoriesName: 'Menu Categories',
         };
       default:
         return {
-          title: 'Menu Module (Dining/Food)',
-          badgeText: 'Menu',
-          badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+          title: 'Food Menu & Kitchen',
+          ordersName: 'Kitchen Orders',
+          tokensName: 'Dining Queue & Tokens',
           catalogName: 'Digital Food Menu',
-          ordersName: 'Menu Orders (Kitchen)',
-          tokensName: 'Menu Kitchen Queue',
+          categoriesName: 'Menu Categories',
         };
     }
+  };
+
+  const getStoreSectionConfig = () => {
+    return {
+      title: catConfig.id === 'hardware' ? 'Hardware & Material Ops' : 'Retail Store Operations',
+      ordersName: 'Store Orders',
+      tokensName: 'Store Tokens & Queue',
+      catalogName: 'Store Catalog & Stock',
+      categoriesName: 'Product Categories',
+    };
   };
 
   const storeSection = getStoreSectionConfig();
   const menuSection = getMenuSectionConfig();
 
-  const navItems: NavSection[] = [
+  // Clean, focused navigation structure ordered by operational priority
+  const navSections: NavSection[] = [
+    // 1. Overview
     {
+      id: 'main',
       title: 'Main',
+      collapsible: false,
       items: [
         {
           name: 'Dashboard Overview',
           href: '/dashboard',
           icon: LayoutDashboard,
-          badge: null,
         },
       ],
     },
+
+    // 2. Core Daily Operations (Prioritized above marketing/display)
+    ...(isMenuEnabled
+      ? [
+          {
+            id: 'menu_ops',
+            title: menuSection.title,
+            collapsible: true,
+            items: [
+              {
+                name: menuSection.ordersName,
+                href: '/dashboard/menu/orders',
+                icon: ReceiptText,
+              },
+              {
+                name: menuSection.tokensName,
+                href: '/dashboard/menu/tokens',
+                icon: Clock,
+              },
+              {
+                name: menuSection.catalogName,
+                href: '/dashboard/menu/catalog',
+                icon: UtensilsCrossed,
+              },
+              {
+                name: menuSection.categoriesName,
+                href: '/dashboard/menu/categories',
+                icon: Layers,
+              },
+            ],
+          },
+        ]
+      : []),
+
+    ...(isStoreEnabled
+      ? [
+          {
+            id: 'store_ops',
+            title: storeSection.title,
+            collapsible: true,
+            items: [
+              {
+                name: storeSection.ordersName,
+                href: '/dashboard/store/orders',
+                icon: ShoppingBag,
+              },
+              {
+                name: storeSection.tokensName,
+                href: '/dashboard/store/tokens',
+                icon: Clock,
+              },
+              {
+                name: storeSection.catalogName,
+                href: '/dashboard/store/catalog',
+                icon: Store,
+              },
+              {
+                name: storeSection.categoriesName,
+                href: '/dashboard/store/categories',
+                icon: Layers,
+              },
+            ],
+          },
+        ]
+      : []),
+
+    // 3. Storefront, QR Standees & Public Displays
     {
+      id: 'storefront',
       title: 'Storefront & Display',
+      collapsible: true,
       items: [
         {
-          name: isFoodCategory ? 'Public Dining Menu' : 'Public Online Storefront',
+          name: isFoodCategory ? 'Public Dining Menu' : 'Public Storefront',
           href: currentBusiness
             ? (isFoodCategory ? `/menu/${currentBusiness.slug}` : `/store/${currentBusiness.slug}`)
-            : '/store/annapurna-foods',
+            : '/menu/royal-kitchen',
           icon: isFoodCategory ? UtensilsCrossed : Store,
           external: true,
-          badge: 'Online',
-          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         },
         {
-          name: 'TV Public Token Display',
-          href: currentBusiness ? `/display/${currentBusiness.slug}` : '/display/annapurna-foods',
+          name: 'TV Token Screen',
+          href: currentBusiness ? `/display/${currentBusiness.slug}` : '/display/royal-kitchen',
           icon: Tv,
           external: true,
-          badge: 'Live',
         },
         {
-          name: 'QR Codes & Posters',
+          name: 'QR Standees & Posters',
           href: '/dashboard/qr-codes',
           icon: QrCode,
-          badge: null,
+        },
+        {
+          name: 'Branding & Appearance',
+          href: '/dashboard/storefront/design',
+          icon: Palette,
+          isLocked: !isGoldPlan,
         },
         {
           name: 'Social Media & Links',
           href: '/dashboard/storefront/social',
           icon: Share2,
-          badge: null,
-        },
-        {
-          name: 'Design & Appearance',
-          href: '/dashboard/storefront/design',
-          icon: Palette,
-          badge: isGoldPlan ? 'Gold' : 'Locked',
-          badgeClass: isGoldPlan
-            ? 'bg-amber-100 text-amber-800 font-semibold text-[10px]'
-            : 'bg-slate-100 text-slate-500 font-medium text-[10px]',
         },
       ],
     },
-    // STORE MODULE SECTION (Materials & Inventory / Retail / Kirana)
-    ...(isStoreEnabled
-      ? [
-          {
-            title: storeSection.title,
-            badgeText: storeSection.badgeText,
-            badgeClass: storeSection.badgeClass,
-            items: [
-              {
-                name: storeSection.catalogName,
-                href: '/dashboard/store/catalog',
-                icon: Store,
-                badge: null,
-              },
-              {
-                name: storeSection.categoriesName || 'Categories',
-                href: '/dashboard/store/categories',
-                icon: Layers,
-                badge: null,
-              },
-              {
-                name: storeSection.ordersName,
-                href: '/dashboard/store/orders',
-                icon: ShoppingBag,
-                badge: 'Live',
-                badgeClass: 'bg-sky-100 text-sky-700',
-              },
-              {
-                name: storeSection.tokensName,
-                href: '/dashboard/store/tokens',
-                icon: ReceiptText,
-                badge: null,
-              },
-            ],
-          },
-        ]
-      : []),
-    // MENU MODULE SECTION (Kitchen / Dining / Barista)
-    ...(isMenuEnabled
-      ? [
-          {
-            title: menuSection.title,
-            badgeText: menuSection.badgeText,
-            badgeClass: menuSection.badgeClass,
-            items: [
-              {
-                name: menuSection.catalogName,
-                href: '/dashboard/menu/catalog',
-                icon: UtensilsCrossed,
-                badge: null,
-              },
-              {
-                name: 'Menu Categories',
-                href: '/dashboard/menu/categories',
-                icon: Layers,
-                badge: null,
-              },
-              {
-                name: menuSection.ordersName,
-                href: '/dashboard/menu/orders',
-                icon: ReceiptText,
-                badge: 'KOT',
-                badgeClass: 'bg-orange-100 text-orange-700',
-              },
-              {
-                name: menuSection.tokensName,
-                href: '/dashboard/menu/tokens',
-                icon: ReceiptText,
-                badge: null,
-              },
-            ],
-          },
-        ]
-      : []),
+
+    // 4. Settings & Account
     {
+      id: 'settings',
       title: 'Settings & Billing',
+      collapsible: true,
       items: [
         {
           name: 'Business Profile',
           href: '/dashboard/settings/profile',
           icon: Building2,
-          badge: null,
+        },
+        {
+          name: 'Store & Operations Settings',
+          href: '/dashboard/settings',
+          icon: Settings,
+        },
+        {
+          name: 'Payments & UPI Setup',
+          href: '/dashboard/settings/payments',
+          icon: QrCode,
+          isLocked: !isGoldPlan,
+        },
+        {
+          name: 'GST & Invoicing',
+          href: '/dashboard/settings/gst',
+          icon: ReceiptText,
+          isLocked: !isGoldPlan,
         },
         {
           name: 'Plans & Subscription',
           href: '/dashboard/subscription',
           icon: CreditCard,
           badge: currentBusiness?.subscription?.planId === 'plan_gold' ? 'Gold' : 'Basic',
-          badgeClass: currentBusiness?.subscription?.planId === 'plan_gold' ? 'bg-amber-100 text-amber-800 font-semibold' : 'bg-emerald-100 text-emerald-800 font-semibold',
-        },
-        {
-          name: 'Payments & UPI Setup',
-          href: '/dashboard/settings/payments',
-          icon: QrCode,
-          badge: isGoldPlan ? 'Gold' : 'Locked',
-          badgeClass: isGoldPlan ? 'bg-amber-100 text-amber-800 font-semibold text-[10px]' : 'bg-slate-100 text-slate-500 font-medium text-[10px]',
-        },
-        {
-          name: 'GST & Invoices',
-          href: '/dashboard/settings/gst',
-          icon: ReceiptText,
-          badge: isGoldPlan ? 'Gold' : 'Locked',
-          badgeClass: isGoldPlan ? 'bg-amber-100 text-amber-800 font-semibold text-[10px]' : 'bg-slate-100 text-slate-500 font-medium text-[10px]',
-        },
-        {
-          name: 'Business Settings',
-          href: '/dashboard/settings',
-          icon: Settings,
-          badge: null,
+          badgeClass:
+            currentBusiness?.subscription?.planId === 'plan_gold'
+              ? 'bg-amber-50 text-amber-700 border border-amber-200/80 font-bold'
+              : 'bg-slate-100 text-slate-600 font-semibold',
         },
         ...(currentRole === 'admin'
           ? [
               {
-                name: 'Platform Super Admin',
+                name: 'Super Admin',
                 href: '/dashboard/admin',
                 icon: ShieldCheck,
                 badge: 'Admin',
-                badgeClass: 'bg-purple-100 text-purple-800',
+                badgeClass: 'bg-purple-100 text-purple-800 font-bold',
               },
             ]
           : []),
@@ -321,164 +330,191 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed top-0 bottom-0 left-0 z-40 flex flex-col w-64 max-w-[85vw] bg-white border-r border-slate-200 transition-transform duration-200 ease-in-out lg:translate-x-0 pt-safe pb-safe',
+          'fixed top-0 bottom-0 left-0 z-40 flex flex-col w-64 max-w-[85vw] bg-white border-r border-slate-200/80 transition-transform duration-200 ease-in-out lg:translate-x-0 pt-safe pb-safe',
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         )}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 shrink-0">
           <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-tr from-indigo-600 to-indigo-500 text-white font-black shadow-xs">
-              <Sparkles className="w-5 h-5" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white shadow-xs">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <div className="font-bold text-slate-900 tracking-tight leading-none text-base">
                 OrderOne<span className="text-indigo-600">.in</span>
               </div>
-              <div className="text-[11px] font-medium text-slate-500 mt-1">
-                Store + Menu + Tokens
+              <div className="text-[10px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">
+                Store • Menu • Tokens
               </div>
             </div>
           </Link>
 
-          {/* Explicit Mobile Close Button */}
+          {/* Mobile Close Button */}
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 lg:hidden transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 lg:hidden transition-colors"
             aria-label="Close Navigation Menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Current Active Business Quick Card */}
+        {/* Active Merchant Quick Identity Badge */}
         {currentBusiness && (
-          <div className="px-3.5 py-2.5 mx-3 mt-3 bg-slate-50/90 rounded-xl border border-slate-200/80">
-            <div className="flex items-center gap-2.5">
+          <div className="px-3 py-2 mx-3 mt-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center justify-between gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               {currentBusiness.logoUrl ? (
                 <img
                   src={currentBusiness.logoUrl}
                   alt={currentBusiness.name}
-                  className="w-8 h-8 rounded-lg object-cover border border-slate-200"
+                  className="w-7 h-7 rounded-lg object-cover border border-slate-200/80 shrink-0"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0">
                   {currentBusiness.name.slice(0, 2).toUpperCase()}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-800 truncate">
-                  {currentBusiness.name}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={cn('text-[9px] px-1.5 py-0.5 rounded font-bold border inline-flex items-center gap-1', catConfig.badgeClass)}>
-                    <span>{catConfig.icon}</span>
-                    <span>{catConfig.shortLabel || catConfig.label}</span>
-                  </span>
-                  <span className="text-[9px] font-semibold text-slate-500">
-                    {currentBusiness.subscription?.planId === 'plan_gold' ? 'Gold' : 'Basic'}
-                  </span>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {currentBusiness.name}
+                  </p>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Store Live" />
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+                  <span className="capitalize">{catConfig.shortLabel || catConfig.label}</span>
+                  <span>•</span>
+                  <span className="capitalize">{currentBusiness.subscription?.planId === 'plan_gold' ? 'Gold' : 'Basic'}</span>
                 </div>
               </div>
             </div>
+            <Link
+              href="/dashboard/settings/profile"
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition-colors"
+              title="Edit Profile"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </Link>
           </div>
         )}
 
         {/* Navigation Sections */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5">
-          {navItems.map((section, idx) => (
-            <div key={idx} className="space-y-1">
-              <div className="flex items-center justify-between px-2 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
-                <span>{section.title}</span>
-                {section.badgeText && (
-                  <span
-                    className={cn(
-                      'text-[9px] px-1.5 py-0.5 rounded font-bold border',
-                      section.badgeClass
-                    )}
-                  >
-                    {section.badgeText}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-0.5 mt-1">
-                {section.items.map((item, itemIdx) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          {navSections.map((section) => {
+            // If any item inside this section is active, keep it expanded
+            const isAnyItemActive = section.items.some((item) => pathname === item.href);
+            const isCollapsed = section.collapsible && collapsedSections[section.id] && !isAnyItemActive;
 
-                  if (item.external) {
-                    return (
-                      <a
-                        key={itemIdx}
-                        href={item.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Icon className="w-4 h-4 text-slate-600" />
-                          <span>{item.name}</span>
-                        </div>
-                        {item.badge && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-indigo-50 text-indigo-600 border border-indigo-200">
-                            {item.badge}
-                          </span>
-                        )}
-                      </a>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={itemIdx}
-                      href={item.href}
-                      onClick={onClose}
+            return (
+              <div key={section.id} className="space-y-0.5">
+                {/* Section Header */}
+                <div
+                  onClick={() => section.collapsible && toggleSection(section.id)}
+                  className={cn(
+                    'flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest transition-colors',
+                    section.collapsible ? 'cursor-pointer hover:text-slate-600 select-none' : 'cursor-default'
+                  )}
+                >
+                  <span>{section.title}</span>
+                  {section.collapsible && (
+                    <ChevronDown
                       className={cn(
-                        'flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                        isActive
-                          ? 'bg-indigo-600 text-white shadow-xs font-semibold'
-                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        'w-3 h-3 text-slate-400 transition-transform duration-200',
+                        isCollapsed && '-rotate-90'
                       )}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Icon
+                    />
+                  )}
+                </div>
+
+                {/* Section Items */}
+                {!isCollapsed && (
+                  <div className="space-y-0.5 pt-0.5">
+                    {section.items.map((item, itemIdx) => {
+                      const isActive = pathname === item.href;
+                      const Icon = item.icon;
+
+                      if (item.external) {
+                        return (
+                          <a
+                            key={itemIdx}
+                            href={item.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 transition-all"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Icon className="w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
+                              <span className="truncate">{item.name}</span>
+                            </div>
+                            <ExternalLink className="w-3.5 h-3.5 text-slate-400 opacity-40 group-hover:opacity-100 shrink-0 transition-opacity" />
+                          </a>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={itemIdx}
+                          href={item.href}
+                          onClick={onClose}
                           className={cn(
-                            'w-4 h-4',
-                            isActive ? 'text-white' : 'text-slate-600'
-                          )}
-                        />
-                        <span>{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <span
-                          className={cn(
-                            'px-1.5 py-0.5 text-[10px] rounded font-semibold',
+                            'group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all',
                             isActive
-                              ? 'bg-white/20 text-white'
-                              : item.badgeClass || 'bg-slate-100 text-slate-600'
+                              ? 'bg-indigo-50/90 text-indigo-700 font-bold border border-indigo-200/60 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                           )}
                         >
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Icon
+                              className={cn(
+                                'w-4 h-4 shrink-0 transition-colors',
+                                isActive
+                                  ? 'text-indigo-600'
+                                  : 'text-slate-400 group-hover:text-slate-600'
+                              )}
+                            />
+                            <span className="truncate">{item.name}</span>
+                          </div>
+
+                          {/* Refined right indicators: Lock or Plan pill */}
+                          {item.isLocked && (
+                            <Lock className="w-3.5 h-3.5 text-slate-400 opacity-60 group-hover:opacity-100 shrink-0" />
+                          )}
+
+                          {item.badge && !item.isLocked && (
+                            <span
+                              className={cn(
+                                'px-1.5 py-0.5 text-[9px] rounded-md font-semibold tracking-wider shrink-0',
+                                item.badgeClass || 'bg-slate-100 text-slate-600'
+                              )}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Footer Info */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50 space-y-1">
-          <div className="flex items-center justify-between text-[11px] text-slate-500">
-            <span className="truncate max-w-[170px]" title={PLATFORM_CONFIG.legalCompanyName}>
-              By {PLATFORM_CONFIG.legalCompanyName}
+        {/* Clean Footer Info */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-1 text-[11px] text-slate-400 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="truncate text-slate-500 font-medium max-w-[140px]">
+              {PLATFORM_CONFIG.brandName}
             </span>
-            <span className="text-emerald-700 font-medium shrink-0">● Connected</span>
+            <span className="text-emerald-600 font-semibold text-[10px] flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Connected
+            </span>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 pt-0.5">
             <Link href="/terms" target="_blank" className="hover:text-slate-600 transition-colors">
               Terms
             </Link>
