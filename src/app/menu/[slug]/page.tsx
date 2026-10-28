@@ -74,6 +74,15 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const [placedOrder, setPlacedOrder] = useState<{ tokenNumber: string; trackingId: string } | null>(null);
   const [showSocialModal, setShowSocialModal] = useState<boolean>(false);
 
+  // Derived simple cart format for StorefrontRenderer (unconditionally declared at top to obey React Hook rules)
+  const simpleCart = React.useMemo(() => {
+    const result: { [productId: string]: number } = {};
+    for (const [k, v] of Object.entries(cart)) {
+      result[k] = v.quantity;
+    }
+    return result;
+  }, [cart]);
+
   const fetchMenuData = async () => {
     try {
       const bizRes = await fetch(`/api/businesses?slug=${params.slug}`);
@@ -390,14 +399,6 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const onlineOrderingEnabled =
     business?.onlineOrderingEnabled ?? business?.settings?.onlineOrderingEnabled ?? true;
   const canAcceptOnlineOrders = isStoreOpen && onlineOrderingEnabled;
-
-  const simpleCart = React.useMemo(() => {
-    const result: { [productId: string]: number } = {};
-    for (const [k, v] of Object.entries(cart)) {
-      result[k] = v.quantity;
-    }
-    return result;
-  }, [cart]);
 
   const designSettings = business?.settings?.storefrontDesign;
   const activeTemplate = designSettings?.templateId || 'classic';
