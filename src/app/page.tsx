@@ -33,6 +33,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
 import { formatINR } from '@/lib/utils';
+import { generateFaqSchema } from '@/lib/seoConfig';
 
 export default function HomePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
@@ -59,8 +60,15 @@ export default function HomePage() {
     },
   ];
 
+  const faqSchema = generateFaqSchema(faqs);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-600 selection:text-white flex flex-col relative overflow-hidden">
+      {/* FAQ Rich Results Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       {/* Light SaaS Ambient Background Glow & Grid Texture */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[560px] pointer-events-none -z-10 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(99,102,241,0.08),transparent_80%)]" />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35" />

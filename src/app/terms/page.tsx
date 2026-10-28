@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   title: 'Terms and Conditions | OrderOne.in — InfraBlue Materials Technology Private Limited',
   description:
     'Terms and Conditions governing the use of OrderOne.in, operated by InfraBlue Materials Technology Private Limited. Explaining merchant accounts, subscription plans, 30-day validity, and Razorpay payments.',
+  alternates: {
+    canonical: 'https://orderone.in/terms',
+  },
+  openGraph: {
+    title: 'Terms and Conditions | OrderOne.in',
+    url: 'https://orderone.in/terms',
+  },
 };
 
 export default function TermsAndConditionsPage() {

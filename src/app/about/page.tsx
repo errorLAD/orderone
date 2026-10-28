@@ -22,6 +22,15 @@ export const metadata: Metadata = {
   title: 'About Us | OrderOne.in — Operated by InfraBlue Materials Technology Private Limited',
   description:
     'Learn about OrderOne.in, a comprehensive digital storefront, menu, and token management platform operated by InfraBlue Materials Technology Private Limited for Indian retail and dining businesses.',
+  alternates: {
+    canonical: 'https://orderone.in/about',
+  },
+  openGraph: {
+    title: 'About OrderOne.in — InfraBlue Materials Technology Private Limited',
+    description:
+      'Learn about OrderOne.in, an Indian multi-business digital storefront, QR menu, and token queue SaaS platform.',
+    url: 'https://orderone.in/about',
+  },
 };
 
 export default function AboutUsPage() {

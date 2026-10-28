@@ -10,6 +10,13 @@ export const metadata: Metadata = {
   title: 'Privacy Policy | OrderOne.in — InfraBlue Materials Technology Private Limited',
   description:
     'Privacy Policy for OrderOne.in, operated by InfraBlue Materials Technology Private Limited. Explaining how merchant and storefront data is collected, stored in Supabase, and processed securely with Razorpay.',
+  alternates: {
+    canonical: 'https://orderone.in/privacy-policy',
+  },
+  openGraph: {
+    title: 'Privacy Policy | OrderOne.in',
+    url: 'https://orderone.in/privacy-policy',
+  },
 };
 
 export default function PrivacyPolicyPage() {

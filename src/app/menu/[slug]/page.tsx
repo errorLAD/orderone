@@ -32,6 +32,7 @@ import { DEFAULT_STOREFRONT_COLORS, getContrastTextColor } from '@/lib/designPre
 import { calculateOrderTax } from '@/lib/gstCalculator';
 import { buildUpiPaymentUri } from '@/lib/upiQr';
 import { PostOrderSocialModal } from '@/components/storefront/PostOrderSocialModal';
+import { trackConversion } from '@/components/analytics/GoogleAnalytics';
 
 export default function PublicMenuPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
@@ -230,6 +231,16 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       if (!data.success) {
         throw new Error(data.error || 'Failed to place food order');
       }
+
+      // Track purchase conversion for Google Analytics & marketing attribution
+      trackConversion('purchase', {
+        transaction_id: data.order?.id || data.order?.tokenNumber,
+        value: cartTotal,
+        currency: 'INR',
+        items_count: cartItems.length,
+        business_slug: params.slug,
+        order_source: 'menu',
+      });
 
       confetti({
         particleCount: 80,

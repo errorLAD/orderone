@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: 'Refund & Cancellation Policy | OrderOne.in — InfraBlue Materials Technology Private Limited',
   description:
     'Refund and Cancellation Policy for OrderOne.in subscriptions, operated by InfraBlue Materials Technology Private Limited. Explaining 30-day validity terms, upgrades, downgrades, and payment error resolutions.',
+  alternates: {
+    canonical: 'https://orderone.in/refund-policy',
+  },
+  openGraph: {
+    title: 'Refund & Cancellation Policy | OrderOne.in',
+    description: 'Learn about OrderOne.in subscription billing terms, 30-day validity, and cancellation policies.',
+    url: 'https://orderone.in/refund-policy',
+    siteName: 'OrderOne.in',
+    type: 'website',
+  },
 };
 
 export default function RefundPolicyPage() {
