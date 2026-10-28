@@ -27,6 +27,7 @@ import {
   Boxes,
   Truck,
   Building2,
+  BedDouble,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -351,6 +352,15 @@ export default function DashboardPage() {
               <UtensilsCrossed className="w-3.5 h-3.5 text-slate-500" />
               <span>{catConfig.terminology.ordersTitle}</span>
             </Link>
+            {catConfig.id === 'hotel' && (
+              <Link
+                href="/dashboard/hotel/rooms"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 transition-colors"
+              >
+                <BedDouble className="w-3.5 h-3.5 text-amber-700" />
+                <span>Rooms & Standees</span>
+              </Link>
+            )}
             <Link
               href="/dashboard/menu/tokens"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors"
@@ -618,7 +628,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {['restaurant', 'cafe', 'bakery', 'juice_chaat'].includes(catConfig.id) && (
+      {['restaurant', 'cafe', 'bakery', 'juice_chaat', 'hotel'].includes(catConfig.id) && (
         <div className="p-5 bg-white rounded-2xl border border-orange-100 shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">

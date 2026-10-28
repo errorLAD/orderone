@@ -17,6 +17,7 @@ import {
   Lock,
   ArrowRight,
   Info,
+  BedDouble,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -26,14 +27,17 @@ import Link from 'next/link';
 
 export default function QrCodesPage() {
   const { currentBusiness } = useApp();
-  const [selectedType, setSelectedType] = useState<'store' | 'menu' | 'table' | 'payment_qr'>('store');
+  const [selectedType, setSelectedType] = useState<'store' | 'menu' | 'table' | 'room' | 'payment_qr'>('store');
   const [tableNumber, setTableNumber] = useState<string>('Table 1');
+  const [roomNumber, setRoomNumber] = useState<string>('101');
+  const [hotelRooms, setHotelRooms] = useState<Array<{ id: string; roomNumber: string; floor?: string }>>([]);
   const [paymentAmount, setPaymentAmount] = useState<string>('250.00');
   const [orderReference, setOrderReference] = useState<string>('S-00102');
   const [upiSettings, setUpiSettings] = useState<any>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
 
+  const isHotel = currentBusiness?.category === 'hotel' || currentBusiness?.type === 'hotel';
   const isGoldPlan =
     currentBusiness?.subscription?.planId === 'plan_gold' ||
     currentBusiness?.subscription?.planId === 'plan_diamond';
@@ -43,6 +47,10 @@ export default function QrCodesPage() {
   // Automatically align initial QR code type with the business's active module
   useEffect(() => {
     if (currentBusiness) {
+      if (isHotel) {
+        setSelectedType('room');
+        return;
+      }
       const isFood = ['restaurant', 'cafe', 'bakery', 'juice_chaat'].includes(
         currentBusiness.category || currentBusiness.type || ''
       );
@@ -57,7 +65,22 @@ export default function QrCodesPage() {
         return prev;
       });
     }
-  }, [currentBusiness]);
+  }, [currentBusiness, isHotel]);
+
+  // Fetch hotel rooms if hotel
+  useEffect(() => {
+    if (currentBusiness?.id && isHotel) {
+      fetch(`/api/hotel/rooms?businessId=${currentBusiness.id}&activeOnly=true`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.rooms) && d.rooms.length > 0) {
+            setHotelRooms(d.rooms);
+            setRoomNumber(d.rooms[0].roomNumber);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [currentBusiness?.id, isHotel]);
 
   // Fetch UPI settings for Gold business
   useEffect(() => {
@@ -78,6 +101,7 @@ export default function QrCodesPage() {
     if (selectedType === 'store') return `${baseUrl}/store/${currentBusiness.slug}`;
     if (selectedType === 'menu') return `${baseUrl}/menu/${currentBusiness.slug}`;
     if (selectedType === 'table') return `${baseUrl}/menu/${currentBusiness.slug}?table=${encodeURIComponent(tableNumber)}`;
+    if (selectedType === 'room') return `${baseUrl}/menu/${currentBusiness.slug}?room=${encodeURIComponent(roomNumber)}`;
     
     // Dynamic Order Payment UPI URI
     const upiId = upiSettings?.upiId || 'merchant@upi';
@@ -102,6 +126,8 @@ export default function QrCodesPage() {
           ? '#c2410c'
           : selectedType === 'table'
           ? '#312e81'
+          : selectedType === 'room'
+          ? '#b45309'
           : '#4f46e5';
 
       QRCode.toDataURL(targetUrl, {
@@ -113,7 +139,7 @@ export default function QrCodesPage() {
         },
       }).then(setQrDataUrl).catch(console.error);
     }
-  }, [targetUrl, selectedType, tableNumber, paymentAmount, orderReference, upiSettings]);
+  }, [targetUrl, selectedType, tableNumber, roomNumber, paymentAmount, orderReference, upiSettings]);
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -212,6 +238,22 @@ export default function QrCodesPage() {
           >
             <Table className="w-4 h-4" />
             <span>Dining Table Specific QR</span>
+          </button>
+        )}
+
+        {/* In-Room Dining QR Standee Tab for Hotels */}
+        {(isHotel || currentBusiness?.settings.modules.menu) && (
+          <button
+            onClick={() => setSelectedType('room')}
+            className={cn(
+              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+              selectedType === 'room'
+                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            )}
+          >
+            <BedDouble className="w-4 h-4" />
+            <span>In-Room Dining QR</span>
           </button>
         )}
 
@@ -340,6 +382,46 @@ export default function QrCodesPage() {
         </div>
       )}
 
+      {/* Hotel Room Selector if room mode */}
+      {selectedType === 'room' && (
+        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-amber-950 flex items-center gap-1.5">
+              <BedDouble className="w-4 h-4 text-amber-700" />
+              Room Number:
+            </span>
+            {hotelRooms.length > 0 ? (
+              <select
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className="px-3 py-1.5 border border-amber-300 rounded-lg font-bold text-amber-900 bg-white"
+              >
+                {hotelRooms.map((r) => (
+                  <option key={r.id} value={r.roomNumber}>
+                    Room {r.roomNumber} {r.floor ? `(Floor ${r.floor})` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                placeholder="e.g. 101"
+                className="w-24 px-3 py-1.5 border border-amber-300 rounded-lg font-bold text-amber-900 bg-white"
+              />
+            )}
+          </div>
+          <Link
+            href="/dashboard/hotel/rooms"
+            className="font-semibold text-amber-800 hover:text-amber-950 underline flex items-center gap-1"
+          >
+            <span>Manage All Hotel Rooms</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      )}
+
       {/* Shareable Link Box (No print) */}
       <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs no-print">
         <div className="truncate font-mono text-slate-700">{targetUrl}</div>
@@ -389,10 +471,18 @@ export default function QrCodesPage() {
               ? 'Scan to view our digital menu & order food'
               : selectedType === 'table'
               ? `Order directly to ${tableNumber}`
+              : selectedType === 'room'
+              ? `In-room dining & food delivery directly to Room ${roomNumber}`
               : `Scan with any UPI App to Pay ₹${paymentAmount || '0.00'}`}
           </p>
 
-          {/* Table pill or Payment pill */}
+          {/* Room pill, Table pill or Payment pill */}
+          {selectedType === 'room' && (
+            <div className="mt-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-black tracking-wide shadow-xs">
+              🛏️ Delivering to Room {roomNumber}
+            </div>
+          )}
+
           {selectedType === 'table' && (
             <div className="mt-2 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black tracking-wide">
               🍽️ {tableNumber}

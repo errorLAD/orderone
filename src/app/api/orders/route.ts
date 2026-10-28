@@ -12,6 +12,8 @@ const createOrderSchema = z.object({
     email: z.string().email().optional().or(z.literal('')),
     address: z.string().optional(),
     tableNumber: z.string().optional(),
+    roomNumber: z.string().optional(),
+    floorNumber: z.string().optional(),
     notes: z.string().optional(),
   }),
   items: z
@@ -30,6 +32,8 @@ const createOrderSchema = z.object({
   paymentMethod: z.enum(['upi', 'cash', 'card', 'online', 'counter']).optional().default('cash'),
   paymentStatus: z.enum(['pending', 'paid', 'failed', 'pay_at_counter', 'pending_verification']).optional(),
   tableNumber: z.string().optional(),
+  roomNumber: z.string().optional(),
+  floorNumber: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -109,16 +113,23 @@ export async function POST(req: NextRequest) {
       resolvedPaymentStatus = 'pending';
     }
 
+    const effectiveRoomNumber = validatedData.customer.roomNumber || validatedData.roomNumber;
+    const effectiveFloorNumber = validatedData.customer.floorNumber || validatedData.floorNumber;
+
     const orderInput: CreateOrderInput = {
       businessId: validatedData.businessId,
       sourceType: validatedData.sourceType,
-      customer: validatedData.customer,
+      customer: {
+        ...validatedData.customer,
+        roomNumber: effectiveRoomNumber,
+        floorNumber: effectiveFloorNumber,
+      },
       items: validatedData.items,
       fulfilmentMethod: method as any,
       fulfillmentType: method as any,
       paymentMethod: validatedData.paymentMethod as any,
       paymentStatus: resolvedPaymentStatus as any,
-      tableNumber: validatedData.tableNumber || validatedData.customer.tableNumber,
+      tableNumber: validatedData.tableNumber || validatedData.customer.tableNumber || effectiveRoomNumber,
     };
 
     const order = await createOrder(orderInput);

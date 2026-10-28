@@ -203,6 +203,42 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
     ],
   },
   {
+    id: 'hotel',
+    label: 'Hotel & Room Service',
+    shortLabel: 'Hotel & Rooms',
+    icon: '🏨',
+    badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+    colorClass: 'text-emerald-700',
+    description: 'In-room food dining, guest room QR codes, room management, kitchen KOT & delivery',
+    primaryModule: 'menu',
+    terminology: {
+      dashboardTitle: 'Hotel & In-Room Dining Operations',
+      dashboardSubtitle: 'Live guest room service orders, KOT status, room QR codes and guest dining sales',
+      itemsTitle: 'In-Room Food & Drink Menu',
+      addItemButton: 'Add Room Service Item',
+      ordersTitle: 'Room Service & In-Room Orders',
+      tokensTitle: 'Kitchen KOT & Room Delivery Queue',
+      storefrontName: 'In-Room Guest Dining Menu',
+      kpiSalesSubtitle: 'Room service dining turnover',
+      kpiOrdersSubtitle: 'Guest room orders & KOT',
+      unitLabel: 'Serving (Portion/Plate/Item)',
+      step1Title: 'Starter Menu & Room Service',
+      step1Subtitle: 'Select initial in-room dining items and refreshments to feature on your guest digital menu.',
+      step2Title: 'Rooms & Fulfilment Operations',
+      step2Subtitle: 'Configure guest room numbers, in-room delivery, kitchen KOT, and optional taxes.',
+      step3Title: 'Launch Room Menu & Room QR Codes',
+      step3Subtitle: 'Your in-room dining menu is live with individual room QR codes and kitchen token screen.',
+    },
+    supportedUnits: ['portion', 'plate', 'half', 'full', 'piece', 'set', 'glass', 'bottle'],
+    starterCategories: ['Breakfast & Morning Specials', 'Soups & Starters', 'Main Course & Thalis', 'Breads & Rice', 'Beverages & Minibar', 'Desserts & Late Night'],
+    starterItems: [
+      { name: 'Executive Club Sandwich with Fries', categoryName: 'Breakfast & Morning Specials', price: 210, isVegetarian: true, unit: 'plate', description: 'Triple-decker toasted sandwich with coleslaw, cheese, and golden fries' },
+      { name: 'Paneer Butter Masala with 2 Naan', categoryName: 'Main Course & Thalis', price: 280, isVegetarian: true, unit: 'set', description: 'Rich creamy paneer butter masala served with two crisp butter tandoori naans' },
+      { name: 'Fresh Mint Lime Soda', categoryName: 'Beverages & Minibar', price: 90, isVegetarian: true, unit: 'glass', description: 'Chilled sparkling soda infused with fresh garden mint and lime juice' },
+      { name: 'Hot Gulab Jamun with Ice Cream', categoryName: 'Desserts & Late Night', price: 120, isVegetarian: true, unit: 'portion', description: 'Two warm mawa gulab jamuns served alongside creamy vanilla bean ice cream' },
+    ],
+  },
+  {
     id: 'cafe',
     label: 'Cafe & Coffee Bar',
     shortLabel: 'Cafe & Espresso',
@@ -438,6 +474,9 @@ export function normalizeCategoryKey(category?: string | null): BusinessType {
   }
   if (c.includes('retail') || c.includes('clothing') || c.includes('electronics') || c.includes('shop')) {
     return 'retail';
+  }
+  if (c.includes('hotel') || c.includes('room') || c.includes('resort') || c.includes('lodge') || c.includes('inn') || c.includes('hospitality')) {
+    return 'hotel';
   }
   if (c.includes('restaurant') || c.includes('dining') || c.includes('food') || c.includes('dhaba') || c.includes('kitchen')) {
     return 'restaurant';
@@ -774,6 +813,41 @@ const otherDisplayConfig: TokenDisplayConfig = {
   },
 };
 
+const hotelDisplayConfig: TokenDisplayConfig = {
+  browserTitle: 'In-Room Dining & Room Service Status',
+  headerSubtitle: 'Live Room Service Kitchen KOT & Delivery Status',
+  badgeLabel: 'Hotel In-Room Dining',
+  counterLabel: 'Room Service Pantry',
+  column1: {
+    title: 'Orders Being Prepared',
+    subtitle: 'Freshly cooking in hotel kitchen for room delivery.',
+    emptyText: 'No room service orders are currently being prepared.',
+    badgeText: 'Kitchen Cooking',
+    icon: 'flame',
+    statusMap: {
+      new: 'Order Received',
+      accepted: 'Chef Confirmed',
+      preparing: 'Preparing in Kitchen',
+    },
+  },
+  column2: {
+    title: 'Ready for Room Delivery',
+    subtitle: 'Room service attendant dispatched to room.',
+    emptyText: 'No orders are currently awaiting room dispatch.',
+    badgeText: 'Dispatched to Room',
+    icon: 'check-circle',
+  },
+  voiceAnnouncementTemplate: (token) =>
+    `Room service order ${token} is ready for delivery. Attendant dispatched to room.`,
+  footerNote: 'Orders are freshly delivered directly to your hotel room door. Please keep your room accessible.',
+  fulfilmentLabels: {
+    pickup: 'Front Desk Pickup',
+    delivery: 'In-Room Delivery',
+    dine_in: 'Room Service Dining',
+    takeaway: 'Takeaway',
+  },
+};
+
 export const TOKEN_DISPLAY_CONFIGS: Record<BusinessType, TokenDisplayConfig> = {
   hardware: hardwareDisplayConfig,
   hardware_building_materials: hardwareDisplayConfig,
@@ -782,6 +856,7 @@ export const TOKEN_DISPLAY_CONFIGS: Record<BusinessType, TokenDisplayConfig> = {
   retail: retailDisplayConfig,
   retail_shop: retailDisplayConfig,
   restaurant: restaurantDisplayConfig,
+  hotel: hotelDisplayConfig,
   cafe: cafeDisplayConfig,
   cafe_coffee_bar: cafeDisplayConfig,
   bakery: bakeryDisplayConfig,

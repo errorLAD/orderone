@@ -2,6 +2,7 @@ export type Role = 'admin' | 'owner' | 'staff';
 
 export type BusinessType =
   | 'restaurant'
+  | 'hotel'
   | 'cafe'
   | 'cafe_coffee_bar'
   | 'bakery'
@@ -256,8 +257,22 @@ export interface CustomerDetails {
   phone?: string;
   email?: string;
   address?: string;
-  tableNumber?: string; // For dine-in menu orders
+  tableNumber?: string; // For dine-in restaurant menu orders
+  roomNumber?: string;  // For hotel in-room dining orders
+  floorNumber?: string; // Optional hotel floor
   notes?: string;
+}
+
+export interface HotelRoom {
+  id: string;
+  businessId: string;
+  roomNumber: string;
+  floor?: string;
+  roomType?: string;
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderStatusHistoryItem {

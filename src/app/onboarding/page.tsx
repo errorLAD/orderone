@@ -989,8 +989,12 @@ export default function OnboardingPage() {
                       enableDineIn ? 'bg-[#EEF2FF] border-[#4F46E5]' : 'bg-white border-slate-200'
                     )}
                   >
-                    <p className="text-xs font-bold text-slate-900">Table Dine-In</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">QR table code ordering</p>
+                    <p className="text-xs font-bold text-slate-900">
+                      {categoryConfig.id === 'hotel' ? 'In-Room Dining' : 'Table Dine-In'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {categoryConfig.id === 'hotel' ? 'QR room standee ordering' : 'QR table code ordering'}
+                    </p>
                     <span className="text-[10px] font-bold text-[#4F46E5] mt-2 inline-block">
                       {enableDineIn ? '✓ Active' : 'Disabled'}
                     </span>

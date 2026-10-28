@@ -261,6 +261,7 @@ export default function AdminBusinessesPage() {
               className="px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
             >
               <option value="all">All Categories</option>
+              <option value="hotel">Hotel & Hospitality</option>
               <option value="restaurant">Restaurant</option>
               <option value="cafe">Cafe & Coffee</option>
               <option value="bakery">Bakery</option>
@@ -374,6 +375,9 @@ export default function AdminBusinessesPage() {
                         <td className="p-3.5 font-mono text-[11px]">
                           <div>{biz.productCount || 0} items</div>
                           <div className="text-[10px] text-slate-400">{biz.categoryCount || 0} categories</div>
+                          {(biz.type === 'hotel' || biz.roomCount > 0) && (
+                            <div className="text-[10px] text-amber-700 font-bold">🛏️ {biz.roomCount || 0} rooms</div>
+                          )}
                         </td>
 
                         <td className="p-3.5 font-mono text-[11px]">
@@ -542,6 +546,7 @@ export default function AdminBusinessesPage() {
                     onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                   >
+                    <option value="hotel">Hotel & Hospitality</option>
                     <option value="restaurant">Restaurant</option>
                     <option value="cafe">Cafe & Coffee</option>
                     <option value="bakery">Bakery</option>

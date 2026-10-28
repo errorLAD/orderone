@@ -18,7 +18,8 @@ import {
   Volume2, 
   VolumeX,
   X,
-  AlertCircle
+  AlertCircle,
+  BedDouble,
 } from 'lucide-react';
 import { useOrderAlert } from '@/context/OrderAlertContext';
 import { useApp } from '@/context/AppContext';
@@ -131,9 +132,19 @@ export function OrderAlertOverlay() {
                   {/* Order Details */}
                   <div className="flex items-start gap-3 min-w-0">
                     <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
-                      isStore ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-orange-50 text-orange-700 border border-orange-200'
+                      order.customer?.roomNumber
+                        ? 'bg-amber-50 text-amber-800 border border-amber-300'
+                        : isStore
+                        ? 'bg-sky-50 text-sky-700 border border-sky-200'
+                        : 'bg-orange-50 text-orange-700 border border-orange-200'
                     }`}>
-                      {isStore ? <Store className="w-5 h-5" /> : <UtensilsCrossed className="w-5 h-5" />}
+                      {order.customer?.roomNumber ? (
+                        <BedDouble className="w-5 h-5 text-amber-700" />
+                      ) : isStore ? (
+                        <Store className="w-5 h-5" />
+                      ) : (
+                        <UtensilsCrossed className="w-5 h-5" />
+                      )}
                     </div>
 
                     <div className="min-w-0">
@@ -143,15 +154,23 @@ export function OrderAlertOverlay() {
                         </span>
 
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                          isStore 
+                          order.customer?.roomNumber
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold'
+                            : isStore 
                             ? 'bg-sky-100 text-sky-800 border border-sky-300' 
                             : 'bg-orange-100 text-orange-800 border border-orange-300'
                         }`}>
-                          {isStore ? 'Store Order' : 'Menu Order'}
+                          {order.customer?.roomNumber
+                            ? `Room Service • Room ${order.customer.roomNumber}`
+                            : isStore
+                            ? 'Store Order'
+                            : 'Menu Order'}
                         </span>
 
                         <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                          {isFoodBiz 
+                          {order.customer?.roomNumber
+                            ? `In-Room Dining ${order.customer.floorNumber ? `(Floor ${order.customer.floorNumber})` : ''}`
+                            : isFoodBiz 
                             ? (isStore ? 'Takeout Merch' : `Kitchen Ticket ${order.customer?.tableNumber ? `• Table #${order.customer.tableNumber}` : ''}`)
                             : (isStore ? 'Online Storefront' : 'Counter Inquiry')}
                         </span>

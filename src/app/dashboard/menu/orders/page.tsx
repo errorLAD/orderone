@@ -208,7 +208,7 @@ export default function MenuOrdersPage() {
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by M-token, table or guest..."
+            placeholder="Search by token, room #, table, or guest..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
@@ -256,14 +256,18 @@ export default function MenuOrdersPage() {
                       <div>
                         <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                           <span>{order.customer.name}</span>
-                          {order.customer.tableNumber && (
-                            <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">
-                              {order.customer.tableNumber}
+                          {order.customer.roomNumber ? (
+                            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
+                              🛏️ Room {order.customer.roomNumber}{order.customer.floorNumber ? ` (Fl ${order.customer.floorNumber})` : ''}
                             </span>
-                          )}
+                          ) : order.customer.tableNumber ? (
+                            <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">
+                              🍽️ {order.customer.tableNumber}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-[11px] text-slate-500">
-                          {order.customer.phone} • {formatDate(order.createdAt)}
+                          {order.customer.phone || 'No phone'} • {formatDate(order.createdAt)}
                         </div>
                       </div>
                     </div>
@@ -283,7 +287,13 @@ export default function MenuOrdersPage() {
                           order.orderStatus === 'cancelled' && 'bg-rose-50 text-rose-700'
                         )}
                       >
-                        {order.orderStatus === 'preparing' ? '🔥 Cooking' : order.orderStatus}
+                        {order.orderStatus === 'preparing'
+                          ? '🔥 Cooking'
+                          : order.orderStatus === 'ready' && order.customer.roomNumber
+                          ? '🛎️ Room Ready'
+                          : order.orderStatus === 'completed' && order.customer.roomNumber
+                          ? '✓ Delivered'
+                          : order.orderStatus}
                       </span>
                     </div>
                   </div>
@@ -340,13 +350,17 @@ export default function MenuOrdersPage() {
               <div className="space-y-1 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-800">{selectedOrder.customer.name}</span>
-                  {selectedOrder.customer.tableNumber && (
+                  {selectedOrder.customer.roomNumber ? (
+                    <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold border border-amber-300">
+                      🛏️ Room {selectedOrder.customer.roomNumber}{selectedOrder.customer.floorNumber ? ` (Fl ${selectedOrder.customer.floorNumber})` : ''}
+                    </span>
+                  ) : selectedOrder.customer.tableNumber ? (
                     <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
                       🍽️ {selectedOrder.customer.tableNumber}
                     </span>
-                  )}
+                  ) : null}
                 </div>
-                <p className="text-slate-500">{selectedOrder.customer.phone}</p>
+                <p className="text-slate-500">{selectedOrder.customer.phone || 'No phone provided'}</p>
                 {selectedOrder.customer.notes && (
                   <p className="text-amber-900 bg-amber-50 p-2 rounded-lg text-[11px] font-medium border border-amber-200">
                     Special Request: {selectedOrder.customer.notes}
@@ -461,7 +475,11 @@ export default function MenuOrdersPage() {
                       className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 col-span-2 flex items-center justify-center gap-1.5"
                     >
                       <BellRing className="w-3.5 h-3.5" />
-                      <span>Food Ready (Ring Bell / Notify Display)</span>
+                      <span>
+                        {selectedOrder.customer.roomNumber
+                          ? `Ready (Dispatch to Room ${selectedOrder.customer.roomNumber})`
+                          : 'Food Ready (Ring Bell / Notify Display)'}
+                      </span>
                     </button>
                   )}
 
@@ -470,7 +488,9 @@ export default function MenuOrdersPage() {
                       onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
                       className="px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-bold hover:bg-emerald-800 col-span-2"
                     >
-                      Mark as Served to Customer
+                      {selectedOrder.customer.roomNumber
+                        ? `Mark Delivered to Room ${selectedOrder.customer.roomNumber} ✓`
+                        : 'Mark as Served to Customer'}
                     </button>
                   )}
 
@@ -530,13 +550,17 @@ export default function MenuOrdersPage() {
             <div className="space-y-1 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-800">{selectedOrder.customer.name}</span>
-                {selectedOrder.customer.tableNumber && (
+                {selectedOrder.customer.roomNumber ? (
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-extrabold border border-amber-300">
+                    🛏️ Room {selectedOrder.customer.roomNumber}{selectedOrder.customer.floorNumber ? ` (Fl ${selectedOrder.customer.floorNumber})` : ''}
+                  </span>
+                ) : selectedOrder.customer.tableNumber ? (
                   <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
                     🍽️ {selectedOrder.customer.tableNumber}
                   </span>
-                )}
+                ) : null}
               </div>
-              <p className="text-slate-500">{selectedOrder.customer.phone}</p>
+              <p className="text-slate-500">{selectedOrder.customer.phone || 'No phone provided'}</p>
               {selectedOrder.customer.notes && (
                 <p className="text-amber-900 bg-amber-50 p-2 rounded-lg text-[11px] font-medium border border-amber-200">
                   Special Request: {selectedOrder.customer.notes}
@@ -651,7 +675,11 @@ export default function MenuOrdersPage() {
                     className="px-3 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 col-span-2 flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <BellRing className="w-4 h-4" />
-                    <span>Food Ready (Ring Bell / Notify Display)</span>
+                    <span>
+                      {selectedOrder.customer.roomNumber
+                        ? `Ready (Dispatch to Room ${selectedOrder.customer.roomNumber})`
+                        : 'Food Ready (Ring Bell / Notify Display)'}
+                    </span>
                   </button>
                 )}
 
@@ -660,7 +688,9 @@ export default function MenuOrdersPage() {
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
                     className="px-3 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-bold hover:bg-emerald-800 col-span-2 shadow-xs"
                   >
-                    Mark as Served to Customer
+                    {selectedOrder.customer.roomNumber
+                      ? `Mark Delivered to Room ${selectedOrder.customer.roomNumber} ✓`
+                      : 'Mark as Served to Customer'}
                   </button>
                 )}
 

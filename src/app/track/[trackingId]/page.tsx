@@ -73,12 +73,28 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
     );
   }
 
+  const isHotelOrder = Boolean(order.customer?.roomNumber);
+
   const steps = [
-    { key: 'new', label: 'Order Received', desc: 'Sent to counter' },
-    { key: 'accepted', label: 'Accepted', desc: 'Confirmed by staff' },
+    { key: 'new', label: 'Order Received', desc: isHotelOrder ? 'Sent to kitchen for room service' : 'Sent to counter' },
+    { key: 'accepted', label: 'Accepted', desc: 'Confirmed by kitchen staff' },
     { key: 'preparing', label: 'Preparing', desc: order.sourceType === 'menu' ? 'Cooking in kitchen' : 'Packing items' },
-    { key: 'ready', label: 'Ready!', desc: order.sourceType === 'menu' ? 'Pick up from counter / serving' : 'Ready for pickup / dispatch' },
-    { key: 'completed', label: 'Completed', desc: 'Enjoy your purchase!' },
+    {
+      key: 'ready',
+      label: isHotelOrder ? 'Ready for Delivery' : 'Ready!',
+      desc: isHotelOrder
+        ? `Fresh food ready, dispatching to Room ${order.customer?.roomNumber}`
+        : order.sourceType === 'menu'
+        ? 'Pick up from counter / serving'
+        : 'Ready for pickup / dispatch',
+    },
+    {
+      key: 'completed',
+      label: isHotelOrder ? 'Delivered to Room' : 'Completed',
+      desc: isHotelOrder
+        ? `Delivered to Room ${order.customer?.roomNumber}. Enjoy your meal!`
+        : 'Enjoy your purchase!',
+    },
   ];
 
   const getStepIndex = (status: OrderStatus) => {
@@ -116,11 +132,16 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
             {order.businessName}
           </p>
 
-          {order.tableNumber && (
+          {isHotelOrder ? (
+            <div className="inline-block mt-2 px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-800 text-xs font-black border border-amber-200">
+              🛏️ Delivering to Room {order.customer?.roomNumber}
+              {order.customer?.floorNumber ? ` (Floor ${order.customer.floorNumber})` : ''}
+            </div>
+          ) : order.tableNumber ? (
             <div className="inline-block mt-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200">
               🍽️ {order.tableNumber}
             </div>
-          )}
+          ) : null}
 
           {/* Current Status Pill */}
           <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-center gap-2">
@@ -138,8 +159,10 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
               {order.orderStatus === 'ready' ? (
                 <>
                   <BellRing className="w-4 h-4" />
-                  <span>READY FOR PICKUP!</span>
+                  <span>{isHotelOrder ? `READY FOR ROOM DELIVERY!` : `READY FOR PICKUP!`}</span>
                 </>
+              ) : order.orderStatus === 'completed' && isHotelOrder ? (
+                <span>DELIVERED TO ROOM</span>
               ) : (
                 <span>Status: {order.orderStatus}</span>
               )}

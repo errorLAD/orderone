@@ -331,7 +331,7 @@ export default function BusinessProfilePage() {
 
   const currentCatConfig = getCategoryConfig(category);
   const pendingCatConfig = pendingCategory ? getCategoryConfig(pendingCategory) : null;
-  const storefrontUrl = category.includes('restaurant') || category.includes('cafe') || category.includes('bakery') || category.includes('juice')
+  const storefrontUrl = category.includes('restaurant') || category.includes('cafe') || category.includes('bakery') || category.includes('juice') || category.includes('hotel')
     ? `/menu/${currentBusiness.slug}`
     : `/store/${currentBusiness.slug}`;
 

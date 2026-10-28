@@ -64,11 +64,36 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const [guestPhone, setGuestPhone] = useState<string>('');
   const [showPhoneField, setShowPhoneField] = useState<boolean>(false);
   const [tableNumber, setTableNumber] = useState<string>('Table 1');
+  const [roomNumber, setRoomNumber] = useState<string>('');
   const [guestNotes, setGuestNotes] = useState<string>('');
   const [fulfilmentMethod, setFulfilmentMethod] = useState<'dine_in' | 'takeaway'>('dine_in');
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash'>('cash');
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+
+  // Check if hotel business
+  const isHotel = Boolean(
+    business?.type === 'hotel' ||
+    business?.category === 'hotel' ||
+    roomNumber
+  );
+
+  // Read URL query parameters for ?room=... or ?table=...
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const r = sp.get('room');
+      if (r) {
+        setRoomNumber(r.trim());
+        setFulfilmentMethod('dine_in');
+      }
+      const t = sp.get('table');
+      if (t) {
+        setTableNumber(t.trim());
+        setFulfilmentMethod('dine_in');
+      }
+    }
+  }, []);
 
   // Post-Order Social & Review Modal State
   const [placedOrder, setPlacedOrder] = useState<{ tokenNumber: string; trackingId: string } | null>(null);
@@ -229,6 +254,11 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       return;
     }
 
+    if (isHotel && fulfilmentMethod === 'dine_in' && !roomNumber.trim()) {
+      setOrderError('Please provide your room number for in-room dining delivery.');
+      return;
+    }
+
     setSubmittingOrder(true);
     setOrderError(null);
 
@@ -245,7 +275,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       customer: {
         name: guestName.trim() || 'Guest Customer',
         phone: guestPhone.trim() || undefined,
-        tableNumber: fulfilmentMethod === 'dine_in' ? tableNumber : undefined,
+        tableNumber: isHotel && roomNumber.trim() ? roomNumber.trim() : (fulfilmentMethod === 'dine_in' ? tableNumber : undefined),
+        roomNumber: isHotel && roomNumber.trim() ? roomNumber.trim() : undefined,
         notes: guestNotes,
       },
       items,
@@ -411,6 +442,31 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       className="min-h-screen flex flex-col font-sans transition-colors"
       style={{ backgroundColor: activeColors.background, color: activeColors.text }}
     >
+      {/* Hotel In-Room Dining Top Indicator */}
+      {isHotel && (
+        <div className="bg-gradient-to-r from-amber-700 via-amber-600 to-orange-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-xs sticky top-0 z-30">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🏨</span>
+            <span>
+              {roomNumber ? (
+                <>Delivering In-Room Dining to <strong className="font-extrabold underline decoration-white/60">Room {roomNumber}</strong></>
+              ) : (
+                <>Hotel In-Room Dining & Room Service</>
+              )}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              const next = prompt('Enter your Hotel Room Number:', roomNumber || '');
+              if (next !== null && next.trim()) setRoomNumber(next.trim());
+            }}
+            className="text-[11px] bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-md text-white font-bold transition-colors"
+          >
+            {roomNumber ? 'Change Room' : 'Set Room #'}
+          </button>
+        </div>
+      )}
+
       <StorefrontRenderer
         business={business}
         products={products}
@@ -640,50 +696,101 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
                     </div>
                   )}
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Dining Option</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFulfilmentMethod('dine_in')}
-                        className={cn(
-                          'p-2.5 rounded-lg border text-left font-bold transition-all',
-                          fulfilmentMethod === 'dine_in'
-                            ? 'bg-orange-50 border-orange-500 text-orange-900'
-                            : 'bg-white border-slate-200 text-slate-600'
-                        )}
-                      >
-                        🍽️ Dine-In (Table)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFulfilmentMethod('takeaway')}
-                        className={cn(
-                          'p-2.5 rounded-lg border text-left font-bold transition-all',
-                          fulfilmentMethod === 'takeaway'
-                            ? 'bg-orange-50 border-orange-500 text-orange-900'
-                            : 'bg-white border-slate-200 text-slate-600'
-                        )}
-                      >
-                        🥡 Takeaway / Parcel
-                      </button>
-                    </div>
-                  </div>
-
-                  {fulfilmentMethod === 'dine_in' && (
+                  {isHotel ? (
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Select Table Number *</label>
-                      <select
-                        value={tableNumber}
-                        onChange={(e) => setTableNumber(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white"
-                      >
-                        {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6', 'Table 7', 'Table 8'].map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
+                      <label className="block font-bold text-slate-700 mb-1">Room Service Delivery</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFulfilmentMethod('dine_in')}
+                          className={cn(
+                            'p-2.5 rounded-lg border text-left font-bold transition-all text-xs',
+                            fulfilmentMethod === 'dine_in'
+                              ? 'bg-amber-50 border-amber-500 text-amber-900'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          )}
+                        >
+                          🛏️ Deliver to Room
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFulfilmentMethod('takeaway')}
+                          className={cn(
+                            'p-2.5 rounded-lg border text-left font-bold transition-all text-xs',
+                            fulfilmentMethod === 'takeaway'
+                              ? 'bg-amber-50 border-amber-500 text-amber-900'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          )}
+                        >
+                          🥡 Pickup at Counter
+                        </button>
+                      </div>
+
+                      {fulfilmentMethod === 'dine_in' && (
+                        <div className="mt-3">
+                          <label className="block font-bold text-slate-700 mb-1">
+                            Hotel Room Number *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={roomNumber}
+                            onChange={(e) => setRoomNumber(e.target.value)}
+                            placeholder="e.g. 101, 204, Suite-A"
+                            className="w-full px-3 py-2 border border-amber-300 rounded-lg font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                          />
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            Fresh food will be prepared and delivered directly to your room door.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Dining Option</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFulfilmentMethod('dine_in')}
+                          className={cn(
+                            'p-2.5 rounded-lg border text-left font-bold transition-all',
+                            fulfilmentMethod === 'dine_in'
+                              ? 'bg-orange-50 border-orange-500 text-orange-900'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          )}
+                        >
+                          🍽️ Dine-In (Table)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFulfilmentMethod('takeaway')}
+                          className={cn(
+                            'p-2.5 rounded-lg border text-left font-bold transition-all',
+                            fulfilmentMethod === 'takeaway'
+                              ? 'bg-orange-50 border-orange-500 text-orange-900'
+                              : 'bg-white border-slate-200 text-slate-600'
+                          )}
+                        >
+                          🥡 Takeaway / Parcel
+                        </button>
+                      </div>
+
+                      {fulfilmentMethod === 'dine_in' && (
+                        <div className="mt-2.5">
+                          <label className="block font-bold text-slate-700 mb-1">Select Table Number *</label>
+                          <select
+                            value={tableNumber}
+                            onChange={(e) => setTableNumber(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white"
+                          >
+                            {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6', 'Table 7', 'Table 8'].map((t) => (
+                              <option key={t} value={t}>
+                                {t}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   )}
 

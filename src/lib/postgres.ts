@@ -11,6 +11,7 @@ import {
   User,
   Role,
   OrderSourceType,
+  HotelRoom,
 } from '@/types';
 
 // Supabase Connection URL with verified IPv4/IPv6 compatibility (use port 6543 for transaction pooling)
@@ -309,5 +310,19 @@ export function mapRowToAuditLog(r: any): AuditLog {
     beforeValues: typeof r.before_values === 'string' ? JSON.parse(r.before_values) : r.before_values || undefined,
     afterValues: typeof r.after_values === 'string' ? JSON.parse(r.after_values) : r.after_values || undefined,
     timestamp: r.timestamp?.toISOString ? r.timestamp.toISOString() : r.timestamp,
+  };
+}
+
+export function mapRowToHotelRoom(r: any): HotelRoom {
+  return {
+    id: r.id,
+    businessId: r.business_id,
+    roomNumber: r.room_number,
+    floor: r.floor || undefined,
+    roomType: r.room_type || undefined,
+    isActive: Boolean(r.is_active),
+    notes: r.notes || undefined,
+    createdAt: r.created_at?.toISOString ? r.created_at.toISOString() : r.created_at,
+    updatedAt: r.updated_at?.toISOString ? r.updated_at.toISOString() : r.updated_at,
   };
 }

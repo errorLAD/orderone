@@ -15,6 +15,8 @@ import {
   BusinessUpiSettings,
   SubscriptionPayment,
   SubscriptionHistory,
+  HotelRoom,
+  CustomerDetails,
 } from '@/types';
 import { generateId, generateTrackingId } from './utils';
 import { resolveBusinessByIdOrSlug, generateUniqueBusinessSlug } from './slug';
@@ -30,6 +32,7 @@ import {
   mapRowToUpiSettings,
   mapRowToSubscriptionPayment,
   mapRowToSubscriptionHistory,
+  mapRowToHotelRoom,
 } from './postgres';
 import { assertCanCreateRecord, hasActiveGoldAccess } from './subscriptionLimits';
 import { calculateOrderTax, generateInvoiceNumber } from './gstCalculator';
@@ -47,6 +50,7 @@ export interface DatabaseSchema {
   notifications: NotificationItem[];
   subscriptionPlans: SubscriptionPlan[];
   auditLogs: AuditLog[];
+  hotelRooms?: HotelRoom[];
   sequences: {
     [key: string]: number; // key format: `${businessId}_${sourceType}`
   };
@@ -63,6 +67,7 @@ const EMPTY_DB: DatabaseSchema = {
   notifications: [],
   subscriptionPlans: [],
   auditLogs: [],
+  hotelRooms: [],
   sequences: {},
 };
 
@@ -755,14 +760,7 @@ export async function generateOrderToken(
 export interface CreateOrderInput {
   businessId: string;
   sourceType: OrderSourceType;
-  customer: {
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    tableNumber?: string;
-    notes?: string;
-  };
+  customer: CustomerDetails;
   items: {
     productId: string;
     quantity: number;
@@ -990,15 +988,23 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   cachedDb.orders.unshift(newOrder);
 
   // Generate Notification for Owner/Staff Dashboard
+  const isHotelOrder = Boolean(input.customer.roomNumber || business.type === 'hotel' || business.category === 'hotel');
+  const notificationTitle = isHotelOrder && input.customer.roomNumber
+    ? `New Room Service Order #${tokenNumber} (Room ${input.customer.roomNumber})`
+    : input.sourceType === 'store'
+    ? `New Store Order #${tokenNumber}`
+    : `New Kitchen Menu Order #${tokenNumber}`;
+
+  const notificationMessage = isHotelOrder && input.customer.roomNumber
+    ? `Room ${input.customer.roomNumber}${input.customer.floorNumber ? ` (Floor ${input.customer.floorNumber})` : ''} • ${input.customer.name || 'Guest'} ordered ₹${total.toFixed(2)}`
+    : `${input.customer.name} placed an order of ₹${total.toFixed(2)} (${input.fulfilmentMethod})`;
+
   const notification: NotificationItem = {
     id: generateId('notif'),
     businessId: input.businessId,
     sourceType: input.sourceType,
-    title:
-      input.sourceType === 'store'
-        ? `New Store Order #${tokenNumber}`
-        : `New Kitchen Menu Order #${tokenNumber}`,
-    message: `${input.customer.name} placed an order of ₹${total.toFixed(2)} (${input.fulfilmentMethod})`,
+    title: notificationTitle,
+    message: notificationMessage,
     orderId: newOrder.id,
     tokenNumber,
     isRead: false,
@@ -2310,4 +2316,224 @@ export async function clearDemoData(businessId?: string): Promise<{ success: boo
     console.error('clearDemoData error:', err);
     throw err;
   }
+}
+
+// ==========================================
+// HOTEL ROOM OPERATIONS (TENANT ISOLATED)
+// ==========================================
+
+export async function getHotelRooms(
+  businessId: string,
+  onlyActive = false
+): Promise<HotelRoom[]> {
+  try {
+    let sql = 'SELECT * FROM public.hotel_rooms WHERE business_id = $1';
+    const params: any[] = [businessId];
+    if (onlyActive) {
+      sql += ' AND is_active = true';
+    }
+    sql += ' ORDER BY room_number ASC';
+    const res = await pgQuery(sql, params);
+    return res.rows.map(mapRowToHotelRoom);
+  } catch (err) {
+    console.error('getHotelRooms error:', err);
+    return (cachedDb.hotelRooms || [])
+      .filter((r) => r.businessId === businessId && (!onlyActive || r.isActive))
+      .sort((a, b) => a.roomNumber.localeCompare(b.roomNumber, undefined, { numeric: true }));
+  }
+}
+
+export async function getHotelRoomById(id: string): Promise<HotelRoom | null> {
+  try {
+    const res = await pgQuery('SELECT * FROM public.hotel_rooms WHERE id = $1 LIMIT 1', [id]);
+    if (res.rows.length > 0) return mapRowToHotelRoom(res.rows[0]);
+  } catch (err) {
+    console.error('getHotelRoomById error:', err);
+  }
+  return (cachedDb.hotelRooms || []).find((r) => r.id === id) || null;
+}
+
+export async function getHotelRoomByNumber(
+  businessId: string,
+  roomNumber: string
+): Promise<HotelRoom | null> {
+  try {
+    const res = await pgQuery(
+      'SELECT * FROM public.hotel_rooms WHERE business_id = $1 AND LOWER(TRIM(room_number)) = LOWER(TRIM($2)) LIMIT 1',
+      [businessId, roomNumber]
+    );
+    if (res.rows.length > 0) return mapRowToHotelRoom(res.rows[0]);
+  } catch (err) {
+    console.error('getHotelRoomByNumber error:', err);
+  }
+  return (
+    (cachedDb.hotelRooms || []).find(
+      (r) => r.businessId === businessId && r.roomNumber.toLowerCase().trim() === roomNumber.toLowerCase().trim()
+    ) || null
+  );
+}
+
+export async function createHotelRoom(
+  data: Omit<HotelRoom, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<HotelRoom> {
+  const id = generateId('room');
+  const now = new Date().toISOString();
+  const roomNumber = data.roomNumber.trim();
+  const floor = data.floor?.trim() || null;
+  const roomType = data.roomType?.trim() || null;
+  const notes = data.notes?.trim() || null;
+  const isActive = data.isActive !== undefined ? data.isActive : true;
+
+  try {
+    const res = await pgQuery(
+      `INSERT INTO public.hotel_rooms (id, business_id, room_number, floor, room_type, is_active, notes, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [id, data.businessId, roomNumber, floor, roomType, isActive, notes, now, now]
+    );
+    if (res.rows.length > 0) {
+      const room = mapRowToHotelRoom(res.rows[0]);
+      if (!cachedDb.hotelRooms) cachedDb.hotelRooms = [];
+      cachedDb.hotelRooms.push(room);
+      return room;
+    }
+  } catch (err: any) {
+    if (err?.code === '23505') {
+      throw new Error(`Room number "${roomNumber}" already exists for this hotel.`);
+    }
+    console.error('createHotelRoom pg error:', err);
+    throw err;
+  }
+
+  const newRoom: HotelRoom = {
+    id,
+    businessId: data.businessId,
+    roomNumber,
+    floor: floor || undefined,
+    roomType: roomType || undefined,
+    isActive,
+    notes: notes || undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+  if (!cachedDb.hotelRooms) cachedDb.hotelRooms = [];
+  cachedDb.hotelRooms.push(newRoom);
+  return newRoom;
+}
+
+export async function createHotelRoomsBatch(
+  businessId: string,
+  rooms: Array<{ roomNumber: string; floor?: string; roomType?: string; notes?: string }>
+): Promise<{ created: HotelRoom[]; skipped: string[] }> {
+  const created: HotelRoom[] = [];
+  const skipped: string[] = [];
+
+  for (const item of rooms) {
+    const trimmed = item.roomNumber.trim();
+    if (!trimmed) continue;
+    try {
+      const existing = await getHotelRoomByNumber(businessId, trimmed);
+      if (existing) {
+        skipped.push(trimmed);
+        continue;
+      }
+      const room = await createHotelRoom({
+        businessId,
+        roomNumber: trimmed,
+        floor: item.floor,
+        roomType: item.roomType,
+        isActive: true,
+        notes: item.notes,
+      });
+      created.push(room);
+    } catch (e) {
+      skipped.push(trimmed);
+    }
+  }
+
+  return { created, skipped };
+}
+
+export async function updateHotelRoom(
+  id: string,
+  updates: Partial<Omit<HotelRoom, 'id' | 'businessId' | 'createdAt' | 'updatedAt'>>
+): Promise<HotelRoom | null> {
+  const now = new Date().toISOString();
+  try {
+    const setClauses: string[] = ['updated_at = $2'];
+    const params: any[] = [id, now];
+    let paramIndex = 3;
+
+    if (updates.roomNumber !== undefined) {
+      setClauses.push(`room_number = $${paramIndex++}`);
+      params.push(updates.roomNumber.trim());
+    }
+    if (updates.floor !== undefined) {
+      setClauses.push(`floor = $${paramIndex++}`);
+      params.push(updates.floor?.trim() || null);
+    }
+    if (updates.roomType !== undefined) {
+      setClauses.push(`room_type = $${paramIndex++}`);
+      params.push(updates.roomType?.trim() || null);
+    }
+    if (updates.isActive !== undefined) {
+      setClauses.push(`is_active = $${paramIndex++}`);
+      params.push(updates.isActive);
+    }
+    if (updates.notes !== undefined) {
+      setClauses.push(`notes = $${paramIndex++}`);
+      params.push(updates.notes?.trim() || null);
+    }
+
+    const sql = `UPDATE public.hotel_rooms SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`;
+    const res = await pgQuery(sql, params);
+    if (res.rows.length > 0) {
+      const updated = mapRowToHotelRoom(res.rows[0]);
+      if (cachedDb.hotelRooms) {
+        const idx = cachedDb.hotelRooms.findIndex((r) => r.id === id);
+        if (idx !== -1) cachedDb.hotelRooms[idx] = updated;
+      }
+      return updated;
+    }
+  } catch (err: any) {
+    if (err?.code === '23505') {
+      throw new Error(`Room number "${updates.roomNumber}" already exists for this hotel.`);
+    }
+    console.error('updateHotelRoom error:', err);
+    throw err;
+  }
+  return null;
+}
+
+export async function deleteHotelRoom(id: string, businessId?: string): Promise<boolean> {
+  try {
+    let sql = 'DELETE FROM public.hotel_rooms WHERE id = $1';
+    const params: any[] = [id];
+    if (businessId) {
+      sql += ' AND business_id = $2';
+      params.push(businessId);
+    }
+    const res = await pgQuery(sql, params);
+    if (cachedDb.hotelRooms) {
+      cachedDb.hotelRooms = cachedDb.hotelRooms.filter((r) => r.id !== id);
+    }
+    return (res.rowCount ?? 0) > 0;
+  } catch (err) {
+    console.error('deleteHotelRoom error:', err);
+    return false;
+  }
+}
+
+export async function getHotelRoomStats(businessId: string): Promise<{
+  total: number;
+  active: number;
+  floors: string[];
+}> {
+  const rooms = await getHotelRooms(businessId);
+  const floors = Array.from(new Set(rooms.map((r) => r.floor).filter((f): f is string => Boolean(f)))).sort();
+  return {
+    total: rooms.length,
+    active: rooms.filter((r) => r.isActive).length,
+    floors,
+  };
 }

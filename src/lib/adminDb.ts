@@ -1,4 +1,4 @@
-import { pgQuery, mapRowToBusiness, mapRowToUser, mapRowToSubscriptionPlan, mapRowToSubscriptionPayment, mapRowToSubscriptionHistory, mapRowToOrder, mapRowToAuditLog } from './postgres';
+import { pgQuery, mapRowToBusiness, mapRowToUser, mapRowToSubscriptionPlan, mapRowToSubscriptionPayment, mapRowToSubscriptionHistory, mapRowToOrder, mapRowToAuditLog, mapRowToHotelRoom } from './postgres';
 import { logAdminAction } from './adminAuth';
 import { Business, User, SubscriptionPlan, SubscriptionPayment, Order, AuditLog, PlatformSettings } from '@/types';
 import { generateId } from './utils';
@@ -243,7 +243,8 @@ export async function getAdminBusinesses(options: {
               (SELECT COUNT(*) FROM public.orders o WHERE o.business_id = b.id AND o.source_type = 'store') as store_order_count,
               (SELECT COUNT(*) FROM public.orders o WHERE o.business_id = b.id AND o.source_type = 'menu') as menu_order_count,
               (SELECT COUNT(*) FROM public.products p WHERE p.business_id = b.id) as product_count,
-              (SELECT COUNT(*) FROM public.categories c WHERE c.business_id = b.id) as category_count
+              (SELECT COUNT(*) FROM public.categories c WHERE c.business_id = b.id) as category_count,
+              (SELECT COUNT(*) FROM public.hotel_rooms hr WHERE hr.business_id = b.id) as room_count
        FROM public.businesses b
        LEFT JOIN public.users u ON b.owner_id = u.id
        WHERE ${whereClause}
@@ -265,6 +266,7 @@ export async function getAdminBusinesses(options: {
       menuOrderCount: parseInt(r.menu_order_count || '0', 10),
       productCount: parseInt(r.product_count || '0', 10),
       categoryCount: parseInt(r.category_count || '0', 10),
+      roomCount: parseInt(r.room_count || '0', 10),
     };
   });
 
@@ -280,7 +282,7 @@ export async function getAdminBusinesses(options: {
 }
 
 export async function getAdminBusinessDetail(businessId: string) {
-  const [bizRes, prodsRes, catsRes, ordersRes, paymentsRes, subHistoryRes] = await Promise.all([
+  const [bizRes, prodsRes, catsRes, ordersRes, paymentsRes, subHistoryRes, roomsRes] = await Promise.all([
     // Business profile
     pgQuery(
       `SELECT b.*, u.name as owner_name, u.email as owner_email, u.phone as owner_phone, u.id as owner_user_id
@@ -326,6 +328,13 @@ export async function getAdminBusinessDetail(businessId: string) {
       `SELECT * FROM public.subscription_history 
        WHERE business_id = $1 
        ORDER BY created_at DESC;`,
+      [businessId]
+    ),
+    // Hotel rooms
+    pgQuery(
+      `SELECT * FROM public.hotel_rooms 
+       WHERE business_id = $1 
+       ORDER BY room_number ASC;`,
       [businessId]
     ),
   ]);
@@ -374,6 +383,11 @@ export async function getAdminBusinessDetail(businessId: string) {
     orders: {
       storeOrders: orders.filter((o) => o.sourceType === 'store'),
       menuOrders: orders.filter((o) => o.sourceType === 'menu'),
+    },
+    rooms: {
+      total: roomsRes.rows.length,
+      active: roomsRes.rows.filter((r) => r.is_active).length,
+      list: roomsRes.rows.map(mapRowToHotelRoom),
     },
     payments,
     subscriptionHistory,

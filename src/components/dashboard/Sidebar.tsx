@@ -24,6 +24,7 @@ import {
   X,
   Lock,
   Clock,
+  BedDouble,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -59,7 +60,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const isStoreEnabled = currentBusiness?.settings?.modules?.store ?? true;
   const isMenuEnabled = currentBusiness?.settings?.modules?.menu ?? true;
   const catConfig = getCategoryConfig(currentBusiness?.type);
-  const isFoodCategory = ['restaurant', 'cafe', 'bakery', 'juice_chaat'].includes(catConfig.id);
+  const isFoodCategory = ['restaurant', 'cafe', 'bakery', 'juice_chaat', 'hotel'].includes(catConfig.id);
+  const isHotel = catConfig.id === 'hotel';
   const isGoldPlan =
     currentBusiness?.subscription?.planId === 'plan_gold' ||
     currentBusiness?.subscription?.planId === 'plan_diamond';
@@ -121,6 +123,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           catalogName: 'Juices & Chaat Menu',
           categoriesName: 'Menu Categories',
         };
+      case 'hotel':
+        return {
+          title: 'Hotel & In-Room Dining',
+          ordersName: 'Room Service Orders',
+          tokensName: 'Kitchen Token Queue',
+          catalogName: 'In-Room Dining Menu',
+          categoriesName: 'Food & Beverage Categories',
+        };
       default:
         return {
           title: 'Food Menu & Kitchen',
@@ -174,6 +184,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 href: '/dashboard/menu/orders',
                 icon: ReceiptText,
               },
+              ...(isHotel
+                ? [
+                    {
+                      name: 'Rooms & In-Room QR',
+                      href: '/dashboard/hotel/rooms',
+                      icon: BedDouble,
+                    },
+                  ]
+                : []),
               {
                 name: menuSection.tokensName,
                 href: '/dashboard/menu/tokens',
@@ -233,7 +252,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       collapsible: true,
       items: [
         {
-          name: isFoodCategory ? 'Public Dining Menu' : 'Public Storefront',
+          name: isHotel ? 'Guest In-Room Menu' : isFoodCategory ? 'Public Dining Menu' : 'Public Storefront',
           href: currentBusiness
             ? (isFoodCategory ? `/menu/${currentBusiness.slug}` : `/store/${currentBusiness.slug}`)
             : '/menu/royal-kitchen',
