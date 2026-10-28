@@ -1,0 +1,756 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import {
+  UtensilsCrossed,
+  Search,
+  ShoppingBag,
+  Plus,
+  Minus,
+  CheckCircle2,
+  Table,
+  ArrowRight,
+  Sparkles,
+  X,
+  Phone,
+  MapPin,
+  Flame,
+  Clock,
+  IndianRupee,
+  ExternalLink,
+  Lock,
+  AlertCircle,
+  PauseCircle,
+} from 'lucide-react';
+import { Business, Category, Product, OrderSourceType } from '@/types';
+import { formatINR, cn } from '@/lib/utils';
+import confetti from 'canvas-confetti';
+import { useRouter } from 'next/navigation';
+import { StorefrontTicker } from '@/components/storefront/StorefrontTicker';
+import { StorefrontRenderer } from '@/components/storefront/StorefrontRenderer';
+import { DEFAULT_STOREFRONT_COLORS, getContrastTextColor } from '@/lib/designPresets';
+import { calculateOrderTax } from '@/lib/gstCalculator';
+import { buildUpiPaymentUri } from '@/lib/upiQr';
+import { PostOrderSocialModal } from '@/components/storefront/PostOrderSocialModal';
+
+export default function PublicMenuPage({ params }: { params: { slug: string } }) {
+  const router = useRouter();
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedCat, setSelectedCat] = useState<string>('all');
+  const [search, setSearch] = useState<string>('');
+  const [dietaryFilter, setDietaryFilter] = useState<'all' | 'veg' | 'spicy' | 'jain'>('all');
+
+  // Cart State (Guest Order)
+  const [cart, setCart] = useState<{
+    [productId: string]: {
+      quantity: number;
+      variantId?: string;
+      addOnIds?: string[];
+      instructions?: string;
+    };
+  }>({});
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [isCheckingOut, setIsCheckingOut] = useState<boolean>(false);
+
+  // Guest Checkout Form
+  const [guestName, setGuestName] = useState<string>('');
+  const [guestPhone, setGuestPhone] = useState<string>('');
+  const [showPhoneField, setShowPhoneField] = useState<boolean>(false);
+  const [tableNumber, setTableNumber] = useState<string>('Table 1');
+  const [guestNotes, setGuestNotes] = useState<string>('');
+  const [fulfilmentMethod, setFulfilmentMethod] = useState<'dine_in' | 'takeaway'>('dine_in');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cash'>('cash');
+  const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+
+  // Post-Order Social & Review Modal State
+  const [placedOrder, setPlacedOrder] = useState<{ tokenNumber: string; trackingId: string } | null>(null);
+  const [showSocialModal, setShowSocialModal] = useState<boolean>(false);
+
+  const fetchMenuData = async () => {
+    try {
+      const bizRes = await fetch(`/api/businesses?slug=${params.slug}`);
+      const bizData = await bizRes.json();
+
+      if (bizData.success && bizData.business) {
+        const biz: Business = bizData.business;
+        setBusiness(biz);
+
+        if (typeof document !== 'undefined') {
+          document.title = `${biz.name} | Dining Menu`;
+        }
+
+        const [catRes, prodRes] = await Promise.all([
+          fetch(`/api/categories?businessId=${biz.id}&sourceType=menu`),
+          fetch(`/api/products?businessId=${biz.id}&sourceType=menu`),
+        ]);
+        const catData = await catRes.json();
+        const prodData = await prodRes.json();
+
+        if (catData.success) setCategories(catData.categories);
+        if (prodData.success) setProducts(prodData.products.filter((p: Product) => p.isAvailable));
+      }
+    } catch (e) {
+      console.error('Error fetching menu storefront:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenuData();
+    const interval = setInterval(fetchMenuData, 4000);
+    return () => clearInterval(interval);
+  }, [params.slug]);
+
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart((prev) => {
+      const current = prev[productId]?.quantity || 0;
+      const next = current + delta;
+      if (next <= 0) {
+        const copy = { ...prev };
+        delete copy[productId];
+        return copy;
+      }
+      return {
+        ...prev,
+        [productId]: {
+          quantity: next,
+          variantId: prev[productId]?.variantId,
+          addOnIds: prev[productId]?.addOnIds,
+        },
+      };
+    });
+  };
+
+  const cartItems = Object.entries(cart)
+    .map(([prodId, details]) => {
+      const product = products.find((p) => p.id === prodId);
+      if (!product) return null;
+      let unitPrice = product.price;
+      if (details.variantId && product.variants) {
+        const v = product.variants.find((vr) => vr.id === details.variantId);
+        if (v) unitPrice = v.price;
+      }
+      return {
+        product,
+        quantity: details.quantity,
+        unitPrice,
+        itemTotal: unitPrice * details.quantity,
+      };
+    })
+    .filter(Boolean) as { product: Product; quantity: number; unitPrice: number; itemTotal: number }[];
+
+  const cartSubtotal = cartItems.reduce((sum, item) => sum + item.itemTotal, 0);
+  const isGoldPlan = Boolean(
+    business?.subscription?.planId === 'plan_gold' ||
+    business?.subscription?.planId === 'plan_diamond'
+  );
+
+  const gstSettings = business?.settings?.gst || (business?.settings?.orderSettings?.enableGst && business?.settings?.orderSettings?.gstin ? {
+    isGstRegistered: true,
+    gstin: business.settings.orderSettings.gstin,
+    legalBusinessName: business.name,
+    registeredAddress: business.address,
+    defaultGstRate: business.settings.orderSettings.taxRatePercentage || 0,
+    pricesIncludeGst: false,
+    invoicePrefix: 'INV-',
+  } : undefined);
+
+  const taxCalculation = calculateOrderTax({
+    subtotal: cartSubtotal,
+    deliveryFee: 0,
+    gstSettings,
+    isGoldSubscriber: isGoldPlan,
+  });
+
+  const tax = taxCalculation.totalTax;
+  const cartTotal = taxCalculation.finalTotal;
+  const hasGst = taxCalculation.isGstApplicable;
+  const cartCount = Object.values(cart).reduce((a, b) => a + b.quantity, 0);
+  const upiSettings = (business?.settings as any)?.upiSettings;
+
+  // Submit Menu Order
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!business) return;
+
+    const isStoreOpen = business.isStoreOpen ?? business.settings?.isStoreOpen ?? true;
+    const onlineOrderingEnabled =
+      business.onlineOrderingEnabled ?? business.settings?.onlineOrderingEnabled ?? true;
+
+    if (!isStoreOpen && !onlineOrderingEnabled) {
+      setOrderError('This restaurant is currently closed and online ordering is unavailable.');
+      return;
+    }
+    if (!isStoreOpen) {
+      setOrderError('This restaurant is currently closed. Please visit again later.');
+      return;
+    }
+    if (!onlineOrderingEnabled) {
+      setOrderError('Online ordering is currently unavailable for this restaurant.');
+      return;
+    }
+
+    setSubmittingOrder(true);
+    setOrderError(null);
+
+    const items = cartItems.map((item) => ({
+      productId: item.product.id,
+      quantity: item.quantity,
+      variantId: cart[item.product.id]?.variantId,
+      addOnIds: cart[item.product.id]?.addOnIds,
+    }));
+
+    const orderPayload = {
+      businessId: business.id,
+      sourceType: 'menu' as const, // STRICTLY MENU ORDER
+      customer: {
+        name: guestName.trim() || 'Guest Customer',
+        phone: guestPhone.trim() || undefined,
+        tableNumber: fulfilmentMethod === 'dine_in' ? tableNumber : undefined,
+        notes: guestNotes,
+      },
+      items,
+      fulfilmentMethod,
+      paymentMethod,
+    };
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to place food order');
+      }
+
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.6 },
+      });
+
+      // Clear cart and close checkout modal
+      setCart({});
+      setIsCheckingOut(false);
+      setIsCartOpen(false);
+
+      const hasGoogle = Boolean(
+        business.settings?.socialLinks?.googleBusiness?.trim() &&
+        business.settings?.socialLinks?.googleBusinessEnabled !== false
+      );
+      const hasInstagram = Boolean(
+        business.settings?.socialLinks?.instagram?.trim() &&
+        business.settings?.socialLinks?.instagramEnabled !== false
+      );
+
+      // Only show popup if store owner has configured Google Review or Instagram URL
+      if (hasGoogle || hasInstagram) {
+        setPlacedOrder({
+          tokenNumber: data.order.tokenNumber,
+          trackingId: data.order.trackingId,
+        });
+        setShowSocialModal(true);
+      } else {
+        // If neither link is configured, proceed directly without interrupting order confirmation
+        router.push(`/track/${data.order.trackingId}`);
+      }
+    } catch (err: any) {
+      setOrderError(err.message || 'Something went wrong');
+    } finally {
+      setSubmittingOrder(false);
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    if (selectedCat !== 'all' && p.categoryId !== selectedCat) return false;
+    if (dietaryFilter === 'veg' && !p.dietaryFlags?.isVeg) return false;
+    if (dietaryFilter === 'spicy' && !p.dietaryFlags?.isSpicy) return false;
+    if (dietaryFilter === 'jain' && !p.dietaryFlags?.isJain) return false;
+    if (search.trim()) {
+      return p.name.toLowerCase().includes(search.toLowerCase());
+    }
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-orange-50/30 flex flex-col items-center justify-center p-6 text-center">
+        <UtensilsCrossed className="w-10 h-10 text-orange-600 animate-bounce mb-3" />
+        <h2 className="text-base font-bold text-slate-800">Opening Digital Food Menu...</h2>
+      </div>
+    );
+  }
+
+  if (!business || !business.settings.modules.menu) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <UtensilsCrossed className="w-12 h-12 text-slate-300 mb-3" />
+        <h2 className="text-lg font-black text-slate-800">Food Menu Not Active</h2>
+        <p className="text-xs text-slate-500 mt-1">This business does not have the food menu module enabled.</p>
+      </div>
+    );
+  }
+
+  const isStoreOpen = business?.isStoreOpen ?? business?.settings?.isStoreOpen ?? true;
+  const onlineOrderingEnabled =
+    business?.onlineOrderingEnabled ?? business?.settings?.onlineOrderingEnabled ?? true;
+  const canAcceptOnlineOrders = isStoreOpen && onlineOrderingEnabled;
+
+  const simpleCart = React.useMemo(() => {
+    const result: { [productId: string]: number } = {};
+    for (const [k, v] of Object.entries(cart)) {
+      result[k] = v.quantity;
+    }
+    return result;
+  }, [cart]);
+
+  const designSettings = business?.settings?.storefrontDesign;
+  const activeTemplate = designSettings?.templateId || 'classic';
+  const activeColors = designSettings?.colors || DEFAULT_STOREFRONT_COLORS;
+  const activeCover = designSettings?.coverImageUrl;
+  const buttonTextColor = getContrastTextColor(activeColors.button);
+
+  return (
+    <div
+      className="min-h-screen flex flex-col font-sans transition-colors"
+      style={{ backgroundColor: activeColors.background, color: activeColors.text }}
+    >
+      <StorefrontRenderer
+        business={business}
+        products={products}
+        categories={categories}
+        templateId={activeTemplate}
+        colors={activeColors}
+        coverImageUrl={activeCover}
+        cart={simpleCart}
+        onUpdateQuantity={updateQuantity}
+        onOpenCart={() => setIsCartOpen(true)}
+        isRestaurant={true}
+        selectedCat={selectedCat}
+        onSelectCat={setSelectedCat}
+        search={search}
+        onSearchChange={setSearch}
+        dietaryFilter={dietaryFilter}
+        onDietaryFilterChange={setDietaryFilter}
+      />
+
+
+
+      {/* Floating Bottom Bar */}
+      {cartCount > 0 && !isCartOpen && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto bottom-safe">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            style={{
+              backgroundColor: activeColors.button,
+              color: buttonTextColor,
+            }}
+            className="w-full p-3.5 rounded-2xl shadow-xl flex items-center justify-between transition-transform active:scale-98"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                style={{
+                  backgroundColor: buttonTextColor,
+                  color: activeColors.button,
+                }}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black"
+              >
+                {cartCount}
+              </span>
+              <span className="font-bold text-xs">View Food Order</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-black">
+              <span>{formatINR(cartTotal)}</span>
+              <ArrowRight className="w-4 h-4" />
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Slide-over Cart / Guest Dining Checkout */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+          <div className="w-full max-w-md bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UtensilsCrossed className="w-4 h-4 text-orange-600" />
+                <h3 className="font-black text-slate-900 text-sm">
+                  {isCheckingOut ? 'Kitchen Guest Checkout' : `Your Food Order (${cartCount} items)`}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setIsCheckingOut(false);
+                }}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {orderError && (
+              <div className="p-3 mx-4 mt-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {orderError}
+              </div>
+            )}
+
+            {!isCheckingOut ? (
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {cartItems.map(({ product, quantity, itemTotal }) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs"
+                    >
+                      <div>
+                        <p className="font-bold text-slate-900">{product.name}</p>
+                        <p className="text-[10px] text-slate-500">{formatINR(product.price)} each</p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 font-bold">
+                          <button onClick={() => updateQuantity(product.id, -1)} className="px-1 text-slate-500">
+                            -
+                          </button>
+                          <span>{quantity}</span>
+                          <button onClick={() => updateQuantity(product.id, 1)} className="px-1 text-slate-500">
+                            +
+                          </button>
+                        </div>
+                        <span className="font-black text-slate-900 w-14 text-right">
+                          {formatINR(itemTotal)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-5 border-t border-slate-100 bg-slate-50 space-y-2 text-xs pb-safe">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Subtotal:</span>
+                    <span>{formatINR(cartSubtotal)}</span>
+                  </div>
+                  {hasGst && tax > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <div>
+                        <span>GST ({business.settings.orderSettings.taxRatePercentage}%):</span>
+                        {business.settings.orderSettings.gstin && (
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            GSTIN: {business.settings.orderSettings.gstin}
+                          </span>
+                        )}
+                      </div>
+                      <span>{formatINR(tax)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-slate-900 font-black text-sm pt-2 border-t border-slate-200">
+                    <span>Total Bill:</span>
+                    <span>{formatINR(cartTotal)}</span>
+                  </div>
+
+                  {!canAcceptOnlineOrders && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium flex items-center gap-1.5 mt-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                      <span>
+                        {!isStoreOpen
+                          ? 'This restaurant is currently closed. Please visit again later.'
+                          : 'Online ordering is currently unavailable.'}
+                      </span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setIsCheckingOut(true)}
+                    disabled={!canAcceptOnlineOrders}
+                    style={
+                      canAcceptOnlineOrders
+                        ? { backgroundColor: activeColors.button, color: buttonTextColor }
+                        : undefined
+                    }
+                    className={cn(
+                      'w-full mt-3 py-3 rounded-xl font-bold text-xs shadow-md transition-all',
+                      canAcceptOnlineOrders
+                        ? 'hover:opacity-90 cursor-pointer active:scale-98'
+                        : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                    )}
+                  >
+                    {!isStoreOpen
+                      ? 'Restaurant Closed · Ordering Unavailable'
+                      : !onlineOrderingEnabled
+                      ? 'Online Ordering Paused'
+                      : 'Proceed to Table / Dining Checkout'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* GUEST DINING CHECKOUT */
+              <form onSubmit={handlePlaceOrder} className="flex-1 flex flex-col min-h-0 text-xs">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
+                  <div className="p-2.5 bg-orange-50 rounded-xl border border-orange-200 text-orange-900 text-[11px] font-medium flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 shrink-0 text-orange-600" />
+                    <span>Instant Kitchen Token generation. No registration required!</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Your Name (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Priya Sundaram (or leave blank)"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* Mobile Phone (Optional & Hidden by default) */}
+                  {showPhoneField ? (
+                    <div className="p-3 bg-orange-50/70 rounded-xl border border-orange-200 transition-all">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block font-bold text-slate-700 text-xs">
+                          Mobile Phone (for Token SMS) <span className="font-normal text-slate-500">(Optional)</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPhoneField(false);
+                            setGuestPhone('');
+                          }}
+                          className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold"
+                        >
+                          ✕ Hide
+                        </button>
+                      </div>
+                      <input
+                        type="tel"
+                        placeholder="e.g. 9123456789"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Optional: Token status is tracked live on your screen and the public TV display.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPhoneField(true)}
+                        className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1.5 py-1"
+                      >
+                        <span>+ Add Mobile Phone for SMS Status (Optional)</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Dining Option</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFulfilmentMethod('dine_in')}
+                        className={cn(
+                          'p-2.5 rounded-lg border text-left font-bold transition-all',
+                          fulfilmentMethod === 'dine_in'
+                            ? 'bg-orange-50 border-orange-500 text-orange-900'
+                            : 'bg-white border-slate-200 text-slate-600'
+                        )}
+                      >
+                        🍽️ Dine-In (Table)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFulfilmentMethod('takeaway')}
+                        className={cn(
+                          'p-2.5 rounded-lg border text-left font-bold transition-all',
+                          fulfilmentMethod === 'takeaway'
+                            ? 'bg-orange-50 border-orange-500 text-orange-900'
+                            : 'bg-white border-slate-200 text-slate-600'
+                        )}
+                      >
+                        🥡 Takeaway / Parcel
+                      </button>
+                    </div>
+                  </div>
+
+                  {fulfilmentMethod === 'dine_in' && (
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Select Table Number *</label>
+                      <select
+                        value={tableNumber}
+                        onChange={(e) => setTableNumber(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white"
+                      >
+                        {['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5', 'Table 6', 'Table 7', 'Table 8'].map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Cooking Instructions (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Less spicy, make dosa extra crisp, separate chutney..."
+                      value={guestNotes}
+                      onChange={(e) => setGuestNotes(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                    />
+                  </div>
+
+                  {/* Payment Method Selection */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Payment Method</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('upi')}
+                        className={cn(
+                          'p-2.5 rounded-lg border text-left font-bold transition-all',
+                          paymentMethod === 'upi'
+                            ? 'bg-orange-50 border-orange-500 text-orange-900'
+                            : 'bg-white border-slate-200 text-slate-600'
+                        )}
+                      >
+                        📱 Pay via UPI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('cash')}
+                        className={cn(
+                          'p-2.5 rounded-lg border text-left font-bold transition-all',
+                          paymentMethod === 'cash'
+                            ? 'bg-orange-50 border-orange-500 text-orange-900'
+                            : 'bg-white border-slate-200 text-slate-600'
+                        )}
+                      >
+                        💵 Pay at Counter
+                      </button>
+                    </div>
+
+                    {paymentMethod === 'upi' && (
+                      <div className="mt-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-2">
+                        {isGoldPlan && upiSettings?.isEnabled && upiSettings?.upiId ? (
+                          <>
+                            <div className="text-[11px] font-bold text-slate-800">
+                              Scan & Pay {formatINR(cartTotal)} to {upiSettings.payeeName || business.name}
+                            </div>
+                            <div className="w-36 h-36 mx-auto bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-center">
+                              <img
+                                src={
+                                  upiSettings.qrImageUrl ||
+                                  `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                                    buildUpiPaymentUri({
+                                      upiId: upiSettings.upiId,
+                                      payeeName: upiSettings.payeeName || business.name,
+                                      amount: cartTotal,
+                                      orderReference: `Dining Order - ${business.name}`,
+                                      transactionNote: `Dining Order - ${business.name}`,
+                                    })
+                                  )}`
+                                }
+                                alt="Menu Dining UPI QR"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <p className="font-mono text-xs font-bold text-slate-900">{upiSettings.upiId}</p>
+                            {upiSettings.instructions && (
+                              <p className="text-[10px] text-slate-600 bg-white p-1.5 rounded border border-slate-200 text-left">
+                                Note: {upiSettings.instructions}
+                              </p>
+                            )}
+                            <p className="text-[10px] text-amber-800 font-medium bg-amber-50 p-1.5 rounded border border-amber-200">
+                              Payment status will be verified by the counter staff upon order collection. Token generated immediately.
+                            </p>
+                          </>
+                        ) : (
+                          <div className="text-left text-[11px] text-slate-600 space-y-1">
+                            <p className="font-semibold text-slate-800">Direct UPI Scan</p>
+                            <p className="text-[10px] text-slate-500">
+                              Pay at the billing counter via the restaurant UPI QR standee after your meal or upon token collection.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-2 pb-safe">
+                  <div className="flex justify-between font-black text-sm text-slate-900">
+                    <span>Total Bill:</span>
+                    <span>{formatINR(cartTotal)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCheckingOut(false)}
+                      className="px-3 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingOrder || !canAcceptOnlineOrders}
+                      style={
+                        canAcceptOnlineOrders && !submittingOrder
+                          ? { backgroundColor: activeColors.button, color: buttonTextColor }
+                          : undefined
+                      }
+                      className={cn(
+                        'flex-1 py-3 rounded-xl font-black shadow-md flex items-center justify-center gap-1.5 transition-all',
+                        canAcceptOnlineOrders && !submittingOrder
+                          ? 'hover:opacity-90 cursor-pointer active:scale-98'
+                          : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                      )}
+                    >
+                      {submittingOrder
+                        ? 'Sending to Kitchen...'
+                        : !isStoreOpen
+                        ? 'Restaurant Closed · Ordering Unavailable'
+                        : !onlineOrderingEnabled
+                        ? 'Online Ordering Paused'
+                        : `Send to Kitchen (${formatINR(cartTotal)})`}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Post-Order Social & Review Modal */}
+      {placedOrder && business && (
+        <PostOrderSocialModal
+          isOpen={showSocialModal}
+          onClose={() => {
+            setShowSocialModal(false);
+            router.push(`/track/${placedOrder.trackingId}`);
+          }}
+          businessName={business.name}
+          tokenNumber={placedOrder.tokenNumber}
+          sourceType="menu"
+          socialLinks={business.settings?.socialLinks}
+          onContinueToTracking={() => {
+            setShowSocialModal(false);
+            router.push(`/track/${placedOrder.trackingId}`);
+          }}
+        />
+      )}
+    </div>
+  );
+}

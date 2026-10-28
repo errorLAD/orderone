@@ -1,0 +1,133 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { Sparkles, ArrowRight, ShieldCheck, Menu, X } from 'lucide-react';
+import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+
+export function PublicHeader() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 font-sans">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Brand Logo & Operator Tag */}
+        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#4F46E5] text-white flex items-center justify-center font-black shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm sm:text-base font-black text-[#0F172A] tracking-tight leading-tight">
+              OrderOne<span className="text-[#4F46E5]">.in</span>
+            </div>
+            <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500 tracking-tight leading-none truncate max-w-[130px] sm:max-w-[200px]">
+              By {PLATFORM_CONFIG.legalCompanyName}
+            </div>
+          </div>
+        </Link>
+
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
+          <Link href="/about" className="hover:text-slate-900 transition-colors">
+            About Us
+          </Link>
+          <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
+            Plans & Pricing
+          </Link>
+          <Link href="/terms" className="hover:text-slate-900 transition-colors">
+            Terms
+          </Link>
+          <Link href="/privacy-policy" className="hover:text-slate-900 transition-colors">
+            Privacy
+          </Link>
+          <Link href="/refund-policy" className="hover:text-slate-900 transition-colors">
+            Refunds
+          </Link>
+        </nav>
+
+        {/* Right CTA & Mobile Toggle */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <Link
+            href="/login"
+            className="hidden xs:inline-flex px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/login"
+            className="px-3 sm:px-3.5 py-1.5 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-xs transition-all flex items-center gap-1"
+          >
+            <span>Register</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+
+          {/* Mobile Menu Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg md:hidden transition-colors"
+            aria-label="Toggle Public Menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-3 animate-in slide-in-from-top-2 duration-150">
+          <nav className="flex flex-col space-y-2 text-xs font-semibold text-slate-700">
+            <Link
+              href="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              About Us & Platform Architecture
+            </Link>
+            <Link
+              href="/dashboard/subscription"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Subscription Plans (₹20 Basic & ₹99 Gold)
+            </Link>
+            <Link
+              href="/terms"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Terms and Conditions
+            </Link>
+            <Link
+              href="/privacy-policy"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/refund-policy"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Refund & Cancellation Policy
+            </Link>
+          </nav>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-xs font-bold text-slate-700 hover:text-slate-900 px-3 py-2 rounded-lg"
+            >
+              Sign In to Account
+            </Link>
+            <span className="text-[10px] text-slate-400">
+              Operated by {PLATFORM_CONFIG.legalCompanyName}
+            </span>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
