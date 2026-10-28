@@ -45,8 +45,8 @@ function AdminLoginForm() {
         return;
       }
 
-      // Successful login
-      router.push(redirectPath);
+      // Successful login - hard navigation guarantees session cookie is propagated
+      window.location.href = redirectPath;
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check network connection.');
     } finally {

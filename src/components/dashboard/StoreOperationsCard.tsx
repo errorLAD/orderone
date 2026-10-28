@@ -11,9 +11,11 @@ import {
   Loader2,
   Info,
   ShieldCheck,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
+import { getCategoryConfig } from '@/lib/categories';
 import Link from 'next/link';
 
 interface StoreOperationsCardProps {
@@ -28,6 +30,27 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   if (!currentBusiness) return null;
+
+  const catConfig = getCategoryConfig(currentBusiness.type);
+  const isFood = catConfig.primaryModule === 'menu';
+  const hasStoreModule =
+    currentBusiness.storeEntitlement?.allowed ??
+    Boolean(currentBusiness.settings?.modules?.store);
+  const hasMenuModule =
+    currentBusiness.menuEntitlement?.allowed ??
+    Boolean(currentBusiness.settings?.modules?.menu);
+
+  // Primary live storefront link:
+  // For food category (e.g. Royal Kitchen): /menu/[slug]
+  // For retail category: /store/[slug]
+  const primaryUrl = isFood ? `/menu/${currentBusiness.slug}` : `/store/${currentBusiness.slug}`;
+  const primaryLabel = isFood ? 'View Public Menu' : 'View Public Storefront';
+  const PrimaryIcon = isFood ? UtensilsCrossed : Store;
+
+  // Secondary link if both channels are active
+  const hasDualChannels = hasStoreModule && hasMenuModule;
+  const secondaryUrl = isFood ? `/store/${currentBusiness.slug}` : `/menu/${currentBusiness.slug}`;
+  const secondaryLabel = isFood ? 'View Retail Store' : 'View Menu';
 
   const isStoreOpen = currentBusiness.isStoreOpen ?? currentBusiness.settings?.isStoreOpen ?? true;
   const onlineOrderingEnabled =
@@ -45,8 +68,8 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
       setFeedback({
         type: 'success',
         message: targetStatus
-          ? 'Store is now marked OPEN for business.'
-          : 'Store is now marked CLOSED. Customers cannot place new orders.',
+          ? (isFood ? 'Kitchen is now marked OPEN for dining and online orders.' : 'Store is now marked OPEN for business.')
+          : (isFood ? 'Kitchen is now marked CLOSED. Customers cannot place new food orders.' : 'Store is now marked CLOSED. Customers cannot place new orders.'),
       });
       setTimeout(() => setFeedback(null), 4000);
     } else {
@@ -69,7 +92,7 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
         type: 'success',
         message: targetStatus
           ? 'Online ordering is now ENABLED.'
-          : 'Online ordering is now PAUSED. Customers can still browse products.',
+          : (isFood ? 'Online food ordering is PAUSED. Customers can still browse menu items.' : 'Online ordering is PAUSED. Customers can still browse products.'),
       });
       setTimeout(() => setFeedback(null), 4000);
     } else {
@@ -80,8 +103,6 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
     }
     setIsUpdatingOrdering(false);
   };
-
-  const publicUrl = `/store/${currentBusiness.slug}`;
 
   return (
     <div
@@ -97,47 +118,70 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
             className={cn(
               'p-2.5 rounded-xl border transition-colors',
               isStoreOpen
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                ? (isFood ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
                 : 'bg-rose-50 text-rose-700 border-rose-200'
             )}
           >
-            <Store className="w-5 h-5" />
+            <PrimaryIcon className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-black text-slate-900 tracking-tight">Store Operations</h2>
+              <h2 className="text-sm font-black text-slate-900 tracking-tight">
+                {isFood ? 'Restaurant & Kitchen Operations' : 'Store Operations'}
+              </h2>
               {/* Status Badge */}
               {isStoreOpen ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Open
+                  {isFood ? 'Kitchen Open' : 'Store Open'}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
                   <span className="w-2 h-2 rounded-full bg-rose-500" />
-                  Closed
+                  {isFood ? 'Kitchen Closed' : 'Store Closed'}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Manage live physical store operating status and public online ordering independently.
+              {isFood
+                ? 'Manage live dining kitchen operating status and public digital menu ordering independently.'
+                : 'Manage live physical store operating status and public online ordering independently.'}
             </p>
           </div>
         </div>
 
-        <Link
-          href={publicUrl}
-          target="_blank"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs hover:border-slate-300 transition-all self-start sm:self-center"
-        >
-          <span>View Public Storefront</span>
-          <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-        </Link>
+        <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
+          <Link
+            href={primaryUrl}
+            target="_blank"
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl shadow-2xs border transition-all',
+              isFood
+                ? 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200'
+                : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200'
+            )}
+          >
+            <PrimaryIcon className="w-3.5 h-3.5" />
+            <span>{primaryLabel}</span>
+            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+          </Link>
+
+          {hasDualChannels && (
+            <Link
+              href={secondaryUrl}
+              target="_blank"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-all"
+            >
+              <span>{secondaryLabel}</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Control Grid: Control A & Control B */}
       <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* CONTROL A: STORE STATUS (OPEN / CLOSED) */}
+        {/* CONTROL A: STORE / KITCHEN STATUS (OPEN / CLOSED) */}
         <div
           className={cn(
             'p-4 rounded-xl border transition-all flex flex-col justify-between',
@@ -151,7 +195,7 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
               <div className="flex items-center gap-2">
                 <Power className={cn('w-4 h-4', isStoreOpen ? 'text-emerald-600' : 'text-rose-600')} />
                 <h3 className="text-xs font-black tracking-wide text-slate-900 uppercase">
-                  Control A: Store Status
+                  {isFood ? 'Control A: Kitchen / Dining Status' : 'Control A: Store Status'}
                 </h3>
               </div>
               <span
@@ -162,20 +206,24 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
                     : 'bg-rose-100 text-rose-800 border-rose-300'
                 )}
               >
-                {isStoreOpen ? 'Store Open' : 'Store Closed'}
+                {isStoreOpen ? (isFood ? 'Kitchen Open' : 'Store Open') : (isFood ? 'Kitchen Closed' : 'Store Closed')}
               </span>
             </div>
 
             <p className="text-xs text-slate-600 mb-3 leading-relaxed">
               {isStoreOpen
-                ? 'Store is open for business. Customers can visit and place orders if online ordering is also ON.'
-                : 'Store is temporarily closed. The storefront shows "Store Closed" banner and prevents checkout while keeping catalog browseable.'}
+                ? (isFood
+                    ? 'Kitchen is open for food orders. Customers can dine in, takeaway, or order delivery if online ordering is also ON.'
+                    : 'Store is open for business. Customers can visit and place orders if online ordering is also ON.')
+                : (isFood
+                    ? 'Kitchen is temporarily closed. The menu displays "Kitchen Closed" banner and pauses order checkout while keeping dishes browseable.'
+                    : 'Store is temporarily closed. The storefront shows "Store Closed" banner and prevents checkout while keeping catalog browseable.')}
             </p>
           </div>
 
           <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700">
-              {isStoreOpen ? 'Mark Store Closed' : 'Mark Store Open'}
+              {isStoreOpen ? (isFood ? 'Mark Kitchen Closed' : 'Mark Store Closed') : (isFood ? 'Mark Kitchen Open' : 'Mark Store Open')}
             </span>
             <button
               onClick={handleToggleStoreStatus}
@@ -185,7 +233,7 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
                 isStoreOpen ? 'bg-emerald-600' : 'bg-slate-300',
                 isUpdatingStore && 'opacity-60 cursor-not-allowed'
               )}
-              title={isStoreOpen ? 'Click to close store' : 'Click to open store'}
+              title={isStoreOpen ? 'Click to close' : 'Click to open'}
               aria-label="Toggle store open/closed"
             >
               <span
@@ -231,8 +279,12 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
 
             <p className="text-xs text-slate-600 mb-3 leading-relaxed">
               {onlineOrderingEnabled
-                ? 'Online orders are accepted. Customers can add items to cart and submit orders (requires Store Open).'
-                : 'Online ordering is paused. Customers can browse products and prices, but Add to Cart and Checkout are disabled.'}
+                ? (isFood
+                    ? 'Online food ordering is active. Customers can add items to cart and submit food orders (requires Kitchen Open).'
+                    : 'Online orders are accepted. Customers can add items to cart and submit orders (requires Store Open).')
+                : (isFood
+                    ? 'Online food ordering is paused. Customers can browse dishes and prices, but Add to Cart and KOT are disabled.'
+                    : 'Online ordering is paused. Customers can browse products and prices, but Add to Cart and Checkout are disabled.')}
             </p>
           </div>
 

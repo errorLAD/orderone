@@ -1,6 +1,7 @@
 import { getPgPool, pgQuery } from './postgres';
 import { getBusinessById } from './db';
-import { BusinessPlanUsage } from '@/types';
+import { BusinessPlanUsage, ModuleEntitlement, Business } from '@/types';
+import { getCategoryConfig } from './categories';
 
 export interface PlanLimitConfig {
   planId: string;
@@ -71,6 +72,115 @@ export function hasActiveGoldAccess(business: { subscription?: any } | null | un
   }
 
   return planId === 'plan_gold' || planId === 'plan_diamond';
+}
+
+/**
+ * Checks whether a business is entitled to access the Store module
+ * based on its business category and active subscription plan.
+ */
+export async function getBusinessStoreEntitlement(business: {
+  id: string;
+  type: any;
+  settings?: any;
+  subscription?: any;
+}): Promise<ModuleEntitlement> {
+  const config = getCategoryConfig(business.type);
+  const isRetail = config.primaryModule === 'store';
+  const limits = await getEffectivePlanLimits(business.id);
+
+  // 1. Retail categories (Hardware, Grocery, Clothing, Electronics, etc.) have Store as their primary channel
+  if (isRetail) {
+    const isExplicitlyDisabled = business.settings?.modules?.store === false;
+    return {
+      allowed: !isExplicitlyDisabled,
+      isPrimaryModule: true,
+      planId: limits.planId,
+      planName: limits.name,
+      requiresUpgrade: false,
+      reason: isExplicitlyDisabled
+        ? 'Store module has been disabled in dashboard settings.'
+        : 'Digital retail store is active under your plan.',
+    };
+  }
+
+  // 2. Food & Dining categories (Restaurants, Cafes, Bakeries, etc.)
+  // Store module requires a plan that permits dual Store+Menu (Gold, Diamond)
+  if (limits.allowsStore) {
+    const isExplicitlyDisabled = business.settings?.modules?.store === false;
+    return {
+      allowed: !isExplicitlyDisabled,
+      isPrimaryModule: false,
+      planId: limits.planId,
+      planName: limits.name,
+      requiresUpgrade: false,
+      reason: isExplicitlyDisabled
+        ? 'Store module is included in your plan, but currently disabled in settings.'
+        : 'Digital retail store is included in your active subscription.',
+    };
+  }
+
+  // 3. Restaurant on Basic tier:
+  return {
+    allowed: false,
+    isPrimaryModule: false,
+    planId: limits.planId,
+    planName: limits.name,
+    requiresUpgrade: true,
+    reason: `The Digital Retail Store module is not included in the ${limits.name} plan for restaurant operations. Upgrade to Gold or Diamond to activate both the Food Menu and Retail Storefront.`,
+  };
+}
+
+/**
+ * Checks whether a business is entitled to access the Menu module.
+ */
+export async function getBusinessMenuEntitlement(business: {
+  id: string;
+  type: any;
+  settings?: any;
+  subscription?: any;
+}): Promise<ModuleEntitlement> {
+  const config = getCategoryConfig(business.type);
+  const isFood = config.primaryModule === 'menu';
+  const limits = await getEffectivePlanLimits(business.id);
+
+  // 1. Food categories have Menu as primary channel
+  if (isFood) {
+    const isExplicitlyDisabled = business.settings?.modules?.menu === false;
+    return {
+      allowed: !isExplicitlyDisabled,
+      isPrimaryModule: true,
+      planId: limits.planId,
+      planName: limits.name,
+      requiresUpgrade: false,
+      reason: isExplicitlyDisabled
+        ? 'Food menu has been disabled in dashboard settings.'
+        : 'Digital food menu is active under your plan.',
+    };
+  }
+
+  // 2. Retail categories on Gold/Diamond that allow Menu
+  if (limits.allowsMenu) {
+    const isExplicitlyDisabled = business.settings?.modules?.menu === false;
+    return {
+      allowed: !isExplicitlyDisabled,
+      isPrimaryModule: false,
+      planId: limits.planId,
+      planName: limits.name,
+      requiresUpgrade: false,
+      reason: isExplicitlyDisabled
+        ? 'Food menu is included in your plan, but currently disabled in settings.'
+        : 'Digital food menu is included in your active subscription.',
+    };
+  }
+
+  return {
+    allowed: false,
+    isPrimaryModule: false,
+    planId: limits.planId,
+    planName: limits.name,
+    requiresUpgrade: true,
+    reason: `The Food Menu module requires upgrading to a plan that supports digital dining menus.`,
+  };
 }
 
 /**

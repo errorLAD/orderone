@@ -17,6 +17,7 @@ import {
   SubscriptionHistory,
 } from '@/types';
 import { generateId, generateTrackingId } from './utils';
+import { resolveBusinessByIdOrSlug, generateUniqueBusinessSlug } from './slug';
 import {
   pgQuery,
   mapRowToBusiness,
@@ -219,16 +220,21 @@ export async function getBusinessById(businessId: string): Promise<Business | nu
 
 export async function getBusinessBySlug(slug: string): Promise<Business | null> {
   try {
-    const res = await pgQuery(
-      `SELECT b.*, u.name as owner_name 
-       FROM public.businesses b 
-       LEFT JOIN public.users u ON b.owner_id = u.id 
-       WHERE b.slug = $1`,
-      [slug]
-    );
-    if (res.rows.length > 0) return mapRowToBusiness(res.rows[0]);
-  } catch (err) {}
-  return cachedDb.businesses.find((b) => b.slug === slug) || null;
+    const resolved = await resolveBusinessByIdOrSlug(slug);
+    if (resolved) return resolved;
+  } catch (err) {
+    console.error('getBusinessBySlug postgres resolution error:', err);
+  }
+  const clean = (slug || '').toLowerCase().trim();
+  return (
+    cachedDb.businesses.find(
+      (b) =>
+        b.slug.toLowerCase() === clean ||
+        b.id === clean ||
+        b.settings?.previousSlugs?.some((ps) => ps.toLowerCase() === clean) ||
+        b.settings?.aliases?.some((al) => al.toLowerCase() === clean)
+    ) || null
+  );
 }
 
 export async function getAllBusinesses(): Promise<Business[]> {
@@ -367,9 +373,31 @@ export async function updateBusiness(
     newSettings.ownerName = updates.ownerName.trim();
   }
 
+  // Safely handle slug updates and track previous slugs for seamless redirection
+  let targetSlug = current.slug;
+  if (updates.slug && updates.slug.trim() && updates.slug.trim().toLowerCase() !== current.slug.toLowerCase()) {
+    const cleanSlug = updates.slug.trim().toLowerCase().replace(/[^\w-]/g, '-').replace(/^-+|-+$/g, '');
+    try {
+      const existing = await pgQuery(
+        `SELECT id FROM public.businesses WHERE LOWER(slug) = LOWER($1) AND id != $2`,
+        [cleanSlug, businessId]
+      );
+      if (existing.rows.length === 0) {
+        targetSlug = cleanSlug;
+        const prevSlugs = Array.isArray(newSettings.previousSlugs) ? newSettings.previousSlugs : [];
+        if (!prevSlugs.includes(current.slug)) {
+          newSettings.previousSlugs = [...prevSlugs, current.slug];
+        }
+      }
+    } catch (sErr) {
+      console.error('Slug check error in updateBusiness:', sErr);
+    }
+  }
+
   cachedDb.businesses[index] = {
     ...current,
     ...updates,
+    slug: targetSlug,
     isStoreOpen,
     onlineOrderingEnabled,
     ownerName: updates.ownerName ? updates.ownerName.trim() : (current.ownerName || newSettings.ownerName),
@@ -391,8 +419,8 @@ export async function updateBusiness(
   try {
     await pgQuery(`
       UPDATE public.businesses 
-      SET name = $1, description = $2, phone = $3, address = $4, email = $5, type = $6, logo_url = $7, settings = $8, subscription = $9, is_store_open = $10, online_ordering_enabled = $11, updated_at = NOW()
-      WHERE id = $12
+      SET name = $1, description = $2, phone = $3, address = $4, email = $5, type = $6, logo_url = $7, settings = $8, subscription = $9, is_store_open = $10, online_ordering_enabled = $11, slug = $12, updated_at = NOW()
+      WHERE id = $13
     `, [
       b.name,
       b.description,
@@ -405,6 +433,7 @@ export async function updateBusiness(
       JSON.stringify(b.subscription),
       isStoreOpen,
       onlineOrderingEnabled,
+      targetSlug,
       businessId
     ]);
   } catch (err) {

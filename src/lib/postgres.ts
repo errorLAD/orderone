@@ -82,6 +82,7 @@ export function mapRowToBusiness(r: any): Business {
     slug: r.slug,
     name: r.name,
     type: r.type,
+    category: r.type,
     ownerId: r.owner_id || undefined,
     ownerName: r.owner_name || settings.ownerName || undefined,
     description: r.description || '',

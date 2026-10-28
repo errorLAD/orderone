@@ -6,6 +6,7 @@ import { User, Role, Business, BusinessType } from '@/types';
 import { generateId } from './utils';
 import { getCategoryConfig } from './categories';
 import { getAllBusinesses } from './db';
+import { generateUniqueBusinessSlug } from './slug';
 
 export interface AuthSession {
   user: User;
@@ -398,11 +399,8 @@ export async function registerBusinessOwner(data: {
     const bizId = generateId('biz');
     const now = new Date().toISOString();
 
-    // Generate unique slug
-    let baseSlug = cleanBizName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    if (!baseSlug) baseSlug = 'store';
-    const slugCheck = await pgQuery(`SELECT id FROM public.businesses WHERE slug = $1`, [baseSlug]);
-    const finalSlug = slugCheck.rows.length > 0 ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}` : baseSlug;
+    // Generate unique, stable slug supporting duplicate business names across any location
+    const finalSlug = await generateUniqueBusinessSlug(cleanBizName, cleanAddress, bizId);
 
     // Determine category setup & default modules
     const config = getCategoryConfig(data.category);

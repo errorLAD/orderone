@@ -55,11 +55,15 @@ export default function LoginPage() {
     try {
       const res = await login(loginEmail.trim(), loginPassword);
       if (res.success) {
-        if (res.hasBusiness) {
-          router.push('/dashboard');
-        } else {
-          router.push('/onboarding');
-        }
+        // Check for redirect URL in search params
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const redirectParam = params?.get('redirect');
+        const targetUrl = redirectParam && redirectParam.startsWith('/')
+          ? redirectParam
+          : (res.hasBusiness ? '/dashboard' : '/onboarding');
+
+        // Full browser navigation ensures session cookies are transmitted cleanly to server & middleware
+        window.location.href = targetUrl;
       } else {
         setErrorMsg(res.error || 'Invalid email or password');
       }
@@ -114,7 +118,7 @@ export default function LoginPage() {
 
       if (res.success && res.business) {
         // Connected flow: seamlessly proceed to category setup wizard
-        router.push('/onboarding');
+        window.location.href = '/onboarding';
       } else {
         setErrorMsg(res.error || 'Failed to register business');
       }

@@ -323,6 +323,17 @@ export default function DashboardPage() {
               <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
               <span>View Online Storefront</span>
             </a>
+            {currentBusiness.settings?.modules?.menu && currentBusiness.menuEntitlement?.allowed && (
+              <a
+                href={`/menu/${currentBusiness.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-orange-600" />
+                <span>Food Menu</span>
+              </a>
+            )}
           </>
         ) : (
           <>
@@ -356,6 +367,17 @@ export default function DashboardPage() {
               <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
               <span>Open Public Menu</span>
             </a>
+            {currentBusiness.settings?.modules?.store && currentBusiness.storeEntitlement?.allowed && (
+              <a
+                href={`/store/${currentBusiness.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 hover:bg-sky-100 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-sky-600" />
+                <span>Online Storefront</span>
+              </a>
+            )}
             <a
               href={`/display/${currentBusiness.slug}`}
               target="_blank"

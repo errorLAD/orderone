@@ -68,8 +68,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const checkSession = async (preferredBizId?: string) => {
     try {
       setIsLoadingAuth(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('orderone_auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const url = preferredBizId ? `/api/auth/me?businessId=${encodeURIComponent(preferredBizId)}` : '/api/auth/me';
-      const res = await fetch(url);
+      const res = await fetch(url, { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.user) {
@@ -109,6 +115,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusiness(null);
       setBusinesses([]);
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('orderone_auth_token');
         localStorage.removeItem('orderone_active_biz_id');
         localStorage.removeItem('antigravity_active_biz_id');
       }
@@ -118,6 +125,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusiness(null);
       setBusinesses([]);
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('orderone_auth_token');
         localStorage.removeItem('orderone_active_biz_id');
         localStorage.removeItem('antigravity_active_biz_id');
       }
@@ -134,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusiness(null);
       setBusinesses([]);
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('orderone_auth_token');
         localStorage.removeItem('orderone_active_biz_id');
         localStorage.removeItem('antigravity_active_biz_id');
       }
@@ -145,11 +154,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await res.json();
       if (data.success && data.user) {
-        // 2. Fetch authoritative user & authorized businesses directly from server session
-        const session = await checkSession();
+        if (typeof window !== 'undefined' && data.token) {
+          localStorage.setItem('orderone_auth_token', data.token);
+        }
+
+        // Authoritatively set user and roles from verified server response
+        setCurrentUser(data.user);
+        setCurrentRole(data.user.role);
+
+        const authorized: Business[] = data.authorizedBusinesses || (data.business ? [data.business] : []);
+        setBusinesses(authorized);
+
+        const chosenBiz: Business | null = data.business || (authorized.length > 0 ? authorized[0] : null);
+        setCurrentBusiness(chosenBiz);
+
+        if (typeof window !== 'undefined' && chosenBiz) {
+          localStorage.setItem('orderone_active_biz_id', chosenBiz.id);
+        }
+
         return {
           success: true,
-          hasBusiness: Boolean(session?.business && (session?.businesses?.length ?? 0) > 0),
+          hasBusiness: Boolean(chosenBiz),
         };
       }
       return { success: false, error: data.error || 'Invalid email or password' };
@@ -164,6 +189,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusiness(null);
       setBusinesses([]);
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('orderone_auth_token');
         localStorage.removeItem('orderone_active_biz_id');
         localStorage.removeItem('antigravity_active_biz_id');
       }
@@ -175,6 +201,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await res.json();
       if (data.success && data.user) {
+        if (typeof window !== 'undefined' && data.token) {
+          localStorage.setItem('orderone_auth_token', data.token);
+        }
         await checkSession();
         return { success: true };
       }
@@ -198,6 +227,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCurrentBusiness(null);
       setBusinesses([]);
       if (typeof window !== 'undefined') {
+        localStorage.removeItem('orderone_auth_token');
         localStorage.removeItem('orderone_active_biz_id');
         localStorage.removeItem('antigravity_active_biz_id');
       }
@@ -209,6 +239,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await res.json();
       if (data.success && data.user && data.business) {
+        if (typeof window !== 'undefined' && data.token) {
+          localStorage.setItem('orderone_auth_token', data.token);
+        }
         await checkSession();
         return { success: true, business: data.business };
       }
@@ -220,9 +253,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('orderone_auth_token') : null;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      await fetch('/api/auth/logout', { method: 'POST', headers });
     } catch (err) {}
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('orderone_auth_token');
       localStorage.removeItem('orderone_active_biz_id');
       localStorage.removeItem('antigravity_active_biz_id');
     }

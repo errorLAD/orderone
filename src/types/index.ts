@@ -120,6 +120,17 @@ export interface BusinessSettings {
   storefrontDesign?: StorefrontDesignSettings;
   gst?: GstInvoiceSettings;
   ownerName?: string;
+  previousSlugs?: string[];
+  aliases?: string[];
+}
+
+export interface ModuleEntitlement {
+  allowed: boolean;
+  isPrimaryModule: boolean;
+  planId: string;
+  planName: string;
+  requiresUpgrade: boolean;
+  reason: string;
 }
 
 export interface Business {
@@ -127,6 +138,7 @@ export interface Business {
   slug: string;
   name: string;
   type: BusinessType;
+  category?: BusinessType;
   ownerId?: string;
   ownerName?: string;
   description: string;
@@ -136,6 +148,8 @@ export interface Business {
   logoUrl?: string;
   isStoreOpen?: boolean;
   onlineOrderingEnabled?: boolean;
+  storeEntitlement?: ModuleEntitlement;
+  menuEntitlement?: ModuleEntitlement;
   settings: BusinessSettings;
   subscription: {
     planId: string;

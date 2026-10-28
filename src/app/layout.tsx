@@ -23,7 +23,10 @@ export const metadata: Metadata = {
   twitter: DEFAULT_SEO.twitter,
   robots: DEFAULT_SEO.robots,
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
     apple: '/favicon.ico',
   },
   verification: {

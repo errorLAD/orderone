@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser } from '@/lib/auth';
+import { authenticateUser, getUserAuthorizedBusinesses } from '@/lib/auth';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -21,10 +21,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const user = result.session.user;
+    let authorizedBusinesses: any[] = [];
+    try {
+      authorizedBusinesses = await getUserAuthorizedBusinesses(user);
+    } catch (bizErr) {
+      console.error('Failed to fetch authorized businesses on login:', bizErr);
+    }
+
+    let business = null;
+    if (user.businessId) {
+      business = authorizedBusinesses.find((b) => b.id === user.businessId) || null;
+    }
+    if (!business && authorizedBusinesses.length > 0) {
+      business = authorizedBusinesses[0];
+    }
+
     const response = NextResponse.json({
       success: true,
-      user: result.session.user,
+      user,
       token: result.session.token,
+      business,
+      authorizedBusinesses,
     });
 
     // Set secure HTTP-only cookie

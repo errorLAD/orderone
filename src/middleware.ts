@@ -5,6 +5,14 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('saas_session')?.value;
   const { pathname } = request.nextUrl;
 
+  // Enforce HTTPS in production to prevent cookie rejection
+  const proto = request.headers.get('x-forwarded-proto');
+  if (process.env.NODE_ENV === 'production' && proto === 'http') {
+    const httpsUrl = request.nextUrl.clone();
+    httpsUrl.protocol = 'https:';
+    return NextResponse.redirect(httpsUrl, 301);
+  }
+
   if (pathname.startsWith('/dashboard')) {
     if (!sessionCookie) {
       const loginUrl = new URL('/login', request.url);

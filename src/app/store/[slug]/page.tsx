@@ -29,7 +29,10 @@ import {
   Shirt,
   Smartphone,
   Package,
+  UtensilsCrossed,
+  Info,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Business, Category, Product, OrderSourceType } from '@/types';
 import { formatINR, cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
@@ -84,12 +87,33 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
           document.title = `${biz.name} | Storefront`;
         }
 
+        const bizCategory = (biz.category || biz.type || '').toLowerCase();
+        const isFood = ['restaurant', 'cafe', 'bakery', 'cloud_kitchen', 'food_truck', 'icecream', 'juice_bar', 'juice_chaat'].includes(bizCategory);
+        const hasStore = biz.storeEntitlement?.allowed ?? Boolean(biz.settings?.modules?.store);
+        const hasMenu = biz.menuEntitlement?.allowed ?? Boolean(biz.settings?.modules?.menu ?? isFood);
+
+        // Seamless auto-redirect: If this is a food/dining establishment without active retail store, forward directly to its live food menu
+        if (!hasStore && hasMenu) {
+          router.replace(`/menu/${params.slug}`);
+          return;
+        }
+
         const [catRes, prodRes] = await Promise.all([
           fetch(`/api/categories?businessId=${biz.id}&sourceType=store`),
           fetch(`/api/products?businessId=${biz.id}&sourceType=store`),
         ]);
         const catData = await catRes.json();
         const prodData = await prodRes.json();
+
+        // Fallback: If retail store has 0 products/categories but dining menu is active, route to menu
+        if (
+          hasMenu &&
+          (!catData.categories || catData.categories.length === 0) &&
+          (!prodData.products || prodData.products.length === 0)
+        ) {
+          router.replace(`/menu/${params.slug}`);
+          return;
+        }
 
         if (catData.success) setCategories(catData.categories);
         if (prodData.success) setProducts(prodData.products.filter((p: Product) => p.isAvailable));
@@ -319,12 +343,65 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
     );
   }
 
-  if (!business || !business.settings.modules.store) {
+  if (!business) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <Store className="w-12 h-12 text-slate-300 mb-3" />
+        <h2 className="text-lg font-black text-slate-800">Storefront Not Found</h2>
+        <p className="text-xs text-slate-500 mt-1">
+          The requested store identifier could not be located.
+        </p>
+      </div>
+    );
+  }
+
+  const bizCategory = (business.category || business.type || '').toLowerCase();
+  const isFoodCategory = ['restaurant', 'cafe', 'bakery', 'cloud_kitchen', 'food_truck', 'icecream', 'juice_bar', 'juice_chaat'].includes(bizCategory);
+  const isRetailCategory = !isFoodCategory;
+  const hasStoreAccess =
+    business.storeEntitlement?.allowed ??
+    Boolean(business.settings?.modules?.store || isRetailCategory);
+
+  if (!hasStoreAccess) {
+    const isFood = !isRetailCategory;
+    const hasMenuModule = business.menuEntitlement?.allowed ?? Boolean(business.settings?.modules?.menu ?? isFood);
+
+    if (hasMenuModule) {
+      return (
+        <div className="min-h-screen bg-orange-50/40 flex flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-orange-200/80 p-8 shadow-xs flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-4">
+              <UtensilsCrossed className="w-7 h-7 animate-pulse" />
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-orange-100 text-orange-800 border border-orange-200 mb-2">
+              Restaurant & Food Menu
+            </span>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight mb-2">
+              {business.name || 'Restaurant'} Digital Menu
+            </h2>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6">
+              This establishment operates a digital restaurant menu for table dining, takeaway, and online food orders.
+            </p>
+            <Link
+              href={`/menu/${params.slug}`}
+              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md transition-all active:scale-[0.98]"
+            >
+              <UtensilsCrossed className="w-4 h-4" />
+              <span>Open Live Food Menu & Order</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
         <Store className="w-12 h-12 text-slate-300 mb-3" />
         <h2 className="text-lg font-black text-slate-800">Digital Store Not Available</h2>
-        <p className="text-xs text-slate-500 mt-1">This business does not have the retail store module active.</p>
+        <p className="text-xs text-slate-500 mt-1">
+          This business does not have the retail store module active under their subscription.
+        </p>
       </div>
     );
   }

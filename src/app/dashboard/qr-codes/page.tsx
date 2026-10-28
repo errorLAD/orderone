@@ -40,6 +40,25 @@ export default function QrCodesPage() {
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://orderone.in';
 
+  // Automatically align initial QR code type with the business's active module
+  useEffect(() => {
+    if (currentBusiness) {
+      const isFood = ['restaurant', 'cafe', 'bakery', 'juice_chaat'].includes(
+        currentBusiness.category || currentBusiness.type || ''
+      );
+      const hasStore = currentBusiness.settings?.modules?.store ?? false;
+      const hasMenu = currentBusiness.settings?.modules?.menu ?? false;
+
+      setSelectedType((prev) => {
+        if (prev === 'store' && !hasStore && hasMenu) return 'menu';
+        if (prev === 'menu' && !hasMenu && hasStore) return 'store';
+        if (prev === 'table' && !hasMenu && hasStore) return 'store';
+        if (prev === 'store' && isFood && hasMenu) return 'menu';
+        return prev;
+      });
+    }
+  }, [currentBusiness]);
+
   // Fetch UPI settings for Gold business
   useEffect(() => {
     if (currentBusiness && isGoldPlan) {

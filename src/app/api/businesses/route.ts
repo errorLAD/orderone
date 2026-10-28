@@ -3,6 +3,26 @@ import { getAllBusinesses, getBusinessById, getBusinessBySlug, createBusiness, u
 import { getCurrentUserFromRequest, getUserAuthorizedBusinesses, isUserAuthorizedForBusiness } from '@/lib/auth';
 import { getCategoryConfig } from '@/lib/categories';
 import { pgQuery } from '@/lib/postgres';
+import { getBusinessStoreEntitlement, getBusinessMenuEntitlement } from '@/lib/subscriptionLimits';
+import { generateUniqueBusinessSlug } from '@/lib/slug';
+import { Business } from '@/types';
+
+async function enrichBusinessEntitlements(biz: Business): Promise<Business> {
+  try {
+    const [storeEntitlement, menuEntitlement] = await Promise.all([
+      getBusinessStoreEntitlement(biz),
+      getBusinessMenuEntitlement(biz),
+    ]);
+    return {
+      ...biz,
+      storeEntitlement,
+      menuEntitlement,
+    };
+  } catch (err) {
+    console.error('enrichBusinessEntitlements error:', err);
+    return biz;
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,13 +33,15 @@ export async function GET(req: NextRequest) {
     if (id) {
       const biz = await getBusinessById(id);
       if (!biz) return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
-      return NextResponse.json({ success: true, business: biz });
+      const enriched = await enrichBusinessEntitlements(biz);
+      return NextResponse.json({ success: true, business: enriched });
     }
 
     if (slug) {
       const biz = await getBusinessBySlug(slug);
       if (!biz) return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
-      return NextResponse.json({ success: true, business: biz });
+      const enriched = await enrichBusinessEntitlements(biz);
+      return NextResponse.json({ success: true, business: enriched });
     }
 
     // Unrestricted business list requires authentication and returns ONLY user-authorized businesses
@@ -33,11 +55,13 @@ export async function GET(req: NextRequest) {
 
     if (currentUser.role === 'admin') {
       const businesses = await getAllBusinesses();
-      return NextResponse.json({ success: true, businesses });
+      const enriched = await Promise.all(businesses.map(enrichBusinessEntitlements));
+      return NextResponse.json({ success: true, businesses: enriched });
     }
 
     const businesses = await getUserAuthorizedBusinesses(currentUser);
-    return NextResponse.json({ success: true, businesses });
+    const enriched = await Promise.all(businesses.map(enrichBusinessEntitlements));
+    return NextResponse.json({ success: true, businesses: enriched });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -61,11 +85,8 @@ export async function POST(req: NextRequest) {
     const config = getCategoryConfig(category);
     const isFood = config.primaryModule === 'menu';
 
-    // Generate unique slug
-    let baseSlug = bizName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    if (!baseSlug) baseSlug = 'store';
-    const slugCheck = await pgQuery(`SELECT id FROM public.businesses WHERE slug = $1`, [baseSlug]);
-    const finalSlug = slugCheck.rows.length > 0 ? `${baseSlug}-${Math.random().toString(36).substring(2, 6)}` : baseSlug;
+    // Generate unique, stable slug supporting duplicate business names in different locations
+    const finalSlug = await generateUniqueBusinessSlug(bizName, body.address);
 
     const businessSettings = {
       modules: {
@@ -118,7 +139,8 @@ export async function POST(req: NextRequest) {
       await pgQuery(`UPDATE public.users SET business_id = $1 WHERE id = $2`, [newBiz.id, currentUser.id]);
     }
 
-    return NextResponse.json({ success: true, business: newBiz });
+    const enriched = await enrichBusinessEntitlements(newBiz);
+    return NextResponse.json({ success: true, business: enriched });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });
   }
@@ -162,7 +184,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, business: updated });
+    const enriched = await enrichBusinessEntitlements(updated);
+    return NextResponse.json({ success: true, business: enriched });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

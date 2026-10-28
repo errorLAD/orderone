@@ -9,8 +9,19 @@ export async function GET(req: NextRequest) {
     const user = await getCurrentUserFromRequest(req);
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized', user: null, business: null, authorizedBusinesses: [] },
-        { status: 401 }
+        {
+          success: false,
+          authenticated: false,
+          user: null,
+          business: null,
+          authorizedBusinesses: [],
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          },
+        }
       );
     }
 
@@ -37,12 +48,20 @@ export async function GET(req: NextRequest) {
       business = authorizedBusinesses[0];
     }
 
-    return NextResponse.json({
-      success: true,
-      user,
-      business,
-      authorizedBusinesses,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        authenticated: true,
+        user,
+        business,
+        authorizedBusinesses,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    );
   } catch (err) {
     console.error('/api/auth/me error:', err);
     return NextResponse.json(
