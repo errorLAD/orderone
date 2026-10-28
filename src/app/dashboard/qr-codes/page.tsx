@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
 import { buildUpiPaymentUri } from '@/lib/upiQr';
 import Link from 'next/link';
+import { AcrylicStandeeCard } from '@/components/dashboard/AcrylicStandeeCard';
 
 export default function QrCodesPage() {
   const { currentBusiness } = useApp();
@@ -44,8 +45,21 @@ export default function QrCodesPage() {
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://orderone.in';
 
-  // Automatically align initial QR code type with the business's active module
+  // Automatically align initial QR code type with the business's active module or URL params
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      const qType = sp.get('type') as any;
+      const qRoom = sp.get('room');
+      const qTable = sp.get('table');
+      if (qType && ['store', 'menu', 'table', 'room', 'payment_qr'].includes(qType)) {
+        setSelectedType(qType);
+        if (qRoom) setRoomNumber(qRoom);
+        if (qTable) setTableNumber(qTable);
+        return;
+      }
+    }
+
     if (currentBusiness) {
       if (isHotel) {
         setSelectedType('room');
@@ -168,11 +182,11 @@ export default function QrCodesPage() {
               <QrCode className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-black text-slate-900 tracking-tight">
-              QR Code Posters & Storefront URLs
+              QR Code Acrylic Standees & Storefront Posters
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Generate and print branded tabletop posters for your store, food menu, and individual dining tables.
+            Generate, customize and download print-ready acrylic table standees (A5, 4x6&quot;, A4) that fit standard tabletop holders.
           </p>
         </div>
 
@@ -180,16 +194,17 @@ export default function QrCodesPage() {
           <button
             onClick={handleDownload}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-2xs"
+            title="Download QR square PNG only"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Download PNG</span>
+            <span>Raw QR PNG</span>
           </button>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print Branded Poster</span>
+            <span>Print Standee</span>
           </button>
         </div>
       </div>
@@ -444,82 +459,28 @@ export default function QrCodesPage() {
         </div>
       </div>
 
-      {/* Print-Ready Branded Poster Preview Card */}
-      <div className="flex justify-center pt-4">
-        <div className="w-full max-w-sm bg-white rounded-3xl border-2 border-slate-300 p-5 sm:p-8 text-center shadow-xl flex flex-col items-center print:shadow-none print:border print:m-0 print:max-w-none">
-          {/* Business branding */}
-          {currentBusiness?.logoUrl ? (
-            <img
-              src={currentBusiness.logoUrl}
-              alt={currentBusiness.name}
-              className="w-16 h-16 rounded-2xl object-cover border border-slate-200 mb-3"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl mb-3">
-              {currentBusiness?.name.slice(0, 2).toUpperCase() || 'SAAS'}
-            </div>
-          )}
-
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">
-            {currentBusiness?.name || 'Store / Restaurant'}
-          </h2>
-
-          <p className="text-xs text-slate-500 mt-1 max-w-xs">
-            {selectedType === 'store'
-              ? 'Scan to browse products & order online'
-              : selectedType === 'menu'
-              ? 'Scan to view our digital menu & order food'
-              : selectedType === 'table'
-              ? `Order directly to ${tableNumber}`
-              : selectedType === 'room'
-              ? `In-room dining & food delivery directly to Room ${roomNumber}`
-              : `Scan with any UPI App to Pay ₹${paymentAmount || '0.00'}`}
-          </p>
-
-          {/* Room pill, Table pill or Payment pill */}
-          {selectedType === 'room' && (
-            <div className="mt-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-black tracking-wide shadow-xs">
-              🛏️ Delivering to Room {roomNumber}
-            </div>
-          )}
-
-          {selectedType === 'table' && (
-            <div className="mt-2 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-black tracking-wide">
-              🍽️ {tableNumber}
-            </div>
-          )}
-
-          {selectedType === 'payment_qr' && (
-            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black tracking-wide border border-emerald-300">
-              <span>💳 Pay ₹{paymentAmount} • Ref: {orderReference}</span>
-            </div>
-          )}
-
-          {/* High-res QR Canvas */}
-          <div className="my-6 p-4 rounded-2xl bg-white border border-slate-200 shadow-md">
-            {qrDataUrl ? (
-              <img src={qrDataUrl} alt="Store QR Code" className="w-56 h-56 object-contain" />
-            ) : (
-              <div className="w-56 h-56 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
-                Generating QR...
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-slate-800">
-              {selectedType === 'payment_qr'
-                ? '⚡ GPay • PhonePe • Paytm • BHIM UPI Accepted'
-                : '⚡ Instant Guest Ordering • No App Needed'}
-            </div>
-            <div className="text-[11px] text-slate-400">
-              {selectedType === 'payment_qr'
-                ? `Direct to ${upiSettings?.payeeName || currentBusiness?.name} • Powered by OrderOne.in`
-                : 'Point your camera to scan • Powered by OrderOne.in'}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Print-Ready Branded Acrylic Standee Component */}
+      {currentBusiness && qrDataUrl && (
+        <AcrylicStandeeCard
+          businessName={currentBusiness.name}
+          businessLogo={currentBusiness.logoUrl}
+          businessCategory={currentBusiness.category || currentBusiness.type}
+          qrCodeUrl={qrDataUrl}
+          targetUrl={targetUrl}
+          type={selectedType}
+          tableNumber={selectedType === 'table' ? tableNumber : undefined}
+          roomNumber={selectedType === 'room' ? roomNumber : undefined}
+          floorNumber={
+            selectedType === 'room'
+              ? hotelRooms.find((r) => r.roomNumber === roomNumber)?.floor
+              : undefined
+          }
+          upiId={upiSettings?.upiId}
+          payeeName={upiSettings?.payeeName}
+          paymentAmount={selectedType === 'payment_qr' ? paymentAmount : undefined}
+          orderReference={selectedType === 'payment_qr' ? orderReference : undefined}
+        />
+      )}
     </div>
   );
 }

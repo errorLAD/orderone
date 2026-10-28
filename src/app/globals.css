@@ -144,5 +144,19 @@
   }
   body {
     background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* When printing acrylic standee, isolate and fit standard paper with cut marks */
+  #acrylic-standee-card, #printable-standee {
+    filter: none !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin: 15mm auto !important;
+    max-width: 140mm !important;
+    border-color: #cbd5e1 !important;
   }
 }

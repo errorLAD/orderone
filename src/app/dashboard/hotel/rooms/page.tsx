@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import Link from 'next/link';
 import { HotelRoom } from '@/types';
 
 export default function HotelRoomsPage() {
@@ -974,14 +975,24 @@ export default function HotelRoomsPage() {
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between gap-2">
-              <button
-                onClick={() => handleCopyRoomUrl(activeQrRoom)}
-                className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
-              >
-                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedLink ? 'Copied' : 'Copy Link'}
-              </button>
+            <div className="p-4 bg-white border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopyRoomUrl(activeQrRoom)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                </button>
+                <Link
+                  href={`/dashboard/qr-codes?type=room&room=${encodeURIComponent(activeQrRoom.roomNumber)}`}
+                  className="px-3 py-2 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-xl transition-colors flex items-center gap-1.5 border border-amber-300/80"
+                  title="Open Acrylic Standee Designer for A5, 4x6, and A4 table stands"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Acrylic Standee Studio</span>
+                </Link>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
@@ -989,7 +1000,7 @@ export default function HotelRoomsPage() {
                   className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Save PNG
+                  Raw QR
                 </button>
                 <button
                   onClick={() => window.print()}
