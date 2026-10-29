@@ -1,22 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Store,
-  Power,
-  ShoppingBag,
   CheckCircle2,
   AlertCircle,
   ExternalLink,
-  Loader2,
   Info,
-  ShieldCheck,
   UtensilsCrossed,
+  ChevronDown,
+  X,
+  Power,
+  ShoppingBag,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 import { getCategoryConfig } from '@/lib/categories';
-import Link from 'next/link';
 
 interface StoreOperationsCardProps {
   className?: string;
@@ -28,6 +28,7 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
   const [isUpdatingStore, setIsUpdatingStore] = useState<boolean>(false);
   const [isUpdatingOrdering, setIsUpdatingOrdering] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showDetails, setShowDetails] = useState<boolean>(false);
 
   if (!currentBusiness) return null;
 
@@ -41,16 +42,14 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
     Boolean(currentBusiness.settings?.modules?.menu);
 
   // Primary live storefront link:
-  // For food category (e.g. Royal Kitchen): /menu/[slug]
-  // For retail category: /store/[slug]
   const primaryUrl = isFood ? `/menu/${currentBusiness.slug}` : `/store/${currentBusiness.slug}`;
-  const primaryLabel = isFood ? 'View Public Menu' : 'View Public Storefront';
+  const primaryLabel = isFood ? 'View Public Menu' : 'View Storefront';
   const PrimaryIcon = isFood ? UtensilsCrossed : Store;
 
   // Secondary link if both channels are active
   const hasDualChannels = hasStoreModule && hasMenuModule;
   const secondaryUrl = isFood ? `/store/${currentBusiness.slug}` : `/menu/${currentBusiness.slug}`;
-  const secondaryLabel = isFood ? 'View Retail Store' : 'View Menu';
+  const secondaryLabel = isFood ? 'View Store' : 'View Menu';
 
   const isStoreOpen = currentBusiness.isStoreOpen ?? currentBusiness.settings?.isStoreOpen ?? true;
   const onlineOrderingEnabled =
@@ -68,14 +67,14 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
       setFeedback({
         type: 'success',
         message: targetStatus
-          ? (isFood ? 'Kitchen is now marked OPEN for dining and online orders.' : 'Store is now marked OPEN for business.')
-          : (isFood ? 'Kitchen is now marked CLOSED. Customers cannot place new food orders.' : 'Store is now marked CLOSED. Customers cannot place new orders.'),
+          ? (isFood ? 'Kitchen is now marked OPEN.' : 'Store is now marked OPEN.')
+          : (isFood ? 'Kitchen is now marked CLOSED.' : 'Store is now marked CLOSED.'),
       });
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 3500);
     } else {
       setFeedback({
         type: 'error',
-        message: res.error || 'Failed to update store status. Rolled back.',
+        message: res.error || 'Failed to update store status.',
       });
     }
     setIsUpdatingStore(false);
@@ -92,13 +91,13 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
         type: 'success',
         message: targetStatus
           ? 'Online ordering is now ENABLED.'
-          : (isFood ? 'Online food ordering is PAUSED. Customers can still browse menu items.' : 'Online ordering is PAUSED. Customers can still browse products.'),
+          : (isFood ? 'Online food ordering is PAUSED.' : 'Online ordering is PAUSED.'),
       });
-      setTimeout(() => setFeedback(null), 4000);
+      setTimeout(() => setFeedback(null), 3500);
     } else {
       setFeedback({
         type: 'error',
-        message: res.error || 'Failed to update ordering status. Rolled back.',
+        message: res.error || 'Failed to update ordering status.',
       });
     }
     setIsUpdatingOrdering(false);
@@ -107,242 +106,179 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
   return (
     <div
       className={cn(
-        'bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden transition-all',
+        'bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all',
         className
       )}
     >
-      {/* Top Banner / Header */}
-      <div className="p-4 sm:p-5 bg-linear-to-r from-slate-50 via-white to-slate-50/50 border-b border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      {/* Sleek, Single-Row Operations Strip */}
+      <div className="p-3 sm:px-4 sm:py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Left: Module Identity & Live Acceptance Status */}
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
             className={cn(
-              'p-2.5 rounded-xl border transition-colors',
+              'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-colors',
               isStoreOpen
-                ? (isFood ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
-                : 'bg-rose-50 text-rose-700 border-rose-200'
+                ? isFood
+                  ? 'bg-orange-50 text-orange-600 border-orange-200'
+                  : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                : 'bg-rose-50 text-rose-600 border-rose-200'
             )}
           >
-            <PrimaryIcon className="w-5 h-5" />
+            <PrimaryIcon className="w-4 h-4" />
           </div>
-          <div>
+
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-black text-slate-900 tracking-tight">
-                {isFood ? 'Restaurant & Kitchen Operations' : 'Store Operations'}
-              </h2>
-              {/* Status Badge */}
-              {isStoreOpen ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  {isFood ? 'Kitchen Open' : 'Store Open'}
+              <span className="text-xs font-black text-slate-900 truncate">
+                {isFood ? 'Kitchen Operations' : 'Store Operations'}
+              </span>
+
+              {canAcceptOnlineOrders ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Accepting Orders
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                  <span className="w-2 h-2 rounded-full bg-rose-500" />
-                  {isFood ? 'Kitchen Closed' : 'Store Closed'}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  Orders Blocked
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isFood
-                ? 'Manage live dining kitchen operating status and public digital menu ordering independently.'
-                : 'Manage live physical store operating status and public online ordering independently.'}
-            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
+        {/* Center: The Two Fast Operational Toggles */}
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap bg-slate-50/90 px-3 py-1.5 rounded-xl border border-slate-200/70">
+          {/* Toggle 1: Kitchen / Store Open */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleStoreStatus}
+              disabled={isUpdatingStore}
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+                isStoreOpen
+                  ? isFood
+                    ? 'bg-orange-600'
+                    : 'bg-emerald-600'
+                  : 'bg-slate-300',
+                isUpdatingStore && 'opacity-60 cursor-not-allowed'
+              )}
+              title={isStoreOpen ? 'Mark Closed' : 'Mark Open'}
+              aria-label="Toggle Store Open/Closed"
+            >
+              <span
+                className={cn(
+                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out',
+                  isStoreOpen ? 'translate-x-4' : 'translate-x-0'
+                )}
+              />
+            </button>
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">
+              {isStoreOpen
+                ? isFood
+                  ? 'Kitchen Open'
+                  : 'Store Open'
+                : isFood
+                ? 'Kitchen Closed'
+                : 'Store Closed'}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+          {/* Toggle 2: Online Ordering ON / OFF */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleOnlineOrdering}
+              disabled={isUpdatingOrdering}
+              className={cn(
+                'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+                onlineOrderingEnabled ? 'bg-sky-600' : 'bg-slate-300',
+                isUpdatingOrdering && 'opacity-60 cursor-not-allowed'
+              )}
+              title={onlineOrderingEnabled ? 'Pause Online Orders' : 'Enable Online Orders'}
+              aria-label="Toggle Online Ordering"
+            >
+              <span
+                className={cn(
+                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out',
+                  onlineOrderingEnabled ? 'translate-x-4' : 'translate-x-0'
+                )}
+              />
+            </button>
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">
+              {onlineOrderingEnabled ? 'Online Orders: ON' : 'Online Orders: Paused'}
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Quick Links & Details Expander */}
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             href={primaryUrl}
             target="_blank"
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl shadow-2xs border transition-all',
-              isFood
-                ? 'text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200'
-                : 'text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200'
-            )}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 transition shadow-2xs"
           >
-            <PrimaryIcon className="w-3.5 h-3.5" />
             <span>{primaryLabel}</span>
-            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+            <ExternalLink className="w-3 h-3 text-slate-400" />
           </Link>
 
           {hasDualChannels && (
             <Link
               href={secondaryUrl}
               target="_blank"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-all"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-700 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 transition shadow-2xs"
             >
               <span>{secondaryLabel}</span>
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+              <ExternalLink className="w-3 h-3 text-slate-400" />
             </Link>
           )}
+
+          <button
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+            title="Toggle rules & explanations"
+            aria-label="Toggle details"
+          >
+            <ChevronDown
+              className={cn('w-4 h-4 transition-transform duration-200', showDetails && 'rotate-180')}
+            />
+          </button>
         </div>
       </div>
 
-      {/* Control Grid: Control A & Control B */}
-      <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* CONTROL A: STORE / KITCHEN STATUS (OPEN / CLOSED) */}
-        <div
-          className={cn(
-            'p-4 rounded-xl border transition-all flex flex-col justify-between',
-            isStoreOpen
-              ? 'bg-emerald-50/40 border-emerald-200/80 shadow-2xs'
-              : 'bg-rose-50/40 border-rose-200/80 shadow-2xs'
-          )}
-        >
-          <div>
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <Power className={cn('w-4 h-4', isStoreOpen ? 'text-emerald-600' : 'text-rose-600')} />
-                <h3 className="text-xs font-black tracking-wide text-slate-900 uppercase">
-                  {isFood ? 'Control A: Kitchen / Dining Status' : 'Control A: Store Status'}
-                </h3>
-              </div>
-              <span
-                className={cn(
-                  'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border',
-                  isStoreOpen
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                    : 'bg-rose-100 text-rose-800 border-rose-300'
-                )}
-              >
-                {isStoreOpen ? (isFood ? 'Kitchen Open' : 'Store Open') : (isFood ? 'Kitchen Closed' : 'Store Closed')}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
-              {isStoreOpen
-                ? (isFood
-                    ? 'Kitchen is open for food orders. Customers can dine in, takeaway, or order delivery if online ordering is also ON.'
-                    : 'Store is open for business. Customers can visit and place orders if online ordering is also ON.')
-                : (isFood
-                    ? 'Kitchen is temporarily closed. The menu displays "Kitchen Closed" banner and pauses order checkout while keeping dishes browseable.'
-                    : 'Store is temporarily closed. The storefront shows "Store Closed" banner and prevents checkout while keeping catalog browseable.')}
-            </p>
-          </div>
-
-          <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">
-              {isStoreOpen ? (isFood ? 'Mark Kitchen Closed' : 'Mark Store Closed') : (isFood ? 'Mark Kitchen Open' : 'Mark Store Open')}
+      {/* Collapsible Details Drawer (Out of the way by default) */}
+      {showDetails && (
+        <div className="px-4 py-3 bg-slate-50/90 border-t border-slate-200/60 text-xs text-slate-600 space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+          <div className="flex items-center gap-2 text-slate-700 font-semibold">
+            <Info className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>
+              <strong>Rule:</strong> Customers can submit orders only when{' '}
+              <code className="text-slate-800 bg-slate-200/70 px-1 py-0.5 rounded text-[11px]">
+                {isFood ? 'Kitchen Open' : 'Store Open'}
+              </code>{' '}
+              AND{' '}
+              <code className="text-slate-800 bg-slate-200/70 px-1 py-0.5 rounded text-[11px]">
+                Online Orders ON
+              </code>
+              .
             </span>
-            <button
-              onClick={handleToggleStoreStatus}
-              disabled={isUpdatingStore}
-              className={cn(
-                'relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2',
-                isStoreOpen ? 'bg-emerald-600' : 'bg-slate-300',
-                isUpdatingStore && 'opacity-60 cursor-not-allowed'
-              )}
-              title={isStoreOpen ? 'Click to close' : 'Click to open'}
-              aria-label="Toggle store open/closed"
-            >
-              <span
-                className={cn(
-                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
-                  isStoreOpen ? 'translate-x-6' : 'translate-x-0'
-                )}
-              />
-            </button>
           </div>
+          <p className="text-[11px] text-slate-500 pl-5 leading-relaxed">
+            When online orders are paused, customers can still browse your menu/catalog and prices, but cart checkout is temporarily blocked.
+          </p>
         </div>
-
-        {/* CONTROL B: ONLINE ORDERING (ON / OFF) */}
-        <div
-          className={cn(
-            'p-4 rounded-xl border transition-all flex flex-col justify-between',
-            onlineOrderingEnabled
-              ? 'bg-sky-50/40 border-sky-200/80 shadow-2xs'
-              : 'bg-amber-50/40 border-amber-200/80 shadow-2xs'
-          )}
-        >
-          <div>
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <ShoppingBag
-                  className={cn('w-4 h-4', onlineOrderingEnabled ? 'text-sky-600' : 'text-amber-600')}
-                />
-                <h3 className="text-xs font-black tracking-wide text-slate-900 uppercase">
-                  Control B: Online Ordering
-                </h3>
-              </div>
-              <span
-                className={cn(
-                  'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border',
-                  onlineOrderingEnabled
-                    ? 'bg-sky-100 text-sky-800 border-sky-300'
-                    : 'bg-amber-100 text-amber-800 border-amber-300'
-                )}
-              >
-                {onlineOrderingEnabled ? 'Ordering ON' : 'Ordering OFF'}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
-              {onlineOrderingEnabled
-                ? (isFood
-                    ? 'Online food ordering is active. Customers can add items to cart and submit food orders (requires Kitchen Open).'
-                    : 'Online orders are accepted. Customers can add items to cart and submit orders (requires Store Open).')
-                : (isFood
-                    ? 'Online food ordering is paused. Customers can browse dishes and prices, but Add to Cart and KOT are disabled.'
-                    : 'Online ordering is paused. Customers can browse products and prices, but Add to Cart and Checkout are disabled.')}
-            </p>
-          </div>
-
-          <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">
-              {onlineOrderingEnabled ? 'Pause Online Orders' : 'Enable Online Orders'}
-            </span>
-            <button
-              onClick={handleToggleOnlineOrdering}
-              disabled={isUpdatingOrdering}
-              className={cn(
-                'relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-sky-600 focus:ring-offset-2',
-                onlineOrderingEnabled ? 'bg-sky-600' : 'bg-slate-300',
-                isUpdatingOrdering && 'opacity-60 cursor-not-allowed'
-              )}
-              title={onlineOrderingEnabled ? 'Click to pause online ordering' : 'Click to enable online ordering'}
-              aria-label="Toggle online ordering ON/OFF"
-            >
-              <span
-                className={cn(
-                  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out',
-                  onlineOrderingEnabled ? 'translate-x-6' : 'translate-x-0'
-                )}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Rules Summary Matrix Bar */}
-      <div className="px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-slate-400 shrink-0" />
-          <span className="text-slate-600">
-            <strong>Rule:</strong> Can Accept Online Orders = <code>Store Open</code> AND{' '}
-            <code>Online Ordering ON</code>
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-slate-500 font-medium">Customer New Order Status:</span>
-          {canAcceptOnlineOrders ? (
-            <span className="font-black text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded border border-emerald-300">
-              ✓ ACCEPTING ORDERS
-            </span>
-          ) : (
-            <span className="font-black text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded border border-rose-300">
-              ✕ ORDERS BLOCKED
-            </span>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Toast Feedback */}
       {feedback && (
         <div
           className={cn(
-            'px-4 py-2.5 text-xs font-semibold flex items-center justify-between border-t transition-all',
+            'px-4 py-2 text-xs font-semibold flex items-center justify-between border-t transition-all',
             feedback.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-rose-50 text-rose-800 border-rose-200'
@@ -350,17 +286,17 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
         >
           <div className="flex items-center gap-2">
             {feedback.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{feedback.message}</span>
           </div>
           <button
             onClick={() => setFeedback(null)}
-            className="text-[11px] underline opacity-75 hover:opacity-100 ml-3"
+            className="text-[11px] font-bold text-slate-500 hover:text-slate-800 ml-3"
           >
-            Dismiss
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
