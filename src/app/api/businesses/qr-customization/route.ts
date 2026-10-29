@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
           frameStyle: row.frame_style || 'bottom_banner',
           frameText: row.frame_text || 'SCAN TO ORDER',
           frameColor: row.frame_color || '#4F46E5',
-          showLogo: row.show_logo !== false,
+          showLogo: row.show_logo === true,
           customLogoUrl: row.custom_logo_url || undefined,
           centerBadgeType: row.center_badge_type || 'logo',
           centerBadgeText: row.center_badge_text || undefined,
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
         ? frameText.trim().slice(0, 50)
         : 'SCAN TO ORDER';
 
-    const cleanShowLogo = showLogo !== false;
+    const cleanShowLogo = showLogo === true;
     const cleanCenterBadgeType = ['logo', 'table_room', 'both'].includes(centerBadgeType)
       ? centerBadgeType
       : 'logo';

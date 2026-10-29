@@ -434,90 +434,104 @@ export default function PosBillingPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* 1. Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
-              <Calculator className="w-6 h-6" />
+    <div className="space-y-3.5 max-w-7xl mx-auto pb-12">
+      {/* 1. Compact Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+            <Calculator className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-black text-slate-900 tracking-tight">
+                POS / Counter Billing
+              </h1>
+              <span
+                className={cn(
+                  'text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider',
+                  isGoldPlan
+                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                )}
+              >
+                {isGoldPlan ? '★ Gold Entitlement Active' : 'Gold Feature (Locked)'}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                  POS / Counter Billing
-                </h1>
-                <span
-                  className={cn(
-                    'text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider',
-                    isGoldPlan
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  )}
-                >
-                  {isGoldPlan ? '★ Gold Entitlement Active' : 'Gold Feature (Locked)'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Generate high-speed bills for walk-in counter customers with automatic taxes, custom discounts & PDF receipts.
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-500">
+              High-speed walk-in counter sales with instant tax calculation, receipts & PDF exports.
+            </p>
           </div>
         </div>
 
-        {/* View Toggle Tabs */}
-        <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+        {/* View Toggle Tabs + Store Tax Quick Shortcut */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* Quick GST Tax Setting Button */}
           <button
-            onClick={() => setActiveTab('register')}
-            className={cn(
-              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition',
-              activeTab === 'register'
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
+            type="button"
+            onClick={() => {
+              setModalTaxRate(taxRate);
+              setShowTaxModal(true);
+            }}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            title="Configure Store Tax / GST Rate"
           >
-            <Calculator className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Counter Register</span>
-            {cart.length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold ml-1">
-                {cart.length}
-              </span>
-            )}
+            <Settings className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Tax: {taxRate}%</span>
           </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={cn(
-              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition',
-              activeTab === 'history'
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
-          >
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
-            <span>POS Sales History</span>
-          </button>
+
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button
+              onClick={() => setActiveTab('register')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition',
+                activeTab === 'register'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              <Calculator className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Register</span>
+              {cart.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold ml-0.5">
+                  {cart.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition',
+                activeTab === 'history'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
+              <span>History</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 2. Upgrade Banner for Basic Plan Users */}
       {!isGoldPlan && (
-        <div className="p-6 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 border border-amber-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
-          <div className="space-y-1">
+        <div className="p-4 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 border border-amber-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <span className="p-1 rounded-md bg-amber-200 text-amber-900">
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-3.5 h-3.5" />
               </span>
-              <h2 className="text-sm font-bold text-amber-950 uppercase tracking-wide">
+              <h2 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
                 Gold Plan Upgrade Required for POS Counter Billing
               </h2>
             </div>
-            <p className="text-xs text-amber-800 leading-relaxed max-w-2xl">
-              POS Counter Billing is an exclusive Gold tier feature. Upgrade now to generate walk-in bills, apply discounts & GST, safely deduct catalog inventory, and download print-ready PDF receipts without hardware printer dependencies.
+            <p className="text-[11px] text-amber-800 max-w-2xl">
+              POS Counter Billing is an exclusive Gold tier feature. Upgrade to create counter bills, apply discounts & GST, and download print-ready receipts.
             </p>
           </div>
           <Link
             href="/dashboard/subscription"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm shrink-0"
           >
             <span>Upgrade to Gold (₹149/mo)</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -527,7 +541,7 @@ export default function PosBillingPage() {
 
       {/* Success / Error Alerts */}
       {successToast && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-semibold text-emerald-800 animate-fadeIn">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-semibold text-emerald-800 animate-fadeIn">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successToast}</span>
@@ -539,7 +553,7 @@ export default function PosBillingPage() {
       )}
 
       {errorMessage && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs font-semibold text-rose-800">
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs font-semibold text-rose-800">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMessage}</span>
@@ -552,11 +566,11 @@ export default function PosBillingPage() {
 
       {/* 3. TAB 1: COUNTER REGISTER (Split Grid: Left Catalog, Right Register) */}
       {activeTab === 'register' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column: Product Catalog Picker (7 cols on Desktop) */}
-          <div className="lg:col-span-7 space-y-4">
-            {/* Catalog Search & Category Navigation Bar */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+          <div className="lg:col-span-7 space-y-3">
+            {/* Unified Compact Search & Categories Bar (Saves massive vertical space) */}
+            <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -564,26 +578,26 @@ export default function PosBillingPage() {
                   placeholder="Search products by name, SKU, or barcode..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+                  className="w-full pl-9 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
-            </div>
 
-            {/* Horizontal Categories Bar (Reference Match with Images & Active Indicator) */}
-            <PosCategoryBar
-              categories={categories}
-              products={products}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-            />
+              {/* Compact Category Navigation Bar */}
+              <PosCategoryBar
+                categories={categories}
+                products={products}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            </div>
 
             {/* Products Grid with Photos */}
             {loadingCatalog ? (
