@@ -25,6 +25,7 @@ import {
   Lock,
   Clock,
   BedDouble,
+  Calculator,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -167,6 +168,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           name: 'Dashboard Overview',
           href: '/dashboard',
           icon: LayoutDashboard,
+        },
+      ],
+    },
+
+    // 2. Counter & POS Register
+    {
+      id: 'pos_ops',
+      title: 'Counter & POS',
+      collapsible: false,
+      items: [
+        {
+          name: 'POS Counter Billing',
+          href: '/dashboard/pos',
+          icon: Calculator,
+          badge: isGoldPlan ? 'Gold' : null,
+          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
+          isLocked: !isGoldPlan,
         },
       ],
     },

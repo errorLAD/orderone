@@ -17,6 +17,9 @@ import {
   SubscriptionHistory,
   HotelRoom,
   CustomerDetails,
+  PosBill,
+  PosBillItem,
+  CreatePosBillInput,
 } from '@/types';
 import { generateId, generateTrackingId } from './utils';
 import { resolveBusinessByIdOrSlug, generateUniqueBusinessSlug } from './slug';
@@ -33,6 +36,8 @@ import {
   mapRowToSubscriptionPayment,
   mapRowToSubscriptionHistory,
   mapRowToHotelRoom,
+  mapRowToPosBill,
+  mapRowToPosBillItem,
 } from './postgres';
 import { assertCanCreateRecord, hasActiveGoldAccess } from './subscriptionLimits';
 import { calculateOrderTax, generateInvoiceNumber } from './gstCalculator';
@@ -1357,7 +1362,7 @@ export interface DashboardAnalytics {
     completed: number;
     cancelled: number;
   };
-  salesTrend: { date: string; label: string; storeSales: number; menuSales: number; totalSales: number }[];
+  salesTrend: { date: string; label: string; storeSales: number; menuSales: number; posSales?: number; totalSales: number }[];
   hourlyOrders: { hour: string; count: number; value: number }[];
   topSellingProducts: {
     productId: string;
@@ -1387,32 +1392,55 @@ export async function getAnalytics(
     allBizOrders = allBizOrders.filter((o) => o.sourceType === scope);
   }
 
-  // Calculate Today's orders
+  // Load POS counter bills if viewing unified overview
+  let allPosBills: PosBill[] = [];
+  if (scope === 'all') {
+    try {
+      const posRes = await pgQuery(
+        "SELECT * FROM public.pos_bills WHERE business_id = $1 AND status != 'cancelled'",
+        [businessId]
+      );
+      allPosBills = posRes.rows.map(mapRowToPosBill);
+    } catch (e) {}
+  }
+
+  // Calculate Today's orders & POS bills
   const todayOrders = allBizOrders.filter((o) => new Date(o.createdAt).getTime() >= startOfToday);
+  const todayPosBills = allPosBills.filter((b) => new Date(b.createdAt).getTime() >= startOfToday);
+  const todayPosRevenue = todayPosBills.reduce((sum, b) => sum + b.totalAmount, 0);
 
   // Exclude cancelled/rejected orders from revenue KPI
   const validTodayOrders = todayOrders.filter((o) => o.orderStatus !== 'cancelled' && o.orderStatus !== 'rejected');
-  const todayOrderValue = validTodayOrders.reduce((sum, o) => sum + o.total, 0);
+  const todayOrderValue = validTodayOrders.reduce((sum, o) => sum + o.total, 0) + todayPosRevenue;
 
   // Calculate Yesterday's orders for genuine growth percentage
   const yesterdayOrders = allBizOrders.filter((o) => {
     const t = new Date(o.createdAt).getTime();
     return t >= startOfYesterday && t < startOfToday;
   });
+  const yesterdayPosBills = allPosBills.filter((b) => {
+    const t = new Date(b.createdAt).getTime();
+    return t >= startOfYesterday && t < startOfToday;
+  });
+  const yesterdayPosRevenue = yesterdayPosBills.reduce((sum, b) => sum + b.totalAmount, 0);
+
   const validYesterdayOrders = yesterdayOrders.filter((o) => o.orderStatus !== 'cancelled' && o.orderStatus !== 'rejected');
-  const yesterdayOrderValue = validYesterdayOrders.reduce((sum, o) => sum + o.total, 0);
+  const yesterdayOrderValue = validYesterdayOrders.reduce((sum, o) => sum + o.total, 0) + yesterdayPosRevenue;
 
   const todayOrderValueChange = yesterdayOrderValue === 0
     ? (todayOrderValue > 0 ? 100 : 0)
     : Math.round(((todayOrderValue - yesterdayOrderValue) / yesterdayOrderValue) * 1000) / 10;
 
-  const todayOrdersChange = yesterdayOrders.length === 0
-    ? (todayOrders.length > 0 ? 100 : 0)
-    : Math.round(((todayOrders.length - yesterdayOrders.length) / yesterdayOrders.length) * 1000) / 10;
+  const totalTodayOrdersCount = todayOrders.length + todayPosBills.length;
+  const totalYesterdayOrdersCount = yesterdayOrders.length + yesterdayPosBills.length;
+
+  const todayOrdersChange = totalYesterdayOrdersCount === 0
+    ? (totalTodayOrdersCount > 0 ? 100 : 0)
+    : Math.round(((totalTodayOrdersCount - totalYesterdayOrdersCount) / totalYesterdayOrdersCount) * 1000) / 10;
 
   // Today's Payments Collected (Earnings)
   const paidTodayOrders = todayOrders.filter((o) => o.paymentStatus === 'paid');
-  const todayEarnings = paidTodayOrders.reduce((sum, o) => sum + o.total, 0);
+  const todayEarnings = paidTodayOrders.reduce((sum, o) => sum + o.total, 0) + todayPosRevenue;
 
   const pendingTodayOrders = todayOrders.filter(
     (o) => o.paymentStatus === 'pending' || o.paymentStatus === 'pay_at_counter'
@@ -1479,6 +1507,7 @@ export async function getAnalytics(
 
     let storeSales = 0;
     let menuSales = 0;
+    let posSales = 0;
 
     allBizOrders.forEach((o) => {
       const oTime = new Date(o.createdAt).getTime();
@@ -1488,12 +1517,20 @@ export async function getAnalytics(
       }
     });
 
+    allPosBills.forEach((b) => {
+      const bTime = new Date(b.createdAt).getTime();
+      if (bTime >= dayStart && bTime < dayEnd && b.status !== 'cancelled') {
+        posSales += b.totalAmount;
+      }
+    });
+
     salesTrend.push({
       date: d.toISOString().split('T')[0],
       label,
       storeSales: Math.round(storeSales),
       menuSales: Math.round(menuSales),
-      totalSales: Math.round(storeSales + menuSales),
+      posSales: Math.round(posSales),
+      totalSales: Math.round(storeSales + menuSales + posSales),
     });
   }
 
@@ -2545,3 +2582,288 @@ export async function getHotelRoomStats(businessId: string): Promise<{
     floors,
   };
 }
+
+// ============================================================
+// 12. POS / COUNTER BILLING OPERATIONS
+// ============================================================
+
+export async function createPosBill(input: CreatePosBillInput): Promise<PosBill> {
+  const business = await getBusinessById(input.businessId);
+  if (!business) {
+    throw new Error('Business not found');
+  }
+
+  if (!input.items || input.items.length === 0) {
+    throw new Error('At least one item is required to generate a bill');
+  }
+
+  // Fetch all business products
+  const products = await getProducts(input.businessId);
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  const billId = generateId('pos_bill');
+  const billItems: PosBillItem[] = [];
+  let subtotal = 0;
+
+  for (const item of input.items) {
+    if (item.quantity <= 0) {
+      throw new Error(`Quantity for ${item.productName || 'item'} must be greater than zero`);
+    }
+
+    let unitPrice = item.unitPrice;
+    let prodName = item.productName;
+
+    if (item.productId) {
+      const prod = productMap.get(item.productId);
+      if (prod) {
+        prodName = prod.name;
+        // Verify stock if stockQuantity is tracked
+        if (typeof prod.stockQuantity === 'number' && prod.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for "${prod.name}". Available: ${prod.stockQuantity}, Requested: ${item.quantity}`);
+        }
+      }
+    }
+
+    const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
+    subtotal += lineTotal;
+
+    billItems.push({
+      id: generateId('pos_item'),
+      billId,
+      businessId: input.businessId,
+      productId: item.productId || undefined,
+      productName: prodName,
+      unitPrice,
+      quantity: item.quantity,
+      totalPrice: lineTotal,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  subtotal = Math.round(subtotal * 100) / 100;
+
+  // Compute discount
+  let discountAmount = 0;
+  const discountType = input.discountType || 'fixed';
+  const discountVal = Number(input.discountValue || 0);
+
+  if (discountVal > 0) {
+    if (discountType === 'percentage') {
+      discountAmount = Math.min(subtotal, Math.round(((subtotal * discountVal) / 100) * 100) / 100);
+    } else {
+      discountAmount = Math.min(subtotal, Math.round(discountVal * 100) / 100);
+    }
+  }
+
+  const taxableAmount = Math.max(0, subtotal - discountAmount);
+
+  // Compute tax
+  const taxRate = typeof input.taxRate === 'number' ? input.taxRate : (business.settings?.orderSettings?.taxRatePercentage || 0);
+  let taxAmount = 0;
+  if (taxRate > 0) {
+    taxAmount = Math.round(((taxableAmount * taxRate) / 100) * 100) / 100;
+  }
+
+  const totalAmount = Math.max(0, Math.round((taxableAmount + taxAmount) * 100) / 100);
+
+  // Generate unique atomic Bill Number (e.g. POS-00101)
+  let billNumber = '';
+  try {
+    const res = await pgQuery('SELECT generate_next_order_token($1, $2) as bill_num', [input.businessId, 'pos']);
+    if (res.rows.length > 0 && res.rows[0].bill_num) {
+      billNumber = res.rows[0].bill_num;
+    }
+  } catch (err) {
+    console.error('Error generating pos bill number via DB function, fallback sequence:', err);
+  }
+
+  if (!billNumber) {
+    const seqKey = `${input.businessId}_pos`;
+    const nextSeq = (cachedDb.sequences[seqKey] || 100) + 1;
+    cachedDb.sequences[seqKey] = nextSeq;
+    const prefix = business.settings?.tokenPrefixPos || 'POS-';
+    billNumber = `${prefix}${String(nextSeq).padStart(5, '0')}`;
+  }
+
+  const nowIso = new Date().toISOString();
+
+  const newBill: PosBill = {
+    id: billId,
+    businessId: input.businessId,
+    billNumber,
+    customerName: input.customerName?.trim() || undefined,
+    customerPhone: input.customerPhone?.trim() || undefined,
+    subtotal,
+    discountType,
+    discountRate: discountVal,
+    discountAmount,
+    taxRate,
+    taxAmount,
+    totalAmount,
+    paymentMethod: input.paymentMethod || 'cash',
+    paymentStatus: 'paid',
+    status: 'completed',
+    notes: input.notes?.trim() || undefined,
+    createdBy: input.createdBy || undefined,
+    items: billItems,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+
+  // Insert into PostgreSQL pos_bills
+  await pgQuery(
+    `INSERT INTO public.pos_bills (
+      id, business_id, bill_number, customer_name, customer_phone,
+      subtotal, discount_type, discount_rate, discount_amount,
+      tax_rate, tax_amount, total_amount, payment_method,
+      payment_status, status, notes, created_by, items,
+      created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5,
+      $6, $7, $8, $9,
+      $10, $11, $12, $13,
+      $14, $15, $16, $17, $18,
+      $19, $20
+    )`,
+    [
+      newBill.id,
+      newBill.businessId,
+      newBill.billNumber,
+      newBill.customerName || null,
+      newBill.customerPhone || null,
+      newBill.subtotal,
+      newBill.discountType,
+      newBill.discountRate,
+      newBill.discountAmount,
+      newBill.taxRate,
+      newBill.taxAmount,
+      newBill.totalAmount,
+      newBill.paymentMethod,
+      newBill.paymentStatus,
+      newBill.status,
+      newBill.notes || null,
+      newBill.createdBy || null,
+      JSON.stringify(newBill.items),
+      newBill.createdAt,
+      newBill.updatedAt,
+    ]
+  );
+
+  // Insert items into public.pos_bill_items
+  for (const item of billItems) {
+    await pgQuery(
+      `INSERT INTO public.pos_bill_items (
+        id, bill_id, business_id, product_id, product_name, unit_price, quantity, total_price, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        item.id,
+        item.billId,
+        item.businessId,
+        item.productId || null,
+        item.productName,
+        item.unitPrice,
+        item.quantity,
+        item.totalPrice,
+        item.createdAt,
+      ]
+    );
+
+    // Safely update inventory stock if stockQuantity is tracked
+    if (item.productId) {
+      await pgQuery(
+        `UPDATE public.products 
+        SET stock_quantity = GREATEST(0, COALESCE(stock_quantity, 0) - $1),
+            is_available = CASE WHEN COALESCE(stock_quantity, 0) - $1 <= 0 THEN false ELSE is_available END
+        WHERE id = $2 AND business_id = $3 AND stock_quantity IS NOT NULL`,
+        [item.quantity, item.productId, input.businessId]
+      );
+    }
+  }
+
+  // Audit log
+  try {
+    await pgQuery(
+      `INSERT INTO public.audit_logs (id, business_id, user_name, action, details, timestamp)
+      VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        generateId('audit'),
+        input.businessId,
+        input.createdBy || 'Counter Staff',
+        'pos_bill_created',
+        `Created counter POS bill #${billNumber} for ₹${totalAmount} (${input.paymentMethod || 'cash'})`,
+        nowIso,
+      ]
+    );
+  } catch (auditErr) {
+    console.error('Audit log error for POS bill creation:', auditErr);
+  }
+
+  return newBill;
+}
+
+export async function getPosBills(
+  businessId: string,
+  options?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{ bills: PosBill[]; totalCount: number }> {
+  const limit = options?.limit || 50;
+  const offset = options?.offset || 0;
+  const search = options?.search?.trim() || '';
+
+  let query = 'SELECT * FROM public.pos_bills WHERE business_id = $1';
+  let countQuery = 'SELECT COUNT(*)::int AS count FROM public.pos_bills WHERE business_id = $1';
+  const params: any[] = [businessId];
+  let paramIdx = 2;
+
+  if (search) {
+    const searchFilter = ` AND (bill_number ILIKE $${paramIdx} OR customer_name ILIKE $${paramIdx} OR customer_phone ILIKE $${paramIdx})`;
+    query += searchFilter;
+    countQuery += searchFilter;
+    params.push(`%${search}%`);
+    paramIdx++;
+  }
+
+  if (options?.startDate) {
+    const startFilter = ` AND created_at >= $${paramIdx}`;
+    query += startFilter;
+    countQuery += startFilter;
+    params.push(options.startDate);
+    paramIdx++;
+  }
+
+  if (options?.endDate) {
+    const endFilter = ` AND created_at <= $${paramIdx}`;
+    query += endFilter;
+    countQuery += endFilter;
+    params.push(options.endDate);
+    paramIdx++;
+  }
+
+  query += ` ORDER BY created_at DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+  const queryParams = [...params, limit, offset];
+
+  const [res, countRes] = await Promise.all([
+    pgQuery(query, queryParams),
+    pgQuery(countQuery, params),
+  ]);
+
+  return {
+    bills: res.rows.map(mapRowToPosBill),
+    totalCount: countRes.rows[0]?.count || 0,
+  };
+}
+
+export async function getPosBillById(businessId: string, billId: string): Promise<PosBill | null> {
+  const res = await pgQuery(
+    'SELECT * FROM public.pos_bills WHERE id = $1 AND business_id = $2',
+    [billId, businessId]
+  );
+  if (res.rows.length === 0) return null;
+  return mapRowToPosBill(res.rows[0]);
+}
+

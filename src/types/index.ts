@@ -137,6 +137,7 @@ export interface BusinessSettings {
   };
   tokenPrefixStore: string; // e.g. "S-"
   tokenPrefixMenu: string;  // e.g. "M-"
+  tokenPrefixPos?: string;   // e.g. "POS-"
   operatingHours: string;
   onboardingCompleted?: boolean;
   socialLinks?: BusinessSocialLinks;
@@ -499,3 +500,57 @@ export interface PlatformSettings {
     accentColor: string;
   };
 }
+
+export interface PosBillItem {
+  id: string;
+  billId?: string;
+  businessId: string;
+  productId?: string;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  totalPrice: number;
+  createdAt?: string;
+}
+
+export interface PosBill {
+  id: string;
+  businessId: string;
+  billNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  subtotal: number;
+  discountType: 'fixed' | 'percentage';
+  discountRate: number;
+  discountAmount: number;
+  taxRate: number;
+  taxAmount: number;
+  totalAmount: number;
+  paymentMethod: 'cash' | 'upi' | 'card';
+  paymentStatus: 'paid' | 'pending' | 'cancelled';
+  status: 'completed' | 'cancelled';
+  notes?: string;
+  createdBy?: string;
+  items: PosBillItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePosBillInput {
+  businessId: string;
+  customerName?: string;
+  customerPhone?: string;
+  items: {
+    productId?: string;
+    productName: string;
+    unitPrice: number;
+    quantity: number;
+  }[];
+  discountType?: 'fixed' | 'percentage';
+  discountValue?: number;
+  taxRate?: number;
+  paymentMethod?: 'cash' | 'upi' | 'card';
+  notes?: string;
+  createdBy?: string;
+}
+

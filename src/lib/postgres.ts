@@ -12,6 +12,8 @@ import {
   Role,
   OrderSourceType,
   HotelRoom,
+  PosBill,
+  PosBillItem,
 } from '@/types';
 
 // Supabase Connection URL with verified IPv4/IPv6 compatibility (use port 6543 for transaction pooling)
@@ -328,3 +330,47 @@ export function mapRowToHotelRoom(r: any): HotelRoom {
     updatedAt: r.updated_at?.toISOString ? r.updated_at.toISOString() : r.updated_at,
   };
 }
+
+export function mapRowToPosBillItem(r: any): PosBillItem {
+  return {
+    id: r.id,
+    billId: r.bill_id,
+    businessId: r.business_id,
+    productId: r.product_id || undefined,
+    productName: r.product_name,
+    unitPrice: parseFloat(r.unit_price || '0'),
+    quantity: parseInt(r.quantity || '1', 10),
+    totalPrice: parseFloat(r.total_price || '0'),
+    createdAt: r.created_at?.toISOString ? r.created_at.toISOString() : r.created_at,
+  };
+}
+
+export function mapRowToPosBill(r: any): PosBill {
+  let items: PosBillItem[] = [];
+  if (r.items) {
+    items = typeof r.items === 'string' ? JSON.parse(r.items) : r.items;
+  }
+  return {
+    id: r.id,
+    businessId: r.business_id,
+    billNumber: r.bill_number,
+    customerName: r.customer_name || undefined,
+    customerPhone: r.customer_phone || undefined,
+    subtotal: parseFloat(r.subtotal || '0'),
+    discountType: r.discount_type || 'fixed',
+    discountRate: parseFloat(r.discount_rate || '0'),
+    discountAmount: parseFloat(r.discount_amount || '0'),
+    taxRate: parseFloat(r.tax_rate || '0'),
+    taxAmount: parseFloat(r.tax_amount || '0'),
+    totalAmount: parseFloat(r.total_amount || '0'),
+    paymentMethod: r.payment_method || 'cash',
+    paymentStatus: r.payment_status || 'paid',
+    status: r.status || 'completed',
+    notes: r.notes || undefined,
+    createdBy: r.created_by || undefined,
+    items,
+    createdAt: r.created_at?.toISOString ? r.created_at.toISOString() : r.created_at,
+    updatedAt: r.updated_at?.toISOString ? r.updated_at.toISOString() : r.updated_at,
+  };
+}
+
