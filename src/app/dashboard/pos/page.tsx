@@ -91,8 +91,8 @@ export default function PosBillingPage() {
     setLoadingCatalog(true);
     try {
       const [prodRes, catRes] = await Promise.all([
-        fetch(`/api/products?businessId=${currentBusiness.id}&limit=500`),
-        fetch(`/api/categories?businessId=${currentBusiness.id}`),
+        fetch(`/api/products?businessId=${currentBusiness.id}&channel=pos&limit=500`),
+        fetch(`/api/categories?businessId=${currentBusiness.id}&channel=pos`),
       ]);
       const prodData = await prodRes.json();
       const catData = await catRes.json();
@@ -145,6 +145,10 @@ export default function PosBillingPage() {
   // Filtered Products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      // Strictly exclude storefront-only items from POS counter
+      if (p.salesChannel === 'storefront') {
+        return false;
+      }
       if (selectedCategory !== 'all' && p.categoryId !== selectedCategory) {
         return false;
       }

@@ -39,6 +39,7 @@ import { formatINR, cn, formatDate } from '@/lib/utils';
 import { StoreLockedPrompt } from '@/components/dashboard/StoreLockedPrompt';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
 import { getCategoryConfig } from '@/lib/categories';
+import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
 export default function StoreCatalogPage() {
   const { currentBusiness } = useApp();
@@ -97,6 +98,7 @@ export default function StoreCatalogPage() {
     lowStockThreshold: '5',
     description: '',
     imageUrl: '',
+    salesChannel: 'both' as SalesChannel,
     isAvailable: true,
   });
 
@@ -386,6 +388,7 @@ export default function StoreCatalogPage() {
       lowStockThreshold: '5',
       description: '',
       imageUrl: '',
+      salesChannel: 'both' as SalesChannel,
       isAvailable: true,
     });
     setShowAddModal(true);
@@ -412,6 +415,7 @@ export default function StoreCatalogPage() {
       lowStockThreshold: String(p.lowStockThreshold || 5),
       description: p.description || '',
       imageUrl: p.imageUrl || '',
+      salesChannel: (p.salesChannel as SalesChannel) || 'both',
       isAvailable: p.isAvailable,
     });
     setShowAddModal(true);
@@ -437,6 +441,7 @@ export default function StoreCatalogPage() {
       lowStockThreshold: Number(formData.lowStockThreshold) || 5,
       description: formData.description?.trim() || '',
       imageUrl: formData.imageUrl?.trim() || undefined,
+      salesChannel: formData.salesChannel || 'both',
       isAvailable: formData.isAvailable,
       variants: variants.filter((v) => v.name.trim() !== ''),
       sortOrder: products.length + 1,
@@ -973,9 +978,12 @@ export default function StoreCatalogPage() {
 
                       {/* Category */}
                       <td className="p-3.5">
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
-                          {cat}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
+                            {cat}
+                          </span>
+                          <SalesChannelBadge channel={p.salesChannel} size="xs" />
+                        </div>
                       </td>
 
                       {/* SKU */}
@@ -1155,9 +1163,12 @@ export default function StoreCatalogPage() {
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div>
                     <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500 mb-1">
-                      <span className="font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
-                        {cat}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                          {cat}
+                        </span>
+                        <SalesChannelBadge channel={p.salesChannel} size="xs" />
+                      </div>
                       <span className="font-mono">{p.sku || 'No SKU'}</span>
                     </div>
 
@@ -1571,6 +1582,13 @@ export default function StoreCatalogPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                 />
               </div>
+
+              {/* Sales Channel Selector */}
+              <SalesChannelSelector
+                value={formData.salesChannel}
+                onChange={(val) => setFormData((prev) => ({ ...prev, salesChannel: val }))}
+                entityType="product"
+              />
 
               {/* Variants Section */}
               <div className="pt-2 border-t border-slate-100 space-y-2">

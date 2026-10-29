@@ -5,6 +5,7 @@
       "slug": "sri-ram-krishna-traders",
       "name": "Sri Ram Krishna Traders",
       "type": "restaurant",
+      "category": "restaurant",
       "ownerId": "user_05ovmrl_mvq8u007",
       "description": "Sri Ram Krishna Traders - Restaurant",
       "email": "krishna@gmail.com",
@@ -51,6 +52,7 @@
       "slug": "sri-ram-krishna-traders-skco",
       "name": "Sri Ram Krishna Traders",
       "type": "hardware",
+      "category": "hardware",
       "ownerId": "user_gf991qy_mvq8x8vh",
       "ownerName": "Ram Krishna Sharma",
       "description": "Sri Ram Krishna Traders - Hardware & Building Materials",
@@ -101,6 +103,7 @@
       "slug": "shri-ram-krishna-trader",
       "name": "Shri Ram krishna trader",
       "type": "hardware",
+      "category": "hardware",
       "ownerId": "user_cw736y9_mvp4pxih",
       "ownerName": "HELLO",
       "description": "Shri Ram krishna trader - Hardware & Building Materials",
@@ -155,6 +158,58 @@
       },
       "createdAt": "2026-10-27T13:39:24.723Z",
       "updatedAt": "2026-10-27T16:49:02.945Z"
+    },
+    {
+      "id": "biz_sdu7mxo_mvs458a5",
+      "slug": "royal-kitchen",
+      "name": "Royal kitchen",
+      "type": "restaurant",
+      "category": "restaurant",
+      "ownerId": "user_bioobkv_mvs458a5",
+      "ownerName": "Abhishek mishra",
+      "description": "Royal kitchen - Restaurant",
+      "email": "call2abhimishra@gmail.com",
+      "phone": "8375007409",
+      "address": "Buiness",
+      "logoUrl": "/uploads/logos/logos_1793205118635_n7yal8g.png",
+      "isStoreOpen": true,
+      "onlineOrderingEnabled": true,
+      "settings": {
+        "modules": {
+          "menu": true,
+          "store": true
+        },
+        "ownerName": "Abhishek mishra",
+        "isStoreOpen": true,
+        "orderSettings": {
+          "enableGst": false,
+          "deliveryFee": 30,
+          "currencyCode": "INR",
+          "enableDineIn": true,
+          "minStoreOrder": 50,
+          "currencySymbol": "₹",
+          "enableDelivery": true,
+          "enableTakeaway": true,
+          "autoAcceptOrders": false,
+          "taxRatePercentage": 0,
+          "tableRoomLabelMode": "table",
+          "customTableRoomLabel": "Table Number"
+        },
+        "operatingHours": "09:00 AM - 09:00 PM (Daily)",
+        "tokenPrefixMenu": "M-",
+        "tokenPrefixStore": "S-",
+        "onboardingCompleted": false,
+        "onlineOrderingEnabled": true
+      },
+      "subscription": {
+        "amount": 149,
+        "planId": "plan_gold",
+        "status": "active",
+        "renewsAt": "2026-12-27T12:51:18.150Z",
+        "billingCycle": "monthly"
+      },
+      "createdAt": "2026-10-28T12:51:17.933Z",
+      "updatedAt": "2026-10-29T08:20:01.171Z"
     }
   ],
   "users": [
@@ -235,6 +290,16 @@
       "createdAt": "2026-10-27T13:39:25.062Z"
     },
     {
+      "id": "cat_s82zi09_mvs458yn",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Starters & Appetizers",
+      "slug": "featured",
+      "sortOrder": 1,
+      "isActive": true,
+      "createdAt": "2026-10-28T12:51:18.924Z"
+    },
+    {
       "id": "cat_bth1y7e_mvqeqmyk",
       "businessId": "biz_n5190tt_mvq8x8vh",
       "sourceType": "store",
@@ -269,6 +334,28 @@
       "addOns": [],
       "createdAt": "2026-10-27T13:39:47.546Z",
       "updatedAt": "2026-10-27T13:39:47.546Z"
+    },
+    {
+      "id": "prod_bqcd9oq_mvs45f0l",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "categoryId": "cat_s82zi09_mvs458yn",
+      "sourceType": "menu",
+      "name": "Paneer Butter Masala",
+      "description": "Rich creamy cottage cheese curry with butter makhani gravy",
+      "price": 220,
+      "unit": "portion",
+      "minOrderQty": 1,
+      "stockQuantity": 50,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "sortOrder": 0,
+      "dietaryFlags": {
+        "isVegetarian": true
+      },
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-28T12:51:26.661Z",
+      "updatedAt": "2026-10-28T12:51:26.661Z"
     },
     {
       "id": "prod_n05pxch_mvqfjh2t",
@@ -306,11 +393,11 @@
       },
       "items": [
         {
-          "productId": "prod_0k6q7j2_mvqqfqoq",
-          "productName": "UltraTech Super Cement (50kg Bag)",
           "price": 385,
           "quantity": 1,
-          "itemTotal": 385
+          "itemTotal": 385,
+          "productId": "prod_0k6q7j2_mvqqfqoq",
+          "productName": "UltraTech Super Cement (50kg Bag)"
         }
       ],
       "subtotal": 385,
@@ -324,22 +411,22 @@
       "fulfilmentMethod": "pickup",
       "queueToken": "S-00103",
       "taxBreakdown": {
-        "isGstApplicable": false,
-        "gstRate": 0,
-        "isTaxInclusive": false,
-        "taxableAmount": 385,
-        "gstAmount": 0,
         "cgst": 0,
-        "sgst": 0,
         "igst": 0,
-        "invoiceNumber": "INV-00103"
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00103",
+        "taxableAmount": 385,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
       },
       "invoiceNumber": "INV-00103",
       "statusHistory": [
         {
+          "note": "Order placed via Digital Store",
           "status": "new",
-          "timestamp": "2026-10-28T11:20:00.397Z",
-          "note": "Order placed via Digital Store"
+          "timestamp": "2026-10-28T11:20:00.397Z"
         }
       ],
       "createdAt": "2026-10-28T11:20:00.397Z",
@@ -943,17 +1030,31 @@
       "servedAt": null
     },
     {
-      "id": "qtok_i7zea5z_mvs0vtsd",
+      "id": "qtok_qmkz8oq_mvs0vtui",
       "businessId": "biz_yxqjlv9_mvqqf92r",
       "sourceType": "store",
       "tokenNumber": "S-00103",
-      "sequenceNumber": 10,
+      "sequenceNumber": 3,
+      "orderId": "ord_eud8yk2_mvs0vtsd",
       "customerName": "Social Flow Test Customer",
       "status": "waiting",
-      "createdAt": "2026-10-28T11:20:00.397Z"
+      "createdAt": "2026-10-28T11:23:30.763Z",
+      "calledAt": null,
+      "servedAt": null
     }
   ],
   "notifications": [
+    {
+      "id": "notif_kayc5ei_mvs0vtsd",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "title": "New Store Order #S-00103",
+      "message": "Social Flow Test Customer placed an order of ₹385.00 (pickup)",
+      "orderId": "ord_eud8yk2_mvs0vtsd",
+      "tokenNumber": "S-00103",
+      "isRead": false,
+      "createdAt": "2026-10-28T11:23:30.848Z"
+    },
     {
       "id": "notif_yq6c6wh_mvs091f9",
       "businessId": "biz_yxqjlv9_mvqqf92r",
@@ -1062,6 +1163,8 @@
       "description": "Essential digital catalog, materials and order tracking for businesses",
       "priceMonthly": 49,
       "priceAnnual": 490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
       "features": [
         "Up to 20 products or menu items",
         "Up to 10 categories",
@@ -1088,15 +1191,15 @@
       "description": "Complete retail store + dining menu suite with custom UPI QR payment collection",
       "priceMonthly": 149,
       "priceAnnual": 1490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
       "features": [
-        "Up to 50 products or menu items",
-        "Up to 30 categories",
-        "Full Store & Menu modules enabled",
-        "Product catalog & stock management",
-        "Storefront Design & Appearance customization",
-        "Custom UPI ID & QR Code setup",
-        "Direct customer UPI payment on checkout",
-        "Sales & stock analytics"
+        "Both Store & Menu modules included simultaneously",
+        "Custom UPI ID & QR Code setup for customer checkout",
+        "Direct bank payments (GPay, PhonePe, Paytm, BHIM)",
+        "Separate Store Orders (S-) and Menu Orders (M-)",
+        "Retail product catalog, barcode, and stock inventory",
+        "Public TV queue token display & sales analytics"
       ],
       "maxProducts": 50,
       "maxCategories": 30,
@@ -1116,6 +1219,8 @@
       "description": "Premium enterprise tier for high-volume operations (Admin Managed)",
       "priceMonthly": 249,
       "priceAnnual": 2490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
       "features": [
         "Unlimited products & stores",
         "Multi-counter POS stations",

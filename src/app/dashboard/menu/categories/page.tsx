@@ -23,6 +23,7 @@ import { Category, Product, BusinessPlanUsage } from '@/types';
 import { cn } from '@/lib/utils';
 import { getCategoryConfig } from '@/lib/categories';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
+import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
 export default function MenuCategoriesPage() {
   const { currentBusiness } = useApp();
@@ -35,6 +36,7 @@ export default function MenuCategoriesPage() {
   // Add Category form state
   const [newCatName, setNewCatName] = useState<string>('');
   const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [newCatSalesChannel, setNewCatSalesChannel] = useState<SalesChannel>('both');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -42,6 +44,7 @@ export default function MenuCategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editName, setEditName] = useState<string>('');
   const [editDesc, setEditDesc] = useState<string>('');
+  const [editSalesChannel, setEditSalesChannel] = useState<SalesChannel>('both');
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Delete Category state
@@ -93,6 +96,7 @@ export default function MenuCategoriesPage() {
           sourceType: 'menu',
           name: targetName,
           description: newCatDesc.trim() || `${catConfig.label} menu category`,
+          salesChannel: newCatSalesChannel,
           sortOrder: categories.length + 1,
         }),
       });
@@ -101,6 +105,7 @@ export default function MenuCategoriesPage() {
         setCategories((prev) => [...prev, data.category]);
         setNewCatName('');
         setNewCatDesc('');
+        setNewCatSalesChannel('both');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('subscription_usage_changed'));
         }
@@ -129,6 +134,7 @@ export default function MenuCategoriesPage() {
           id: editingCategory.id,
           name: editName.trim(),
           description: editDesc.trim(),
+          salesChannel: editSalesChannel,
         }),
       });
       const data = await res.json();
@@ -263,49 +269,67 @@ export default function MenuCategoriesPage() {
             e.preventDefault();
             handleCreateCategory();
           }}
-          className="flex flex-col sm:flex-row gap-2.5"
+          className="space-y-3"
         >
-          <div className="flex-1">
-            <input
-              type="text"
-              required
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. Starters, Main Course, Breads, Mocktails, Desserts..."
-              className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white text-slate-800 placeholder:text-slate-400 font-medium"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                Category Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="e.g. Starters, Main Course, Breads, Mocktails, Desserts..."
+                className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white text-slate-800 placeholder:text-slate-400 font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                Brief Description <span className="font-normal text-slate-400">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                value={newCatDesc}
+                onChange={(e) => setNewCatDesc(e.target.value)}
+                placeholder="Brief description (optional)"
+                className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white text-slate-800 placeholder:text-slate-400"
+              />
+            </div>
           </div>
-          <div className="flex-1 sm:max-w-xs">
-            <input
-              type="text"
-              value={newCatDesc}
-              onChange={(e) => setNewCatDesc(e.target.value)}
-              placeholder="Brief description (optional)"
-              className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:bg-white text-slate-800 placeholder:text-slate-400"
-            />
+
+          {/* Sales Channel Selector */}
+          <SalesChannelSelector
+            value={newCatSalesChannel}
+            onChange={setNewCatSalesChannel}
+            entityType="category"
+          />
+
+          <div className="flex justify-end pt-1">
+            <button
+              type="submit"
+              disabled={isSubmitting || !newCatName.trim() || planUsage?.categories.isLimitReached}
+              className={cn(
+                'px-5 py-2 font-bold rounded-lg text-xs transition-colors shadow-xs flex items-center justify-center gap-1.5 shrink-0',
+                planUsage?.categories.isLimitReached
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50'
+              )}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Creating...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Category</span>
+                </>
+              )}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || !newCatName.trim() || planUsage?.categories.isLimitReached}
-            className={cn(
-              'px-4 py-2 font-bold rounded-lg text-xs transition-colors shadow-xs flex items-center justify-center gap-1.5 shrink-0',
-              planUsage?.categories.isLimitReached
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                : 'bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50'
-            )}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Creating...</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Category</span>
-              </>
-            )}
-          </button>
         </form>
 
         {/* 1-Click Suggested Starter Categories */}
@@ -398,9 +422,12 @@ export default function MenuCategoriesPage() {
                         </span>
                         <h3 className="font-bold text-slate-900 text-sm">{cat.name}</h3>
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                        {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SalesChannelBadge channel={cat.salesChannel} size="xs" />
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                        </span>
+                      </div>
                     </div>
                     {cat.description && (
                       <p className="text-xs text-slate-500 line-clamp-2">{cat.description}</p>
@@ -422,6 +449,7 @@ export default function MenuCategoriesPage() {
                           setEditingCategory(cat);
                           setEditName(cat.name);
                           setEditDesc(cat.description || '');
+                          setEditSalesChannel(cat.salesChannel || 'both');
                         }}
                         className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
                         title="Edit Category Name"
@@ -484,6 +512,13 @@ export default function MenuCategoriesPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
                 />
               </div>
+
+              {/* Edit Sales Channel Selector */}
+              <SalesChannelSelector
+                value={editSalesChannel}
+                onChange={setEditSalesChannel}
+                entityType="category"
+              />
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button

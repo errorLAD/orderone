@@ -9,12 +9,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get('businessId');
     const sourceType = searchParams.get('sourceType') as OrderSourceType | null;
+    const channel = searchParams.get('channel') as 'both' | 'storefront' | 'pos' | null;
 
     if (!businessId) {
       return NextResponse.json({ success: false, error: 'businessId is required' }, { status: 400 });
     }
 
-    const categories = await getCategories(businessId, sourceType || undefined);
+    const categories = await getCategories(businessId, sourceType || undefined, channel || undefined);
     return NextResponse.json({ success: true, count: categories.length, categories });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -36,6 +37,10 @@ export async function POST(req: NextRequest) {
     const isAuth = await isUserAuthorizedForBusiness(user, body.businessId);
     if (!isAuth) {
       return NextResponse.json({ success: false, error: 'Forbidden: You do not have permission to manage categories for this business' }, { status: 403 });
+    }
+
+    if (body.salesChannel && !['both', 'storefront', 'pos'].includes(body.salesChannel)) {
+      return NextResponse.json({ success: false, error: 'Invalid salesChannel. Allowed values: both, storefront, pos' }, { status: 400 });
     }
 
     const category = await createCategory(body);
@@ -79,6 +84,10 @@ export async function PUT(req: NextRequest) {
     const isAuth = await isUserAuthorizedForBusiness(user, existing.businessId);
     if (!isAuth) {
       return NextResponse.json({ success: false, error: 'Forbidden: You do not have permission to edit this category' }, { status: 403 });
+    }
+
+    if (updates.salesChannel && !['both', 'storefront', 'pos'].includes(updates.salesChannel)) {
+      return NextResponse.json({ success: false, error: 'Invalid salesChannel. Allowed values: both, storefront, pos' }, { status: 400 });
     }
 
     const category = await updateCategory(id, updates);

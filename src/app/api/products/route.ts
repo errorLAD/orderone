@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     const businessId = searchParams.get('businessId');
     const sourceType = searchParams.get('sourceType') as OrderSourceType | null;
     const categoryId = searchParams.get('categoryId') || undefined;
+    const channel = searchParams.get('channel') as 'both' | 'storefront' | 'pos' | null;
     const search = searchParams.get('search')?.toLowerCase().trim();
     const stockStatus = searchParams.get('stockStatus'); // 'all', 'in_stock', 'low_stock', 'out_of_stock'
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'businessId is required' }, { status: 400 });
     }
 
-    let products = await getProducts(businessId, sourceType || undefined, categoryId);
+    let products = await getProducts(businessId, sourceType || undefined, categoryId, channel || undefined);
 
     // Apply search filter
     if (search) {
@@ -109,6 +110,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: authCheck.error }, { status: authCheck.status || 403 });
     }
 
+    if (body.salesChannel && !['both', 'storefront', 'pos'].includes(body.salesChannel)) {
+      return NextResponse.json({ success: false, error: 'Invalid salesChannel. Allowed values: both, storefront, pos' }, { status: 400 });
+    }
+
     const product = await createProduct(body);
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
@@ -145,6 +150,10 @@ export async function PUT(req: NextRequest) {
     const authCheck = await verifyBusinessOwnership(req, existing.businessId);
     if (!authCheck.authorized) {
       return NextResponse.json({ success: false, error: authCheck.error }, { status: authCheck.status || 403 });
+    }
+
+    if (updates.salesChannel && !['both', 'storefront', 'pos'].includes(updates.salesChannel)) {
+      return NextResponse.json({ success: false, error: 'Invalid salesChannel. Allowed values: both, storefront, pos' }, { status: 400 });
     }
 
     const product = await updateProduct(id, updates);

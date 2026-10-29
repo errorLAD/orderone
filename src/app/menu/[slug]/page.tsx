@@ -140,8 +140,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
         }
 
         const [catRes, prodRes] = await Promise.all([
-          fetch(`/api/categories?businessId=${biz.id}&sourceType=menu`),
-          fetch(`/api/products?businessId=${biz.id}&sourceType=menu`),
+          fetch(`/api/categories?businessId=${biz.id}&sourceType=menu&channel=storefront`),
+          fetch(`/api/products?businessId=${biz.id}&sourceType=menu&channel=storefront`),
         ]);
         const catData = await catRes.json();
         const prodData = await prodRes.json();
@@ -156,8 +156,12 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
           return;
         }
 
-        if (catData.success) setCategories(catData.categories);
-        if (prodData.success) setProducts(prodData.products.filter((p: Product) => p.isAvailable));
+        if (catData.success) {
+          setCategories((catData.categories || []).filter((c: Category) => c.salesChannel !== 'pos'));
+        }
+        if (prodData.success) {
+          setProducts((prodData.products || []).filter((p: Product) => p.isAvailable && p.salesChannel !== 'pos'));
+        }
       }
     } catch (e) {
       console.error('Error fetching menu storefront:', e);

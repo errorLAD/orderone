@@ -214,6 +214,7 @@ export interface Category {
   imageUrl?: string;
   sortOrder: number;
   isActive: boolean;
+  salesChannel?: 'both' | 'storefront' | 'pos';
   createdAt: string;
 }
 
@@ -256,6 +257,7 @@ export interface Product {
   stockQuantity?: number; // Retail inventory
   lowStockThreshold?: number;
   isAvailable: boolean;
+  salesChannel?: 'both' | 'storefront' | 'pos';
   imageUrl?: string;
   sortOrder: number;
   dietaryFlags?: DietaryFlags;

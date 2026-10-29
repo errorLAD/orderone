@@ -113,6 +113,7 @@ export function mapRowToCategory(r: any): Category {
     imageUrl: r.image_url || undefined,
     sortOrder: r.sort_order || 0,
     isActive: r.is_active !== false,
+    salesChannel: (r.sales_channel as any) || 'both',
     createdAt: r.created_at?.toISOString ? r.created_at.toISOString() : r.created_at,
   };
 }
@@ -135,6 +136,7 @@ export function mapRowToProduct(r: any): Product {
     stockQuantity: r.stock_quantity !== null && r.stock_quantity !== undefined ? parseInt(r.stock_quantity, 10) : undefined,
     lowStockThreshold: r.low_stock_threshold ? parseInt(r.low_stock_threshold, 10) : 5,
     isAvailable: r.is_available !== false,
+    salesChannel: (r.sales_channel as any) || 'both',
     imageUrl: r.image_url || undefined,
     sortOrder: r.sort_order || 0,
     dietaryFlags: typeof r.dietary_flags === 'string' ? JSON.parse(r.dietary_flags) : r.dietary_flags || {},

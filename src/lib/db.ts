@@ -457,14 +457,20 @@ export async function updateBusiness(
 // 2. Categories
 export async function getCategories(
   businessId: string,
-  sourceType?: OrderSourceType
+  sourceType?: OrderSourceType,
+  channel?: 'both' | 'storefront' | 'pos'
 ): Promise<Category[]> {
   try {
     let sql = 'SELECT * FROM public.categories WHERE business_id = $1';
     const params: any[] = [businessId];
     if (sourceType) {
       params.push(sourceType);
-      sql += ' AND source_type = $2';
+      sql += ' AND source_type = $' + params.length;
+    }
+    if (channel === 'storefront') {
+      sql += " AND sales_channel IN ('both', 'storefront')";
+    } else if (channel === 'pos') {
+      sql += " AND sales_channel IN ('both', 'pos')";
     }
     sql += ' ORDER BY sort_order ASC, created_at ASC';
     const res = await pgQuery(sql, params);
@@ -472,7 +478,13 @@ export async function getCategories(
   } catch (err) {}
 
   return cachedDb.categories
-    .filter((c) => c.businessId === businessId && (!sourceType || c.sourceType === sourceType))
+    .filter((c) => {
+      if (c.businessId !== businessId) return false;
+      if (sourceType && c.sourceType !== sourceType) return false;
+      if (channel === 'storefront' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'storefront') return false;
+      if (channel === 'pos' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'pos') return false;
+      return true;
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
@@ -503,10 +515,13 @@ export async function createCategory(data: Omit<Category, 'id' | 'createdAt'>): 
       .replace(/(^-|-$)+/g, '') ||
     generateId('cat');
 
+  const salesChannel = data.salesChannel || 'both';
+
   const cat: Category = {
     ...data,
     slug,
     isActive: data.isActive !== false,
+    salesChannel,
     id: generateId('cat'),
     createdAt: new Date().toISOString(),
   };
@@ -514,9 +529,9 @@ export async function createCategory(data: Omit<Category, 'id' | 'createdAt'>): 
 
   try {
     await pgQuery(`
-      INSERT INTO public.categories (id, business_id, source_type, name, slug, description, image_url, sort_order, is_active, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    `, [cat.id, cat.businessId, cat.sourceType, cat.name, cat.slug, cat.description || null, cat.imageUrl || null, cat.sortOrder, cat.isActive, cat.createdAt]);
+      INSERT INTO public.categories (id, business_id, source_type, name, slug, description, image_url, sort_order, is_active, sales_channel, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `, [cat.id, cat.businessId, cat.sourceType, cat.name, cat.slug, cat.description || null, cat.imageUrl || null, cat.sortOrder, cat.isActive, cat.salesChannel || 'both', cat.createdAt]);
   } catch (err) {
     console.error('pg createCategory error:', err);
   }
@@ -537,9 +552,9 @@ export async function updateCategory(
   try {
     await pgQuery(`
       UPDATE public.categories 
-      SET name = $1, description = $2, image_url = $3, sort_order = $4, is_active = $5
-      WHERE id = $6
-    `, [c.name, c.description || null, c.imageUrl || null, c.sortOrder, c.isActive, id]);
+      SET name = $1, description = $2, image_url = $3, sort_order = $4, is_active = $5, sales_channel = $6
+      WHERE id = $7
+    `, [c.name, c.description || null, c.imageUrl || null, c.sortOrder, c.isActive, c.salesChannel || 'both', id]);
   } catch (err) {
     console.error('pg updateCategory error:', err);
   }
@@ -569,7 +584,8 @@ export async function deleteCategory(id: string): Promise<boolean> {
 export async function getProducts(
   businessId: string,
   sourceType?: OrderSourceType,
-  categoryId?: string
+  categoryId?: string,
+  channel?: 'both' | 'storefront' | 'pos'
 ): Promise<Product[]> {
   try {
     let sql = 'SELECT * FROM public.products WHERE business_id = $1';
@@ -582,6 +598,11 @@ export async function getProducts(
       params.push(categoryId);
       sql += ` AND category_id = $${params.length}`;
     }
+    if (channel === 'storefront') {
+      sql += " AND sales_channel IN ('both', 'storefront')";
+    } else if (channel === 'pos') {
+      sql += " AND sales_channel IN ('both', 'pos')";
+    }
     sql += ' ORDER BY sort_order ASC, created_at ASC';
     const res = await pgQuery(sql, params);
     return res.rows.map(mapRowToProduct);
@@ -592,6 +613,8 @@ export async function getProducts(
       if (p.businessId !== businessId) return false;
       if (sourceType && p.sourceType !== sourceType) return false;
       if (categoryId && p.categoryId !== categoryId) return false;
+      if (channel === 'storefront' && p.salesChannel && p.salesChannel !== 'both' && p.salesChannel !== 'storefront') return false;
+      if (channel === 'pos' && p.salesChannel && p.salesChannel !== 'both' && p.salesChannel !== 'pos') return false;
       return true;
     })
     .sort((a, b) => a.sortOrder - b.sortOrder);
@@ -616,8 +639,11 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
   // Strict Subscription Limit Enforcement for Products & Menu Items
   await assertCanCreateRecord(data.businessId, 'product');
 
+  const salesChannel = data.salesChannel || 'both';
+
   const prod: Product = {
     ...data,
+    salesChannel,
     id: generateId('prod'),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -626,8 +652,12 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
 
   try {
     await pgQuery(`
-      INSERT INTO public.products (id, business_id, category_id, source_type, name, description, price, sale_price, sku, barcode, brand, unit, min_order_qty, stock_quantity, low_stock_threshold, is_available, image_url, sort_order, dietary_flags, variants, add_ons, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+      INSERT INTO public.products (
+        id, business_id, category_id, source_type, name, description,
+        price, sale_price, sku, barcode, brand, unit, min_order_qty,
+        stock_quantity, low_stock_threshold, is_available, sales_channel,
+        image_url, sort_order, dietary_flags, variants, add_ons, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
     `, [
       prod.id,
       prod.businessId,
@@ -645,6 +675,7 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
       prod.stockQuantity !== undefined && prod.stockQuantity !== null ? Number(prod.stockQuantity) : null,
       prod.lowStockThreshold || 5,
       prod.isAvailable !== false,
+      prod.salesChannel || 'both',
       prod.imageUrl || null,
       prod.sortOrder || 0,
       JSON.stringify(prod.dietaryFlags || {}),
@@ -680,8 +711,8 @@ export async function updateProduct(
       SET name = $1, description = $2, price = $3, sale_price = $4, stock_quantity = $5, 
           is_available = $6, brand = $7, unit = $8, min_order_qty = $9, sku = $10, 
           barcode = $11, image_url = $12, category_id = $13, low_stock_threshold = $14,
-          dietary_flags = $15, variants = $16, add_ons = $17, updated_at = NOW()
-      WHERE id = $18
+          dietary_flags = $15, variants = $16, add_ons = $17, sales_channel = $18, updated_at = NOW()
+      WHERE id = $19
     `, [
       p.name,
       p.description || null,
@@ -700,6 +731,7 @@ export async function updateProduct(
       JSON.stringify(p.dietaryFlags || {}),
       JSON.stringify(p.variants || []),
       JSON.stringify(p.addOns || []),
+      p.salesChannel || 'both',
       id
     ]);
   } catch (err) {

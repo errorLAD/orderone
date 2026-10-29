@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { getCategoryConfig } from '@/lib/categories';
 import { StoreLockedPrompt } from '@/components/dashboard/StoreLockedPrompt';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
+import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
 export default function StoreCategoriesPage() {
   const { currentBusiness } = useApp();
@@ -39,6 +40,7 @@ export default function StoreCategoriesPage() {
   // Add Category form state
   const [newCatName, setNewCatName] = useState<string>('');
   const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [newCatSalesChannel, setNewCatSalesChannel] = useState<SalesChannel>('both');
   const [newCatImageFile, setNewCatImageFile] = useState<File | null>(null);
   const [newCatImagePreview, setNewCatImagePreview] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
@@ -52,6 +54,7 @@ export default function StoreCategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editName, setEditName] = useState<string>('');
   const [editDesc, setEditDesc] = useState<string>('');
+  const [editSalesChannel, setEditSalesChannel] = useState<SalesChannel>('both');
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
   const [isUploadingEditImage, setIsUploadingEditImage] = useState<boolean>(false);
@@ -187,6 +190,7 @@ export default function StoreCategoriesPage() {
           name: targetName,
           description: newCatDesc.trim() || `${catConfig.label} product category`,
           imageUrl: newCatImagePreview || undefined,
+          salesChannel: newCatSalesChannel,
           sortOrder: categories.length + 1,
         }),
       });
@@ -195,6 +199,7 @@ export default function StoreCategoriesPage() {
         setCategories((prev) => [...prev, data.category]);
         setNewCatName('');
         setNewCatDesc('');
+        setNewCatSalesChannel('both');
         setNewCatImageFile(null);
         setNewCatImagePreview('');
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -227,6 +232,7 @@ export default function StoreCategoriesPage() {
           name: editName.trim(),
           description: editDesc.trim(),
           imageUrl: editImagePreview || undefined,
+          salesChannel: editSalesChannel,
         }),
       });
       const data = await res.json();
@@ -409,6 +415,13 @@ export default function StoreCategoriesPage() {
               />
             </div>
           </div>
+
+          {/* Sales Channel Selector */}
+          <SalesChannelSelector
+            value={newCatSalesChannel}
+            onChange={setNewCatSalesChannel}
+            entityType="category"
+          />
 
           {/* Category Image Upload Row */}
           <div>
@@ -616,9 +629,12 @@ export default function StoreCategoriesPage() {
                           )}
                           <h3 className="font-bold text-slate-900 text-sm">{cat.name}</h3>
                         </div>
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                          {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <SalesChannelBadge channel={cat.salesChannel} size="xs" />
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                          </span>
+                        </div>
                       </div>
                       {cat.description && (
                         <p className="text-xs text-slate-500 line-clamp-2 mt-1">{cat.description}</p>
@@ -640,6 +656,7 @@ export default function StoreCategoriesPage() {
                             setEditingCategory(cat);
                             setEditName(cat.name);
                             setEditDesc(cat.description || '');
+                            setEditSalesChannel(cat.salesChannel || 'both');
                             setEditImagePreview(cat.imageUrl || '');
                             setEditImageFile(null);
                             setEditImageError('');
@@ -706,6 +723,13 @@ export default function StoreCategoriesPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                 />
               </div>
+
+              {/* Edit Sales Channel Selector */}
+              <SalesChannelSelector
+                value={editSalesChannel}
+                onChange={setEditSalesChannel}
+                entityType="category"
+              />
 
               {/* Edit Category Image Upload */}
               <div>

@@ -110,7 +110,10 @@ export function StorefrontRenderer({
     return <Package className="w-4 h-4" />;
   };
 
-  const filteredProducts = products.filter((p) => {
+  const visibleCategories = categories.filter((c) => c.salesChannel !== 'pos');
+  const visibleProducts = products.filter((p) => p.salesChannel !== 'pos');
+
+  const filteredProducts = visibleProducts.filter((p) => {
     if (selectedCat !== 'all' && p.categoryId !== selectedCat) return false;
     if (search.trim()) {
       return p.name.toLowerCase().includes(search.toLowerCase());
@@ -412,11 +415,11 @@ export function StorefrontRenderer({
                   : undefined
               }
             >
-              All {isRestaurant ? 'Dishes' : 'Products'} ({products.length})
+              All {isRestaurant ? 'Dishes' : 'Products'} ({visibleProducts.length})
             </button>
-            {categories.map((c) => {
+            {visibleCategories.map((c) => {
               const isSelected = selectedCat === c.id;
-              const count = products.filter((p) => p.categoryId === c.id).length;
+              const count = visibleProducts.filter((p) => p.categoryId === c.id).length;
               return (
                 <button
                   key={c.id}
@@ -469,12 +472,12 @@ export function StorefrontRenderer({
               }
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>All ({products.length})</span>
+              <span>All ({visibleProducts.length})</span>
             </button>
 
-            {categories.map((c) => {
+            {visibleCategories.map((c) => {
               const isSelected = selectedCat === c.id;
-              const count = products.filter((p) => p.categoryId === c.id).length;
+              const count = visibleProducts.filter((p) => p.categoryId === c.id).length;
               return (
                 <button
                   key={c.id}

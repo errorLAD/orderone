@@ -118,8 +118,8 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
         }
 
         const [catRes, prodRes] = await Promise.all([
-          fetch(`/api/categories?businessId=${biz.id}&sourceType=store`),
-          fetch(`/api/products?businessId=${biz.id}&sourceType=store`),
+          fetch(`/api/categories?businessId=${biz.id}&sourceType=store&channel=storefront`),
+          fetch(`/api/products?businessId=${biz.id}&sourceType=store&channel=storefront`),
         ]);
         const catData = await catRes.json();
         const prodData = await prodRes.json();
@@ -134,8 +134,12 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
           return;
         }
 
-        if (catData.success) setCategories(catData.categories);
-        if (prodData.success) setProducts(prodData.products.filter((p: Product) => p.isAvailable));
+        if (catData.success) {
+          setCategories((catData.categories || []).filter((c: Category) => c.salesChannel !== 'pos'));
+        }
+        if (prodData.success) {
+          setProducts((prodData.products || []).filter((p: Product) => p.isAvailable && p.salesChannel !== 'pos'));
+        }
       }
     } catch (e) {
       console.error('Error fetching store storefront:', e);

@@ -35,6 +35,7 @@ import { Product, Category, ProductVariant, ProductAddOn, BusinessPlanUsage } fr
 import { formatINR, cn, formatDate } from '@/lib/utils';
 import { getCategoryConfig } from '@/lib/categories';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
+import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
 export default function MenuCatalogPage() {
   const { currentBusiness } = useApp();
@@ -84,6 +85,7 @@ export default function MenuCatalogPage() {
     description: '',
     imageUrl: '',
     isAvailable: true,
+    salesChannel: 'both' as SalesChannel,
     isVeg: true,
     isSpicy: false,
     isJain: false,
@@ -307,6 +309,7 @@ export default function MenuCatalogPage() {
       description: '',
       imageUrl: '',
       isAvailable: true,
+      salesChannel: 'both' as SalesChannel,
       isVeg: true,
       isSpicy: false,
       isJain: false,
@@ -330,6 +333,7 @@ export default function MenuCatalogPage() {
       description: p.description || '',
       imageUrl: p.imageUrl || '',
       isAvailable: p.isAvailable,
+      salesChannel: (p.salesChannel as SalesChannel) || 'both',
       isVeg: p.dietaryFlags?.isVeg ?? true,
       isSpicy: p.dietaryFlags?.isSpicy ?? false,
       isJain: p.dietaryFlags?.isJain ?? false,
@@ -351,6 +355,7 @@ export default function MenuCatalogPage() {
       description: formData.description.trim(),
       imageUrl: formData.imageUrl?.trim() || undefined,
       isAvailable: formData.isAvailable,
+      salesChannel: formData.salesChannel || 'both',
       dietaryFlags: {
         isVeg: formData.isVeg,
         isNonVeg: !formData.isVeg,
@@ -746,6 +751,7 @@ export default function MenuCatalogPage() {
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <SalesChannelBadge channel={p.salesChannel} size="xs" />
                       {p.dietaryFlags?.isSpicy && (
                         <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 flex items-center gap-0.5">
                           <Flame className="w-2.5 h-2.5" /> Spicy
@@ -863,7 +869,10 @@ export default function MenuCatalogPage() {
                         )}
                         <div>
                           <div className="font-bold text-slate-900">{p.name}</div>
-                          <div className="text-[10px] text-slate-500">{cat}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] text-slate-500">{cat}</span>
+                            <SalesChannelBadge channel={p.salesChannel} size="xs" />
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -1181,6 +1190,13 @@ export default function MenuCatalogPage() {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden"
                 />
               </div>
+
+              {/* Sales Channel Selector */}
+              <SalesChannelSelector
+                value={formData.salesChannel}
+                onChange={(val) => setFormData((prev) => ({ ...prev, salesChannel: val }))}
+                entityType="item"
+              />
 
               {/* Portion Sizes / Variants */}
               <div className="pt-2 border-t border-slate-100 space-y-2">
