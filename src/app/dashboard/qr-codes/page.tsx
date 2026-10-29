@@ -437,6 +437,9 @@ export default function QrCodesPage() {
           businessSlug={currentBusiness.slug}
           targetUrl={targetUrl}
           isGoldPlan={isGoldPlan}
+          qrType={selectedType}
+          tableNumber={selectedType === 'table' ? tableNumber : undefined}
+          roomNumber={selectedType === 'room' ? roomNumber : undefined}
         />
       )}
 

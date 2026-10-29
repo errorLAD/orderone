@@ -66,6 +66,7 @@ export interface StorefrontDesignSettings {
 export type QrDotStyle = 'square' | 'rounded' | 'dots' | 'diamond' | 'classy';
 export type QrEyeStyle = 'square' | 'rounded' | 'circle' | 'leaf';
 export type QrFrameStyle = 'none' | 'simple_border' | 'top_banner' | 'bottom_banner' | 'card' | 'badge';
+export type QrCenterBadgeType = 'logo' | 'table_room' | 'both';
 
 export interface QrCustomizationSettings {
   templateId?: string;
@@ -79,8 +80,14 @@ export interface QrCustomizationSettings {
   frameColor: string;
   showLogo: boolean;
   customLogoUrl?: string;
+  centerBadgeType?: QrCenterBadgeType;
+  centerBadgeText?: string;
   showBusinessName: boolean;
+  headerTitle?: string;
+  showHeaderTitle?: boolean;
   headerSubtitle?: string;
+  showHeaderLogo?: boolean;
+  headerLogoUrl?: string;
   updatedAt?: string;
 }
 

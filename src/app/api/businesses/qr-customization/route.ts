@@ -59,8 +59,14 @@ export async function GET(req: NextRequest) {
           frameColor: row.frame_color || '#4F46E5',
           showLogo: row.show_logo !== false,
           customLogoUrl: row.custom_logo_url || undefined,
+          centerBadgeType: row.center_badge_type || 'logo',
+          centerBadgeText: row.center_badge_text || undefined,
           showBusinessName: row.show_business_name !== false,
+          headerTitle: row.header_title || business.settings?.qrCustomization?.headerTitle || undefined,
+          showHeaderTitle: row.show_header_title !== false,
           headerSubtitle: row.header_subtitle || business.settings?.qrCustomization?.headerSubtitle || 'DIGITAL STOREFRONT & MENU',
+          showHeaderLogo: row.show_header_logo === true,
+          headerLogoUrl: row.header_logo_url || business.settings?.qrCustomization?.headerLogoUrl || undefined,
           updatedAt: row.updated_at,
         };
       } else if (business.settings?.qrCustomization) {
@@ -106,8 +112,14 @@ export async function POST(req: NextRequest) {
       frameColor,
       showLogo,
       customLogoUrl,
+      centerBadgeType,
+      centerBadgeText,
       showBusinessName,
+      headerTitle,
+      showHeaderTitle,
       headerSubtitle,
+      showHeaderLogo,
+      headerLogoUrl,
     } = body;
 
     if (!businessId) {
@@ -182,11 +194,29 @@ export async function POST(req: NextRequest) {
         : 'SCAN TO ORDER';
 
     const cleanShowLogo = showLogo !== false;
+    const cleanCenterBadgeType = ['logo', 'table_room', 'both'].includes(centerBadgeType)
+      ? centerBadgeType
+      : 'logo';
+    const cleanCenterBadgeText =
+      typeof centerBadgeText === 'string' && centerBadgeText.trim().length > 0
+        ? centerBadgeText.trim().slice(0, 30)
+        : undefined;
+
     const cleanShowBusinessName = showBusinessName !== false;
+    const cleanShowHeaderTitle = showHeaderTitle !== false;
+    const cleanHeaderTitle =
+      typeof headerTitle === 'string' && headerTitle.trim().length > 0
+        ? headerTitle.trim().slice(0, 50)
+        : undefined;
     const cleanHeaderSubtitle =
       typeof headerSubtitle === 'string' && headerSubtitle.trim().length > 0
         ? headerSubtitle.trim().slice(0, 60)
         : 'DIGITAL STOREFRONT & MENU';
+    const cleanShowHeaderLogo = showHeaderLogo === true;
+    const cleanHeaderLogoUrl =
+      typeof headerLogoUrl === 'string' && headerLogoUrl.trim().length > 0
+        ? headerLogoUrl.trim()
+        : undefined;
     const cleanCustomLogoUrl =
       typeof customLogoUrl === 'string' && customLogoUrl.trim().length > 0
         ? customLogoUrl.trim()
@@ -206,8 +236,14 @@ export async function POST(req: NextRequest) {
       frameColor: cleanFrameColor,
       showLogo: cleanShowLogo,
       customLogoUrl: cleanCustomLogoUrl,
+      centerBadgeType: cleanCenterBadgeType,
+      centerBadgeText: cleanCenterBadgeText,
       showBusinessName: cleanShowBusinessName,
+      headerTitle: cleanHeaderTitle,
+      showHeaderTitle: cleanShowHeaderTitle,
       headerSubtitle: cleanHeaderSubtitle,
+      showHeaderLogo: cleanShowHeaderLogo,
+      headerLogoUrl: cleanHeaderLogoUrl,
       updatedAt: now,
     };
 
@@ -217,11 +253,15 @@ export async function POST(req: NextRequest) {
         `INSERT INTO public.business_qr_customizations (
           business_id, template_id, foreground_color, background_color, eye_color,
           dot_style, eye_style, frame_style, frame_text, frame_color,
-          show_logo, custom_logo_url, show_business_name, header_subtitle, updated_at
+          show_logo, custom_logo_url, center_badge_type, center_badge_text,
+          show_business_name, header_title, show_header_title, header_subtitle,
+          show_header_logo, header_logo_url, updated_at
         ) VALUES (
           $1, $2, $3, $4, $5,
           $6, $7, $8, $9, $10,
-          $11, $12, $13, $14, NOW()
+          $11, $12, $13, $14,
+          $15, $16, $17, $18,
+          $19, $20, NOW()
         )
         ON CONFLICT (business_id) DO UPDATE SET
           template_id = EXCLUDED.template_id,
@@ -235,8 +275,14 @@ export async function POST(req: NextRequest) {
           frame_color = EXCLUDED.frame_color,
           show_logo = EXCLUDED.show_logo,
           custom_logo_url = EXCLUDED.custom_logo_url,
+          center_badge_type = EXCLUDED.center_badge_type,
+          center_badge_text = EXCLUDED.center_badge_text,
           show_business_name = EXCLUDED.show_business_name,
+          header_title = EXCLUDED.header_title,
+          show_header_title = EXCLUDED.show_header_title,
           header_subtitle = EXCLUDED.header_subtitle,
+          show_header_logo = EXCLUDED.show_header_logo,
+          header_logo_url = EXCLUDED.header_logo_url,
           updated_at = NOW();`,
         [
           business.id,
@@ -251,8 +297,14 @@ export async function POST(req: NextRequest) {
           updatedCustomization.frameColor,
           updatedCustomization.showLogo,
           updatedCustomization.customLogoUrl || null,
+          updatedCustomization.centerBadgeType,
+          updatedCustomization.centerBadgeText || null,
           updatedCustomization.showBusinessName,
+          updatedCustomization.headerTitle || null,
+          updatedCustomization.showHeaderTitle,
           updatedCustomization.headerSubtitle,
+          updatedCustomization.showHeaderLogo,
+          updatedCustomization.headerLogoUrl || null,
         ]
       );
     } catch (pgErr) {

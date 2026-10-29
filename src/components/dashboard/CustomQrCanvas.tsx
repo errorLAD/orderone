@@ -12,6 +12,8 @@ interface CustomQrCanvasProps {
   businessLogo?: string;
   size?: number; // base render size (e.g. 360 for preview, 520 for standard)
   className?: string;
+  tableNumber?: string;
+  roomNumber?: string;
   onGenerated?: (dataUrl: string, canvas: HTMLCanvasElement) => void;
 }
 
@@ -22,30 +24,51 @@ export function CustomQrCanvas({
   businessLogo,
   size = 360,
   className,
+  tableNumber,
+  roomNumber,
   onGenerated,
 }: CustomQrCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
+  const [headerLogoImg, setHeaderLogoImg] = useState<HTMLImageElement | null>(null);
   const [orderOneLogoImg, setOrderOneLogoImg] = useState<HTMLImageElement | null>(null);
 
-  const activeLogoUrl = customization.customLogoUrl || businessLogo;
+  const activeCenterLogoUrl = customization.customLogoUrl || businessLogo;
+  const activeHeaderLogoUrl = customization.headerLogoUrl || businessLogo;
 
   // Pre-load merchant center logo image if enabled
   useEffect(() => {
-    if (!customization.showLogo || !activeLogoUrl) {
+    if (!customization.showLogo || !activeCenterLogoUrl) {
       setLogoImg(null);
       return;
     }
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = activeLogoUrl;
+    img.src = activeCenterLogoUrl;
     img.onload = () => setLogoImg(img);
     img.onerror = () => {
-      console.warn('Failed to load custom logo image, using monogram fallback');
+      console.warn('Failed to load center logo image, using monogram/badge fallback');
       setLogoImg(null);
     };
-  }, [customization.showLogo, activeLogoUrl]);
+  }, [customization.showLogo, activeCenterLogoUrl]);
+
+  // Pre-load merchant header logo image if enabled
+  useEffect(() => {
+    if (!customization.showHeaderLogo || !activeHeaderLogoUrl) {
+      setHeaderLogoImg(null);
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = activeHeaderLogoUrl;
+    img.onload = () => setHeaderLogoImg(img);
+    img.onerror = () => {
+      console.warn('Failed to load header logo image');
+      setHeaderLogoImg(null);
+    };
+  }, [customization.showHeaderLogo, activeHeaderLogoUrl]);
 
   // Pre-load OrderOne footer brand logo
   useEffect(() => {
@@ -79,16 +102,39 @@ export function CustomQrCanvas({
       const isBadge = frameStyle === 'badge';
       const isSimpleBorder = frameStyle === 'simple_border';
 
+      // Header specifications (Optional Title, Subtitle, and Logo)
       const showHeader = customization.showBusinessName !== false;
-      const displayBizName = (businessName || 'OrderOne Store').trim();
-      const displaySubtitle = (customization.headerSubtitle || 'DIGITAL STOREFRONT & MENU').trim();
+      const showTitle = customization.showHeaderTitle !== false;
+      const displayBizName = (customization.headerTitle || businessName || '').trim();
+      const displaySubtitle = (customization.headerSubtitle || '').trim();
+      const hasHeaderLogo = customization.showHeaderLogo === true && !!headerLogoImg;
+
+      // Table / Room badge label (from customization or props)
+      const badgeLabel = (
+        customization.centerBadgeText ||
+        tableNumber ||
+        roomNumber ||
+        ''
+      ).trim();
+
+      // Dynamic header height based on options enabled
+      let headerH = 14;
+      if (showHeader && (hasHeaderLogo || (showTitle && displayBizName) || displaySubtitle)) {
+        if (hasHeaderLogo && showTitle && displayBizName) {
+          headerH = 96;
+        } else if (hasHeaderLogo) {
+          headerH = 68;
+        } else if (showTitle && displayBizName) {
+          headerH = 74;
+        } else {
+          headerH = 46;
+        }
+      }
 
       // Canvas dimensions & proportional scaling
       const canvasW = size;
       const qrSize = Math.round(canvasW * 0.74);
       const qrOffsetX = Math.round((canvasW - qrSize) / 2);
-
-      const headerH = showHeader ? 74 : 14;
       let qrOffsetY = headerH + 8;
 
       let bannerH = 0;
@@ -208,32 +254,57 @@ export function CustomQrCanvas({
         );
       }
 
-      // 4. Upper Header (Store / Hotel / Restaurant Name & Subtitle)
-      if (showHeader) {
-        // Business Name with smart length-based font scaling
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = isDarkBg ? '#FFFFFF' : '#0F172A';
+      // 4. Upper Header (Optional Title, Optional Logo, Optional Subtitle)
+      if (showHeader && headerH > 14) {
+        let currentHeaderY = 18;
 
-        let titleFontSize = 20;
-        if (displayBizName.length > 28) {
-          titleFontSize = 14;
-        } else if (displayBizName.length > 20) {
-          titleFontSize = 16;
-        } else if (displayBizName.length > 14) {
-          titleFontSize = 18;
+        // A. Optional Header Logo
+        if (hasHeaderLogo && headerLogoImg) {
+          const hLogoH = 26;
+          const hAspect = headerLogoImg.width / headerLogoImg.height;
+          const hLogoW = Math.min(Math.round(hLogoH * hAspect), 120);
+          const hLogoX = Math.round((canvasW - hLogoW) / 2);
+
+          ctx.save();
+          drawRoundRect(hLogoX - 4, currentHeaderY - 2, hLogoW + 8, hLogoH + 4, 6, '#FFFFFF', undefined, 0);
+          ctx.drawImage(headerLogoImg, hLogoX, currentHeaderY, hLogoW, hLogoH);
+          ctx.restore();
+
+          currentHeaderY += hLogoH + 8;
         }
 
-        ctx.font = `800 ${titleFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillText(displayBizName.toUpperCase(), canvasW / 2, 28);
+        // B. Optional Header Title (Store / Restaurant / Hotel Name)
+        if (showTitle && displayBizName) {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isDarkBg ? '#FFFFFF' : '#0F172A';
 
-        // Subtitle / Tagline
-        ctx.fillStyle = isDarkBg ? '#94A3B8' : '#64748B';
-        ctx.font = '700 9.5px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        ctx.fillText(displaySubtitle.toUpperCase(), canvasW / 2, 48);
+          let titleFontSize = 20;
+          if (displayBizName.length > 28) {
+            titleFontSize = 13;
+          } else if (displayBizName.length > 20) {
+            titleFontSize = 15;
+          } else if (displayBizName.length > 14) {
+            titleFontSize = 17;
+          }
 
-        // Decorative Hairline Accent Divider with Center Diamond
-        const divY = 62;
+          ctx.font = `800 ${titleFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+          ctx.fillText(displayBizName.toUpperCase(), canvasW / 2, currentHeaderY + 8);
+          currentHeaderY += 22;
+        }
+
+        // C. Optional Subtitle / Tagline
+        if (displaySubtitle) {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = isDarkBg ? '#94A3B8' : '#64748B';
+          ctx.font = '700 9.5px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText(displaySubtitle.toUpperCase(), canvasW / 2, currentHeaderY + 2);
+          currentHeaderY += 14;
+        }
+
+        // D. Decorative Accent Hairline Divider with Center Dot
+        const divY = Math.min(currentHeaderY + 2, headerH + 2);
         const divHalfW = 60;
         ctx.strokeStyle = isDarkBg ? 'rgba(255, 255, 255, 0.18)' : 'rgba(15, 23, 42, 0.12)';
         ctx.lineWidth = 1;
@@ -265,10 +336,11 @@ export function CustomQrCanvas({
         return false;
       };
 
-      // Check if coordinate is in center logo exclusion zone (~22% area)
+      // Check if coordinate is in center logo exclusion zone (ONLY if showLogo is TRUE)
       const centerStart = Math.floor(moduleCount * 0.38);
       const centerEnd = Math.ceil(moduleCount * 0.62);
       const isCenter = (r: number, c: number) => {
+        // When Middle Logo is disabled/optional, NO modules are excluded!
         if (!customization.showLogo) return false;
         return r >= centerStart && r <= centerEnd && c >= centerStart && c <= centerEnd;
       };
@@ -427,13 +499,14 @@ export function CustomQrCanvas({
       // Bottom-Left Eye
       drawEye(qrOffsetX, qrOffsetY + (moduleCount - 7) * cellSize, eyeStyle);
 
-      // 8. Draw Center Business Logo (if enabled)
+      // 8. Draw Center Middle Badge (OPTIONAL: Logo, Table/Room Number, or Both)
       if (customization.showLogo) {
         const logoZoneSize = (centerEnd - centerStart + 0.4) * cellSize;
         const logoX = qrOffsetX + centerStart * cellSize - cellSize * 0.2;
         const logoY = qrOffsetY + centerStart * cellSize - cellSize * 0.2;
 
         ctx.save();
+        // Protective background badge (clean white + frame color or eye color ring)
         drawRoundRect(
           logoX,
           logoY,
@@ -445,28 +518,106 @@ export function CustomQrCanvas({
           2
         );
 
-        if (logoImg) {
-          ctx.beginPath();
-          const padding = logoZoneSize * 0.12;
-          const imgW = logoZoneSize - padding * 2;
-          const imgH = logoZoneSize - padding * 2;
-          drawRoundRect(
-            logoX + padding,
-            logoY + padding,
-            imgW,
-            imgH,
-            imgW * 0.2,
-            undefined
-          );
-          ctx.clip();
-          ctx.drawImage(logoImg, logoX + padding, logoY + padding, imgW, imgH);
-        } else {
-          const initial = displayBizName ? displayBizName.charAt(0).toUpperCase() : 'O';
-          ctx.fillStyle = fg;
-          ctx.font = `bold ${Math.round(logoZoneSize * 0.48)}px system-ui, sans-serif`;
+        const activeBadgeType = customization.centerBadgeType || (badgeLabel ? 'table_room' : 'logo');
+
+        if (activeBadgeType === 'table_room' && badgeLabel) {
+          // Center Badge: Table No / Room No (e.g. "Table 4" or "Room 101" or "Temple 1")
+          const parts = badgeLabel.trim().split(/\s+/);
+          if (parts.length >= 2) {
+            const prefix = parts[0].toUpperCase();
+            const num = parts.slice(1).join(' ').toUpperCase();
+
+            // Line 1: TABLE / ROOM / TEMPLE
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#64748B';
+            ctx.font = `800 ${Math.round(logoZoneSize * 0.17)}px system-ui, sans-serif`;
+            ctx.fillText(prefix, logoX + logoZoneSize / 2, logoY + logoZoneSize * 0.35);
+
+            // Line 2: Big Bold Number (4 / 101 / 2)
+            ctx.fillStyle = frameColor || fg;
+            ctx.font = `900 ${Math.round(logoZoneSize * 0.38)}px system-ui, sans-serif`;
+            ctx.fillText(num, logoX + logoZoneSize / 2, logoY + logoZoneSize * 0.68);
+          } else {
+            // Single word (e.g. "101" or "T4")
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = frameColor || fg;
+            ctx.font = `900 ${Math.round(logoZoneSize * 0.34)}px system-ui, sans-serif`;
+            ctx.fillText(badgeLabel.toUpperCase(), logoX + logoZoneSize / 2, logoY + logoZoneSize / 2);
+          }
+        } else if (activeBadgeType === 'both' && badgeLabel) {
+          // Both Logo & Table/Room Number
+          const topH = logoZoneSize * 0.52;
+          const botH = logoZoneSize * 0.48;
+
+          // Top: Logo or Monogram
+          if (logoImg) {
+            ctx.beginPath();
+            const pad = topH * 0.12;
+            const imgSize = topH - pad * 2;
+            drawRoundRect(
+              logoX + (logoZoneSize - imgSize) / 2,
+              logoY + pad + 2,
+              imgSize,
+              imgSize,
+              imgSize * 0.2,
+              undefined
+            );
+            ctx.clip();
+            ctx.drawImage(
+              logoImg,
+              logoX + (logoZoneSize - imgSize) / 2,
+              logoY + pad + 2,
+              imgSize,
+              imgSize
+            );
+          } else {
+            const initial = displayBizName ? displayBizName.charAt(0).toUpperCase() : 'O';
+            ctx.fillStyle = fg;
+            ctx.font = `bold ${Math.round(topH * 0.62)}px system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(initial, logoX + logoZoneSize / 2, logoY + topH / 2 + 2);
+          }
+
+          // Bottom: Mini Table/Room Pill Badge
+          const pillW = logoZoneSize * 0.88;
+          const pillH = botH * 0.68;
+          const pillX = logoX + (logoZoneSize - pillW) / 2;
+          const pillY = logoY + topH + 3;
+
+          drawRoundRect(pillX, pillY, pillW, pillH, pillH * 0.35, frameColor || fg);
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(initial, logoX + logoZoneSize / 2, logoY + logoZoneSize / 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 ${Math.round(pillH * 0.54)}px system-ui, sans-serif`;
+          ctx.fillText(badgeLabel.toUpperCase(), pillX + pillW / 2, pillY + pillH / 2);
+        } else {
+          // Logo or Monogram Fallback
+          if (logoImg) {
+            ctx.beginPath();
+            const padding = logoZoneSize * 0.12;
+            const imgW = logoZoneSize - padding * 2;
+            const imgH = logoZoneSize - padding * 2;
+            drawRoundRect(
+              logoX + padding,
+              logoY + padding,
+              imgW,
+              imgH,
+              imgW * 0.2,
+              undefined
+            );
+            ctx.clip();
+            ctx.drawImage(logoImg, logoX + padding, logoY + padding, imgW, imgH);
+          } else {
+            const initial = displayBizName ? displayBizName.charAt(0).toUpperCase() : 'O';
+            ctx.fillStyle = fg;
+            ctx.font = `bold ${Math.round(logoZoneSize * 0.48)}px system-ui, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(initial, logoX + logoZoneSize / 2, logoY + logoZoneSize / 2);
+          }
         }
         ctx.restore();
       }
@@ -574,8 +725,11 @@ export function CustomQrCanvas({
     customization,
     businessName,
     logoImg,
+    headerLogoImg,
     orderOneLogoImg,
     size,
+    tableNumber,
+    roomNumber,
     onGenerated,
   ]);
 

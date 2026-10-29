@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Palette,
@@ -22,8 +22,12 @@ import {
   HelpCircle,
   Copy,
   ExternalLink,
+  Upload,
+  Trash2,
+  BedDouble,
+  UtensilsCrossed,
 } from 'lucide-react';
-import { QrCustomizationSettings, QrDotStyle, QrEyeStyle, QrFrameStyle } from '@/types';
+import { QrCustomizationSettings, QrDotStyle, QrEyeStyle, QrFrameStyle, QrCenterBadgeType } from '@/types';
 import {
   DEFAULT_QR_CUSTOMIZATION,
   QR_PRESET_TEMPLATES,
@@ -44,6 +48,9 @@ interface QrCustomizationStudioProps {
   businessSlug: string;
   targetUrl: string;
   isGoldPlan: boolean;
+  qrType?: 'store' | 'menu' | 'table' | 'room' | 'payment_qr';
+  tableNumber?: string;
+  roomNumber?: string;
 }
 
 export function QrCustomizationStudio({
@@ -53,6 +60,9 @@ export function QrCustomizationStudio({
   businessSlug,
   targetUrl,
   isGoldPlan,
+  qrType,
+  tableNumber,
+  roomNumber,
 }: QrCustomizationStudioProps) {
   const [customization, setCustomization] = useState<QrCustomizationSettings>(DEFAULT_QR_CUSTOMIZATION);
   const [activeTab, setActiveTab] = useState<'presets' | 'colors' | 'patterns' | 'frames'>('presets');
@@ -64,6 +74,68 @@ export function QrCustomizationStudio({
   const [activeCanvas, setActiveCanvas] = useState<HTMLCanvasElement | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // File upload refs and state for logo uploads
+  const centerLogoFileRef = useRef<HTMLInputElement | null>(null);
+  const headerLogoFileRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState<'center' | 'header' | null>(null);
+
+  // Automatically sync table or room number into center badge text when switching destinations
+  useEffect(() => {
+    if (tableNumber) {
+      setCustomization((prev) => ({
+        ...prev,
+        centerBadgeText: prev.centerBadgeText || tableNumber,
+      }));
+    } else if (roomNumber) {
+      setCustomization((prev) => ({
+        ...prev,
+        centerBadgeText: prev.centerBadgeText || `Room ${roomNumber}`,
+      }));
+    }
+  }, [tableNumber, roomNumber]);
+
+  // Handle uploading logo file to server storage
+  const handleUploadLogo = async (file: File, target: 'center' | 'header') => {
+    try {
+      setUploadingLogo(target);
+      setErrorMsg(null);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'logos');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload logo image');
+      }
+
+      if (target === 'center') {
+        setCustomization((prev) => ({
+          ...prev,
+          customLogoUrl: data.url,
+          showLogo: true,
+          templateId: 'custom',
+        }));
+      } else {
+        setCustomization((prev) => ({
+          ...prev,
+          headerLogoUrl: data.url,
+          showHeaderLogo: true,
+          showBusinessName: true,
+          templateId: 'custom',
+        }));
+      }
+    } catch (err: any) {
+      console.error('Logo upload error:', err);
+      setErrorMsg(err.message || 'Image upload failed. Please try again.');
+    } finally {
+      setUploadingLogo(null);
+    }
+  };
 
   // Fetch saved customization from backend on mount
   useEffect(() => {
@@ -146,7 +218,7 @@ export function QrCustomizationStudio({
       setDownloadingPdf(true);
       await downloadQrPdf({
         canvas: activeCanvas,
-        businessName,
+        businessName: (customization.showHeaderTitle !== false && customization.headerTitle) || businessName,
         targetUrl,
         frameText: customization.frameText,
       });
@@ -602,18 +674,18 @@ export function QrCustomizationStudio({
             </div>
           )}
 
-          {/* TAB 4: Frames & Logo */}
+          {/* TAB 4: Header, Center Badge & Frames */}
           {activeTab === 'frames' && (
             <div className="space-y-4">
-              {/* Upper Header Section */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              {/* SECTION 1: Upper Standee Header (Optional Title, Subtitle, & Header Logo) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-xs font-bold text-slate-800 block">
-                      Upper Header: Store / Restaurant Name
+                      1. Upper Header: Store / Restaurant Title & Logo
                     </label>
                     <p className="text-[11px] text-slate-500">
-                      Display your store name and category tagline prominently above the QR code.
+                      Display your store name, header logo, and category tagline at the top of the standee.
                     </p>
                   </div>
                   <input
@@ -631,136 +703,192 @@ export function QrCustomizationStudio({
                 </div>
 
                 {customization.showBusinessName !== false && (
-                  <div className="space-y-2 pt-2 border-t border-slate-200/60">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      Subtitle / Tagline (Under Store Name)
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={40}
-                      value={customization.headerSubtitle || ''}
-                      onChange={(e) =>
-                        setCustomization({
-                          ...customization,
-                          headerSubtitle: e.target.value,
-                          templateId: 'custom',
-                        })
-                      }
-                      placeholder="e.g. DIGITAL STOREFRONT & MENU"
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 uppercase bg-white focus:ring-2 focus:ring-slate-900"
-                    />
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="text-[10px] text-slate-500">Suggestions:</span>
-                      {[
-                        'DIGITAL STOREFRONT & MENU',
-                        'SCAN • ORDER • PAY',
-                        'CONTACTLESS DINING',
-                        'OFFICIAL STORE QR',
-                      ].map((sug) => (
-                        <button
-                          key={sug}
-                          type="button"
-                          onClick={() =>
+                  <div className="space-y-3 pt-3 border-t border-slate-200/60">
+                    {/* Header Title (Store Name) - Optional Toggle & Custom Text */}
+                    <div className="space-y-1.5 p-3 bg-white rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <span>Header Store / Restaurant Title</span>
+                          <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={customization.showHeaderTitle !== false}
+                          onChange={(e) =>
                             setCustomization({
                               ...customization,
-                              headerSubtitle: sug,
+                              showHeaderTitle: e.target.checked,
                               templateId: 'custom',
                             })
                           }
-                          className="text-[10px] font-semibold text-indigo-600 hover:underline bg-white px-2 py-0.5 rounded border border-slate-200"
-                        >
-                          {sug}
-                        </button>
-                      ))}
+                          className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                      </div>
+
+                      {customization.showHeaderTitle !== false && (
+                        <div className="pt-1.5">
+                          <input
+                            type="text"
+                            maxLength={50}
+                            value={customization.headerTitle || ''}
+                            onChange={(e) =>
+                              setCustomization({
+                                ...customization,
+                                headerTitle: e.target.value,
+                                templateId: 'custom',
+                              })
+                            }
+                            placeholder={businessName || 'e.g. ROYAL KITCHEN'}
+                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 uppercase bg-white focus:ring-2 focus:ring-slate-900"
+                          />
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Leave empty to automatically use default business name: <strong>{businessName}</strong>.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Header Logo Upload & Toggle */}
+                    <div className="space-y-1.5 p-3 bg-white rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <span>Header Brand Logo</span>
+                          <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="checkbox"
+                          checked={customization.showHeaderLogo === true}
+                          onChange={(e) =>
+                            setCustomization({
+                              ...customization,
+                              showHeaderLogo: e.target.checked,
+                              templateId: 'custom',
+                            })
+                          }
+                          className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                      </div>
+
+                      {customization.showHeaderLogo && (
+                        <div className="space-y-2 pt-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              ref={headerLogoFileRef}
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUploadLogo(file, 'header');
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => headerLogoFileRef.current?.click()}
+                              disabled={uploadingLogo === 'header'}
+                              className="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition"
+                            >
+                              {uploadingLogo === 'header' ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Upload className="w-3.5 h-3.5" />
+                              )}
+                              <span>Upload Header Logo</span>
+                            </button>
+
+                            {customization.headerLogoUrl && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCustomization({
+                                    ...customization,
+                                    headerLogoUrl: undefined,
+                                    templateId: 'custom',
+                                  })
+                                }
+                                className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg border border-slate-200 bg-white"
+                                title="Remove Header Logo"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          <input
+                            type="url"
+                            value={customization.headerLogoUrl || ''}
+                            onChange={(e) =>
+                              setCustomization({
+                                ...customization,
+                                headerLogoUrl: e.target.value,
+                                templateId: 'custom',
+                              })
+                            }
+                            placeholder={businessLogo || 'https://orderone.in/logo.png'}
+                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Subtitle / Category Tagline */}
+                    <div className="space-y-1.5 p-3 bg-white rounded-xl border border-slate-200">
+                      <label className="block text-xs font-bold text-slate-800">
+                        Tagline / Subtitle (Under Store Name)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={50}
+                        value={customization.headerSubtitle || ''}
+                        onChange={(e) =>
+                          setCustomization({
+                            ...customization,
+                            headerSubtitle: e.target.value,
+                            templateId: 'custom',
+                          })
+                        }
+                        placeholder="e.g. DIGITAL STOREFRONT & MENU"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 uppercase bg-white focus:ring-2 focus:ring-slate-900"
+                      />
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400">Quick suggestions:</span>
+                        {[
+                          'DIGITAL STOREFRONT & MENU',
+                          'SCAN • ORDER • PAY',
+                          'IN-ROOM DINING',
+                          'DINING TABLE MENU',
+                          'OFFICIAL STORE QR',
+                        ].map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() =>
+                              setCustomization({
+                                ...customization,
+                                headerSubtitle: sug,
+                                templateId: 'custom',
+                              })
+                            }
+                            className="text-[10px] font-semibold text-indigo-600 hover:underline bg-slate-50 px-2 py-0.5 rounded border border-slate-200"
+                          >
+                            {sug}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Frame Style */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
-                  Frame & Poster Layout
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {FRAME_STYLES.map((frame) => {
-                    const isSelected = customization.frameStyle === frame.id;
-                    return (
-                      <button
-                        key={frame.id}
-                        onClick={() =>
-                          setCustomization({
-                            ...customization,
-                            frameStyle: frame.id,
-                            templateId: 'custom',
-                          })
-                        }
-                        className={cn(
-                          'p-3 rounded-xl border text-left transition',
-                          isSelected
-                            ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-600/20'
-                            : 'border-slate-200 bg-white hover:bg-slate-50'
-                        )}
-                      >
-                        <span className="text-xs font-bold text-slate-900 block">{frame.label}</span>
-                        <span className="text-[10px] text-slate-500 block mt-0.5">{frame.description}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Call-to-Action Text */}
-              {customization.frameStyle !== 'none' && (
-                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <label className="block text-xs font-bold text-slate-800">
-                    Call to Action Banner Text
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={40}
-                    value={customization.frameText}
-                    onChange={(e) =>
-                      setCustomization({
-                        ...customization,
-                        frameText: e.target.value,
-                        templateId: 'custom',
-                      })
-                    }
-                    placeholder="e.g. SCAN TO ORDER"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 uppercase bg-white focus:ring-2 focus:ring-slate-900"
-                  />
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[11px] text-slate-500">Quick suggestions:</span>
-                    {['SCAN TO ORDER', 'SCAN FOR MENU', 'ORDER HERE', 'SCAN & PAY'].map((sug) => (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() =>
-                          setCustomization({
-                            ...customization,
-                            frameText: sug,
-                            templateId: 'custom',
-                          })
-                        }
-                        className="text-[10px] font-semibold text-indigo-600 hover:underline bg-white px-2 py-0.5 rounded border border-slate-200"
-                      >
-                        {sug}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Center Logo Options */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              {/* SECTION 2: Middle Center Badge (OPTIONAL - Logo, Room No, Table No) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-xs font-bold text-slate-800 block">
-                      Embed Business Logo in Center
+                      2. Middle Center Badge: Optional
                     </label>
                     <p className="text-[11px] text-slate-500">
-                      Error correction level H preserves scannability with protective center badge.
+                      Keep center clean (pure QR matrix) or embed your Logo, Room No, or Table No.
                     </p>
                   </div>
                   <input
@@ -778,35 +906,251 @@ export function QrCustomizationStudio({
                 </div>
 
                 {customization.showLogo && (
-                  <div className="space-y-2 pt-2 border-t border-slate-200/60">
-                    <label className="block text-[11px] font-semibold text-slate-700">
-                      Custom Logo Image URL (Optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={customization.customLogoUrl || ''}
-                      onChange={(e) =>
-                        setCustomization({
-                          ...customization,
-                          customLogoUrl: e.target.value,
-                          templateId: 'custom',
-                        })
-                      }
-                      placeholder={businessLogo || 'https://orderone.in/logo.png'}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
-                    />
-                    <p className="text-[10px] text-slate-400">
-                      Leave empty to automatically use your business profile logo or initial monogram.
-                    </p>
+                  <div className="space-y-3 pt-3 border-t border-slate-200/60">
+                    {/* Content Selector: Logo, Room/Table, or Both */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                        Choose Middle Center Badge Content:
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'logo', label: 'Store Logo / Monogram', icon: ImageIcon },
+                          { id: 'table_room', label: 'Room / Table No', icon: BedDouble },
+                          { id: 'both', label: 'Logo + Room / Table', icon: Sparkles },
+                        ].map((bType) => {
+                          const isSel = (customization.centerBadgeType || 'logo') === bType.id;
+                          const IconComp = bType.icon;
+                          return (
+                            <button
+                              key={bType.id}
+                              type="button"
+                              onClick={() =>
+                                setCustomization({
+                                  ...customization,
+                                  centerBadgeType: bType.id as QrCenterBadgeType,
+                                  templateId: 'custom',
+                                })
+                              }
+                              className={cn(
+                                'p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1',
+                                isSel
+                                  ? 'border-indigo-600 bg-white ring-2 ring-indigo-600/20 shadow-xs'
+                                  : 'border-slate-200 bg-white hover:bg-slate-50'
+                              )}
+                            >
+                              <IconComp className={cn('w-4 h-4', isSel ? 'text-indigo-600' : 'text-slate-500')} />
+                              <span className={cn('text-[11px] font-bold leading-tight', isSel ? 'text-indigo-900' : 'text-slate-700')}>
+                                {bType.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Room / Table Number Label (if table_room or both) */}
+                    {(customization.centerBadgeType === 'table_room' || customization.centerBadgeType === 'both') && (
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                        <label className="block text-xs font-bold text-slate-800">
+                          Middle Room / Table / Counter Number Label
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={25}
+                          value={customization.centerBadgeText ?? (tableNumber || (roomNumber ? `Room ${roomNumber}` : ''))}
+                          onChange={(e) =>
+                            setCustomization({
+                              ...customization,
+                              centerBadgeText: e.target.value,
+                              templateId: 'custom',
+                            })
+                          }
+                          placeholder={tableNumber || (roomNumber ? `Room ${roomNumber}` : 'e.g. Table 4 or Room 101')}
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 uppercase bg-white focus:ring-2 focus:ring-slate-900"
+                        />
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[10px] text-slate-400">Presets:</span>
+                          {[
+                            'Table 1',
+                            'Table 2',
+                            'Table 4',
+                            'Room 101',
+                            'Room 102',
+                            'Room 201',
+                            'Temple 1',
+                            'Counter 1',
+                          ].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() =>
+                                setCustomization({
+                                  ...customization,
+                                  centerBadgeText: chip,
+                                  templateId: 'custom',
+                                })
+                              }
+                              className="text-[10px] font-semibold text-indigo-600 hover:underline bg-slate-50 px-2 py-0.5 rounded border border-slate-200"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Logo Upload (if logo or both) */}
+                    {(customization.centerBadgeType === 'logo' || customization.centerBadgeType === 'both' || !customization.centerBadgeType) && (
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-800">
+                            Middle Business Logo
+                          </label>
+                          <input
+                            type="file"
+                            ref={centerLogoFileRef}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadLogo(file, 'center');
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => centerLogoFileRef.current?.click()}
+                            disabled={uploadingLogo === 'center'}
+                            className="px-3 py-1 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 transition"
+                          >
+                            {uploadingLogo === 'center' ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5" />
+                            )}
+                            <span>Upload Logo File</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            value={customization.customLogoUrl || ''}
+                            onChange={(e) =>
+                              setCustomization({
+                                ...customization,
+                                customLogoUrl: e.target.value,
+                                templateId: 'custom',
+                              })
+                            }
+                            placeholder={businessLogo || 'https://orderone.in/logo.png'}
+                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
+                          />
+                          {customization.customLogoUrl && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCustomization({
+                                  ...customization,
+                                  customLogoUrl: undefined,
+                                  templateId: 'custom',
+                                })
+                              }
+                              className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg border border-slate-200 bg-white shrink-0"
+                              title="Clear Custom Logo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400">
+                          Leave empty to automatically use your business monogram or initial.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Official Footer Branding */}
+              {/* SECTION 3: Frame Style & CTA Banner */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <label className="block text-xs font-bold text-slate-800">
+                  3. Standee Frame & CTA Banner Layout
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {FRAME_STYLES.map((frame) => {
+                    const isSelected = customization.frameStyle === frame.id;
+                    return (
+                      <button
+                        key={frame.id}
+                        type="button"
+                        onClick={() =>
+                          setCustomization({
+                            ...customization,
+                            frameStyle: frame.id,
+                            templateId: 'custom',
+                          })
+                        }
+                        className={cn(
+                          'p-3 rounded-xl border text-left transition',
+                          isSelected
+                            ? 'border-indigo-600 bg-white ring-2 ring-indigo-600/20 shadow-xs'
+                            : 'border-slate-200 bg-white hover:bg-slate-50'
+                        )}
+                      >
+                        <span className="text-xs font-bold text-slate-900 block">{frame.label}</span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">{frame.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {customization.frameStyle !== 'none' && (
+                  <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Call to Action Banner Text
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={40}
+                      value={customization.frameText}
+                      onChange={(e) =>
+                        setCustomization({
+                          ...customization,
+                          frameText: e.target.value,
+                          templateId: 'custom',
+                        })
+                      }
+                      placeholder="e.g. SCAN TO ORDER"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 uppercase bg-white focus:ring-2 focus:ring-slate-900"
+                    />
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-slate-400">Suggestions:</span>
+                      {['SCAN TO ORDER', 'SCAN FOR MENU', 'ORDER HERE', 'SCAN & PAY'].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() =>
+                            setCustomization({
+                              ...customization,
+                              frameText: sug,
+                              templateId: 'custom',
+                            })
+                          }
+                          className="text-[10px] font-semibold text-indigo-600 hover:underline bg-white px-2 py-0.5 rounded border border-slate-200"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 4: Standee Verification Footer */}
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs">
                 <div>
                   <span className="font-bold text-slate-800 block">
-                    Standee Footer: Powered by OrderOne.in
+                    4. Standee Footer: Powered by OrderOne.in
                   </span>
                   <p className="text-[11px] text-slate-500">
                     Official verification badge with brand logo and .in tag is rendered at the bottom of the standee.
@@ -883,6 +1227,8 @@ export function QrCustomizationStudio({
               businessName={businessName}
               businessLogo={businessLogo}
               size={360}
+              tableNumber={tableNumber}
+              roomNumber={roomNumber}
               onGenerated={(dataUrl, canvas) => {
                 setGeneratedDataUrl(dataUrl);
                 setActiveCanvas(canvas);

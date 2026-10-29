@@ -19,7 +19,10 @@ export const DEFAULT_QR_CUSTOMIZATION: QrCustomizationSettings = {
   frameText: 'SCAN TO ORDER',
   frameColor: '#4F46E5',
   showLogo: true,
+  centerBadgeType: 'logo',
   showBusinessName: true,
+  showHeaderTitle: true,
+  showHeaderLogo: false,
   headerSubtitle: 'DIGITAL STOREFRONT & MENU',
 };
 
