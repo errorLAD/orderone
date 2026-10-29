@@ -170,6 +170,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           href: '/dashboard',
           icon: LayoutDashboard,
         },
+        {
+          name: 'POS Counter Billing',
+          href: '/dashboard/pos',
+          icon: Calculator,
+          badge: isGoldPlan ? 'Gold' : null,
+          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
+          isLocked: !isGoldPlan,
+        },
       ],
     },
 
@@ -286,24 +294,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ],
     },
 
-    // 4. Counter & POS Register
-    {
-      id: 'pos_ops',
-      title: 'Counter & POS',
-      collapsible: true,
-      items: [
-        {
-          name: 'POS Counter Billing',
-          href: '/dashboard/pos',
-          icon: Calculator,
-          badge: isGoldPlan ? 'Gold' : null,
-          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
-          isLocked: !isGoldPlan,
-        },
-      ],
-    },
-
-    // 5. Settings & Account
+    // 4. Settings & Account
     {
       id: 'settings',
       title: 'Settings & Billing',
