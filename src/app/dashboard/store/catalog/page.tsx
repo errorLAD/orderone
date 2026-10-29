@@ -509,6 +509,39 @@ export default function StoreCatalogPage() {
     }
   };
 
+  const [togglingAvailabilityId, setTogglingAvailabilityId] = useState<string | null>(null);
+
+  const handleSetAvailability = async (product: Product, isAvailable: boolean) => {
+    if (product.isAvailable === isAvailable) return;
+    try {
+      setTogglingAvailabilityId(product.id);
+      // Optimistic update for instant UI feedback
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, isAvailable } : p))
+      );
+
+      const res = await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: product.id,
+          isAvailable,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update product availability');
+      }
+
+      await fetchData();
+    } catch (e) {
+      console.error('Error adjusting availability:', e);
+      await fetchData();
+    } finally {
+      setTogglingAvailabilityId(null);
+    }
+  };
+
   const handleQuickStockAdjust = async (product: Product, delta: number) => {
     const newQty = Math.max(0, (product.stockQuantity || 0) + delta);
     try {
@@ -1069,35 +1102,52 @@ export default function StoreCatalogPage() {
                         </div>
                       </td>
 
-                      {/* Status */}
+                      {/* Status / Availability Buttons */}
                       <td className="p-3.5">
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold',
-                            isOut
-                              ? 'bg-rose-50 text-rose-700'
-                              : isLow
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-emerald-50 text-emerald-700'
+                        <div className="flex flex-col gap-1 items-start">
+                          <div className="inline-flex items-center p-0.5 bg-slate-100/90 rounded-lg border border-slate-200/90 shadow-2xs whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => handleSetAvailability(p, true)}
+                              disabled={togglingAvailabilityId === p.id}
+                              className={cn(
+                                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95',
+                                p.isAvailable
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                              )}
+                              title="Mark product as Available"
+                            >
+                              <CheckCircle2 className="w-3 h-3 shrink-0" />
+                              <span>Available</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetAvailability(p, false)}
+                              disabled={togglingAvailabilityId === p.id}
+                              className={cn(
+                                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95',
+                                !p.isAvailable
+                                  ? 'bg-rose-600 text-white shadow-xs'
+                                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                              )}
+                              title="Mark product as Not Available"
+                            >
+                              <XCircle className="w-3 h-3 shrink-0" />
+                              <span>Not Available</span>
+                            </button>
+                          </div>
+                          {p.isAvailable && isLow && !isOut && (
+                            <span className="text-[10px] text-amber-600 font-semibold flex items-center gap-0.5">
+                              <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> Low Stock ({p.stockQuantity})
+                            </span>
                           )}
-                        >
-                          {isOut ? (
-                            <>
-                              <XCircle className="w-3 h-3" />
-                              <span>Out of Stock</span>
-                            </>
-                          ) : isLow ? (
-                            <>
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>Low Stock</span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Active</span>
-                            </>
+                          {p.isAvailable && isOut && (
+                            <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-0.5">
+                              <AlertCircle className="w-2.5 h-2.5 shrink-0" /> Out of stock
+                            </span>
                           )}
-                        </span>
+                        </div>
                       </td>
 
                       {/* Updated Date */}
@@ -1163,20 +1213,32 @@ export default function StoreCatalogPage() {
                     </div>
                   )}
 
-                  {/* Status Badge */}
-                  <div className="absolute top-2.5 left-2.5">
-                    <span
+                  {/* Status / Availability Badge Button */}
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <button
+                      type="button"
+                      onClick={() => handleSetAvailability(p, !p.isAvailable)}
+                      disabled={togglingAvailabilityId === p.id}
                       className={cn(
-                        'px-2 py-0.5 rounded text-[10px] font-bold shadow-xs',
-                        isOut
-                          ? 'bg-rose-600 text-white'
-                          : isLow
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-emerald-600 text-white'
+                        'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md cursor-pointer transition-all active:scale-95',
+                        p.isAvailable
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-rose-600 text-white hover:bg-rose-700'
                       )}
+                      title={p.isAvailable ? 'Click to mark as Not Available' : 'Click to mark as Available'}
                     >
-                      {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
-                    </span>
+                      {p.isAvailable ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>Available</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3 h-3 shrink-0" />
+                          <span>Not Available</span>
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   {/* Brand Tag */}
@@ -1243,22 +1305,36 @@ export default function StoreCatalogPage() {
                       </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="flex items-center justify-between gap-2 pt-3 mt-2 border-t border-slate-100">
-                      <div className="inline-flex rounded-md shadow-2xs border border-slate-200 overflow-hidden text-xs">
+                    {/* Quick Actions & Availability */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-slate-100">
+                      <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80 shadow-2xs">
                         <button
-                          onClick={() => handleQuickStockAdjust(p, -1)}
-                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold"
-                          title="Decrease 1"
+                          type="button"
+                          onClick={() => handleSetAvailability(p, true)}
+                          disabled={togglingAvailabilityId === p.id}
+                          className={cn(
+                            'px-2 py-0.5 text-[10px] font-bold rounded transition-colors',
+                            p.isAvailable
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          )}
+                          title="Set Available"
                         >
-                          -1
+                          Available
                         </button>
                         <button
-                          onClick={() => handleQuickStockAdjust(p, 5)}
-                          className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold border-l border-slate-200"
-                          title="Add 5"
+                          type="button"
+                          onClick={() => handleSetAvailability(p, false)}
+                          disabled={togglingAvailabilityId === p.id}
+                          className={cn(
+                            'px-2 py-0.5 text-[10px] font-bold rounded transition-colors',
+                            !p.isAvailable
+                              ? 'bg-rose-600 text-white shadow-xs'
+                              : 'text-slate-500 hover:text-slate-800'
+                          )}
+                          title="Set Not Available"
                         >
-                          +5
+                          Not Available
                         </button>
                       </div>
 

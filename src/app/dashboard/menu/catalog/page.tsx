@@ -422,6 +422,32 @@ export default function MenuCatalogPage() {
     }
   };
 
+  const [togglingAvailabilityId, setTogglingAvailabilityId] = useState<string | null>(null);
+
+  const handleSetAvailability = async (product: Product, isAvailable: boolean) => {
+    if (product.isAvailable === isAvailable) return;
+    try {
+      setTogglingAvailabilityId(product.id);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === product.id ? { ...p, isAvailable } : p))
+      );
+      await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: product.id,
+          isAvailable,
+        }),
+      });
+      await fetchData();
+    } catch (e) {
+      console.error('Error toggling availability:', e);
+      await fetchData();
+    } finally {
+      setTogglingAvailabilityId(null);
+    }
+  };
+
   const handleToggleSoldOut = async (product: Product) => {
     try {
       await fetch('/api/products', {
@@ -934,15 +960,40 @@ export default function MenuCatalogPage() {
                       ) : null}
                     </td>
 
+                    {/* Status / Availability Buttons */}
                     <td className="p-3.5">
-                      <span
-                        className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1',
-                          p.isAvailable ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                        )}
-                      >
-                        {p.isAvailable ? 'Available' : 'Sold Out'}
-                      </span>
+                      <div className="inline-flex items-center p-0.5 bg-slate-100/90 rounded-lg border border-slate-200/90 shadow-2xs whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleSetAvailability(p, true)}
+                          disabled={togglingAvailabilityId === p.id}
+                          className={cn(
+                            'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95',
+                            p.isAvailable
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                          )}
+                          title="Mark menu item as Available"
+                        >
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>Available</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetAvailability(p, false)}
+                          disabled={togglingAvailabilityId === p.id}
+                          className={cn(
+                            'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95',
+                            !p.isAvailable
+                              ? 'bg-rose-600 text-white shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/60'
+                          )}
+                          title="Mark menu item as Not Available (Sold Out)"
+                        >
+                          <XCircle className="w-3 h-3 shrink-0" />
+                          <span>Not Available</span>
+                        </button>
+                      </div>
                     </td>
 
                     <td className="p-3.5 pr-4 text-right">

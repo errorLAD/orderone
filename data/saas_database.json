@@ -189,6 +189,7 @@
       "phone": "8375007409",
       "address": "Buiness",
       "logoUrl": "/uploads/logos/logos_1793205118635_n7yal8g.png",
+      "coverImageUrl": "/uploads/covers/covers_1793294124435_xo6xpvq.jpg",
       "isStoreOpen": true,
       "onlineOrderingEnabled": true,
       "settings": {
@@ -206,6 +207,7 @@
           "updatedAt": "2026-10-29T16:25:35.374Z",
           "businessId": "biz_sdu7mxo_mvs458a5"
         },
+        "coverImageUrl": "/uploads/covers/covers_1793294124435_xo6xpvq.jpg",
         "orderSettings": {
           "enableGst": false,
           "deliveryFee": 30,
@@ -222,6 +224,9 @@
         },
         "operatingHours": "09:00 AM - 09:00 PM (Daily)",
         "tokenPrefixMenu": "M-",
+        "storefrontDesign": {
+          "coverImageUrl": "/uploads/covers/covers_1793294124435_xo6xpvq.jpg"
+        },
         "tokenPrefixStore": "S-",
         "onboardingCompleted": false,
         "onlineOrderingEnabled": true
@@ -234,7 +239,7 @@
         "billingCycle": "monthly"
       },
       "createdAt": "2026-10-28T12:51:17.933Z",
-      "updatedAt": "2026-10-29T16:25:35.913Z"
+      "updatedAt": "2026-10-29T17:15:26.148Z"
     }
   ],
   "users": [
@@ -496,6 +501,27 @@
       "updatedAt": "2026-10-28T12:51:26.661Z"
     },
     {
+      "id": "prod_khfq94r_mvtt628q",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "categoryId": "cat_92gae5e_mvtjaqw6",
+      "sourceType": "store",
+      "name": "pizza 123",
+      "price": 340,
+      "unit": "half",
+      "minOrderQty": 1,
+      "stockQuantity": 24,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "imageUrl": "/uploads/products/products_1793294312966_1zkt1sp.jpg",
+      "sortOrder": 1,
+      "dietaryFlags": {},
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-29T17:19:33.338Z",
+      "updatedAt": "2026-10-29T17:19:33.338Z"
+    },
+    {
       "id": "prod_n05pxch_mvqfjh2t",
       "businessId": "biz_n5190tt_mvq8x8vh",
       "categoryId": "cat_jkdvsrk_mvq8x93x",
@@ -517,6 +543,48 @@
       "addOns": [],
       "createdAt": "2026-10-27T08:34:45.941Z",
       "updatedAt": "2026-10-27T08:34:45.941Z"
+    },
+    {
+      "id": "prod_nt48qi0_mvtta4fm",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "categoryId": "cat_jpgmmgz_mvtjcw91",
+      "sourceType": "store",
+      "name": "Chinese All",
+      "price": 122,
+      "unit": "half",
+      "minOrderQty": 1,
+      "stockQuantity": 25,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "imageUrl": "/uploads/products/products_1793294531293_lzwmxdz.jpg",
+      "sortOrder": 2,
+      "dietaryFlags": {},
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-29T17:22:42.802Z",
+      "updatedAt": "2026-10-29T17:22:42.802Z"
+    },
+    {
+      "id": "prod_pty92a5_mvttb39z",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "categoryId": "cat_92gae5e_mvtjaqw6",
+      "sourceType": "store",
+      "name": "Burger Big",
+      "price": 1,
+      "unit": "portion",
+      "minOrderQty": 1,
+      "stockQuantity": 24,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "imageUrl": "/uploads/products/products_1793294585012_vhuqegg.jpg",
+      "sortOrder": 3,
+      "dietaryFlags": {},
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-29T17:23:27.959Z",
+      "updatedAt": "2026-10-29T17:23:27.959Z"
     }
   ],
   "orders": [
