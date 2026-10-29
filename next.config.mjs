@@ -49,13 +49,6 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         ],
       },
-      // Aggressive long-term caching for static assets (Next.js hashes filenames)
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
       // Cache public uploads / category images for 24 hours
       {
         source: '/uploads/:path*',

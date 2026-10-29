@@ -1,19 +1,9 @@
 import React, { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 import { DEFAULT_SEO, SITE_URL, generatePlatformSchema } from '@/lib/seoConfig';
-
-// Self-host the font: zero render-blocking, no external network request per page
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-plus-jakarta',
-  preload: true,
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -59,8 +49,11 @@ export default function RootLayout({
   const platformSchema = generatePlatformSchema();
 
   return (
-    <html lang="en" className={`scroll-smooth ${plusJakartaSans.variable}`}>
+    <html lang="en" className="scroll-smooth">
       <head>
+        {/* Preconnect to external resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Platform Organization & WebSite JSON-LD Schema */}
         <script
           type="application/ld+json"
