@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   QrCode,
   Download,
@@ -18,6 +18,8 @@ import {
   ArrowRight,
   Info,
   BedDouble,
+  Palette,
+  Layers,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -25,9 +27,11 @@ import QRCode from 'qrcode';
 import { buildUpiPaymentUri } from '@/lib/upiQr';
 import Link from 'next/link';
 import { AcrylicStandeeCard } from '@/components/dashboard/AcrylicStandeeCard';
+import { QrCustomizationStudio } from '@/components/dashboard/QrCustomizationStudio';
 
 export default function QrCodesPage() {
   const { currentBusiness } = useApp();
+  const [viewMode, setViewMode] = useState<'custom_studio' | 'acrylic_standee'>('custom_studio');
   const [selectedType, setSelectedType] = useState<'store' | 'menu' | 'table' | 'room' | 'payment_qr'>('store');
   const [tableNumber, setTableNumber] = useState<string>('Table 1');
   const [roomNumber, setRoomNumber] = useState<string>('101');
@@ -52,6 +56,10 @@ export default function QrCodesPage() {
       const qType = sp.get('type') as any;
       const qRoom = sp.get('room');
       const qTable = sp.get('table');
+      const qMode = sp.get('mode');
+      if (qMode === 'standee') {
+        setViewMode('acrylic_standee');
+      }
       if (qType && ['store', 'menu', 'table', 'room', 'payment_qr'].includes(qType)) {
         setSelectedType(qType);
         if (qRoom) setRoomNumber(qRoom);
@@ -182,202 +190,137 @@ export default function QrCodesPage() {
               <QrCode className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-black text-slate-900 tracking-tight">
-              QR Code Acrylic Standees & Storefront Posters
+              QR Code Studio & Storefront Posters
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Generate, customize and download print-ready acrylic table standees (A5, 4x6&quot;, A4) that fit standard tabletop holders.
+            Customize branded colors, shapes, logo embeds, or generate print-ready acrylic tabletop standees.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* View Mode Switcher: Custom Studio (Gold) vs Acrylic Standee */}
+        <div className="flex items-center p-1 bg-slate-100 rounded-xl text-xs font-bold no-print">
           <button
-            onClick={handleDownload}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-2xs"
-            title="Download QR square PNG only"
+            onClick={() => setViewMode('custom_studio')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition',
+              viewMode === 'custom_studio'
+                ? 'bg-white text-indigo-700 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            )}
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>Raw QR PNG</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Custom QR Studio</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-900 font-black">
+              Gold
+            </span>
           </button>
           <button
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 shadow-xs"
+            onClick={() => setViewMode('acrylic_standee')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition',
+              viewMode === 'acrylic_standee'
+                ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                : 'text-slate-600 hover:text-slate-900'
+            )}
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Print Standee</span>
+            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <span>Acrylic Standees</span>
           </button>
         </div>
       </div>
 
-      {/* Target Selector Tabs (No print) */}
-      <div className="flex flex-wrap items-center gap-2 no-print text-xs">
-        {currentBusiness?.settings.modules.store && (
-          <button
-            onClick={() => setSelectedType('store')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
-              selectedType === 'store'
-                ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            )}
-          >
-            <Store className="w-4 h-4" />
-            <span>Retail Store QR</span>
-          </button>
-        )}
-
-        {currentBusiness?.settings.modules.menu && (
-          <button
-            onClick={() => setSelectedType('menu')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
-              selectedType === 'menu'
-                ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            )}
-          >
-            <UtensilsCrossed className="w-4 h-4" />
-            <span>Food Menu QR</span>
-          </button>
-        )}
-
-        {currentBusiness?.settings.modules.menu && (
-          <button
-            onClick={() => setSelectedType('table')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
-              selectedType === 'table'
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            )}
-          >
-            <Table className="w-4 h-4" />
-            <span>Dining Table Specific QR</span>
-          </button>
-        )}
-
-        {/* In-Room Dining QR Standee Tab for Hotels */}
-        {(isHotel || currentBusiness?.settings.modules.menu) && (
-          <button
-            onClick={() => setSelectedType('room')}
-            className={cn(
-              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
-              selectedType === 'room'
-                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            )}
-          >
-            <BedDouble className="w-4 h-4" />
-            <span>In-Room Dining QR</span>
-          </button>
-        )}
-
-        {/* Dynamic Order Payment UPI QR Tab (Gold) */}
-        <button
-          onClick={() => setSelectedType('payment_qr')}
-          className={cn(
-            'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
-            selectedType === 'payment_qr'
-              ? 'bg-[#4F46E5] text-white border-[#4F46E5] shadow-xs'
-              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-          )}
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Order Payment UPI QR</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-950 font-black">
-            Gold
+      {/* Target Destination Selector Tabs */}
+      <div className="space-y-2 no-print">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            1. Select QR Destination Link
           </span>
-        </button>
-      </div>
-
-      {/* Storefront QR vs Payment QR Explanation Banner */}
-      <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl text-xs text-indigo-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2 no-print">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-[#4F46E5] shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">QR Type Guide: </span>
-            <span>
-              {selectedType === 'payment_qr'
-                ? 'Payment QR initiates a direct UPI payment in the customer phone with merchant & amount prefilled.'
-                : 'Storefront QR opens your public catalog website in the customer browser for browsing and ordering.'}
-            </span>
-          </div>
+          <span className="text-[11px] text-slate-500">
+            Encoded URL: <code className="font-mono text-slate-700">{targetUrl}</code>
+          </span>
         </div>
-        <Link
-          href="/dashboard/settings/payments"
-          className="text-[11px] font-bold text-[#4F46E5] hover:underline flex items-center gap-1 shrink-0"
-        >
-          <span>Configure Merchant UPI</span>
-          <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
 
-      {/* Order Payment UPI QR Inputs (if payment_qr mode) */}
-      {selectedType === 'payment_qr' && !isGoldPlan && (
-        <div className="p-6 bg-white rounded-2xl border border-amber-200 shadow-sm text-center max-w-xl mx-auto space-y-3 no-print">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
-            <Lock className="w-5 h-5" />
-          </div>
-          <h3 className="font-black text-slate-900 text-sm">Order Payment QR Code is Locked</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Dynamic amount-based UPI payment QR generation is exclusive to the <strong>Gold plan (₹99/mo)</strong>. Upgrade to generate direct checkout QR codes.
-          </p>
-          <Link
-            href="/dashboard/subscription?plan=gold"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#4F46E5] text-white rounded-xl font-bold text-xs shadow-xs hover:bg-[#4338CA]"
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {currentBusiness?.settings.modules.store && (
+            <button
+              onClick={() => setSelectedType('store')}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+                selectedType === 'store'
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              )}
+            >
+              <Store className="w-4 h-4" />
+              <span>Retail Store QR</span>
+            </button>
+          )}
+
+          {currentBusiness?.settings.modules.menu && (
+            <button
+              onClick={() => setSelectedType('menu')}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+                selectedType === 'menu'
+                  ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              )}
+            >
+              <UtensilsCrossed className="w-4 h-4" />
+              <span>Food Menu QR</span>
+            </button>
+          )}
+
+          {currentBusiness?.settings.modules.menu && (
+            <button
+              onClick={() => setSelectedType('table')}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+                selectedType === 'table'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              )}
+            >
+              <Table className="w-4 h-4" />
+              <span>Dining Table Specific QR</span>
+            </button>
+          )}
+
+          {/* In-Room Dining QR Standee Tab for Hotels */}
+          {(isHotel || currentBusiness?.settings.modules.menu) && (
+            <button
+              onClick={() => setSelectedType('room')}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+                selectedType === 'room'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              )}
+            >
+              <BedDouble className="w-4 h-4" />
+              <span>In-Room Dining QR</span>
+            </button>
+          )}
+
+          {/* Dynamic Order Payment UPI QR Tab (Gold) */}
+          <button
+            onClick={() => setSelectedType('payment_qr')}
+            className={cn(
+              'flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold border transition-colors',
+              selectedType === 'payment_qr'
+                ? 'bg-[#4F46E5] text-white border-[#4F46E5] shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            )}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Upgrade to Gold Plan</span>
-          </Link>
-        </div>
-      )}
-
-      {selectedType === 'payment_qr' && isGoldPlan && (
-        <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3 text-xs no-print">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <div className="flex items-center gap-1.5">
-              <CreditCard className="w-4 h-4 text-[#4F46E5]" />
-              <span className="font-bold text-slate-800">Dynamic Payment QR Generator</span>
-            </div>
-            <span className="text-[11px] text-slate-500 font-mono">
-              Merchant UPI: {upiSettings?.upiId || 'Not configured (using demo@upi)'}
+            <CreditCard className="w-4 h-4" />
+            <span>Order Payment UPI QR</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-950 font-black">
+              Gold
             </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Order Amount (₹ INR) *
-              </label>
-              <div className="relative">
-                <IndianRupee className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="250.00"
-                  className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Order Reference / Token Number *
-              </label>
-              <input
-                type="text"
-                value={orderReference}
-                onChange={(e) => setOrderReference(e.target.value)}
-                placeholder="e.g. S-00102"
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-[#4F46E5]"
-              />
-            </div>
-          </div>
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Table Selector if table mode */}
       {selectedType === 'table' && (
@@ -437,30 +380,68 @@ export default function QrCodesPage() {
         </div>
       )}
 
-      {/* Shareable Link Box (No print) */}
-      <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs no-print">
-        <div className="truncate font-mono text-slate-700">{targetUrl}</div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
-          </button>
-          <a
-            href={targetUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="p-1 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </div>
+      {/* Order Payment UPI QR Inputs (if payment_qr mode) */}
+      {selectedType === 'payment_qr' && isGoldPlan && (
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3 text-xs no-print">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-[#4F46E5]" />
+              <span className="font-bold text-slate-800">Dynamic Payment QR Generator</span>
+            </div>
+            <span className="text-[11px] text-slate-500 font-mono">
+              Merchant UPI: {upiSettings?.upiId || 'Not configured (using demo@upi)'}
+            </span>
+          </div>
 
-      {/* Print-Ready Branded Acrylic Standee Component */}
-      {currentBusiness && qrDataUrl && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                Order Amount (₹ INR) *
+              </label>
+              <div className="relative">
+                <IndianRupee className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="250.00"
+                  className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-[#4F46E5]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                Order Reference / Token Number *
+              </label>
+              <input
+                type="text"
+                value={orderReference}
+                onChange={(e) => setOrderReference(e.target.value)}
+                placeholder="e.g. S-00102"
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-[#4F46E5]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODE 1: CUSTOM QR STUDIO (GOLD FEATURE) */}
+      {viewMode === 'custom_studio' && currentBusiness && (
+        <QrCustomizationStudio
+          businessId={currentBusiness.id}
+          businessName={currentBusiness.name}
+          businessLogo={currentBusiness.logoUrl}
+          businessSlug={currentBusiness.slug}
+          targetUrl={targetUrl}
+          isGoldPlan={isGoldPlan}
+        />
+      )}
+
+      {/* MODE 2: ACRYLIC TABLETOP STANDEES (PRINT SIZE REFERENCE) */}
+      {viewMode === 'acrylic_standee' && currentBusiness && qrDataUrl && (
         <AcrylicStandeeCard
           businessName={currentBusiness.name}
           businessLogo={currentBusiness.logoUrl}

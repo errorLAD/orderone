@@ -63,6 +63,26 @@ export interface StorefrontDesignSettings {
   updatedAt?: string;
 }
 
+export type QrDotStyle = 'square' | 'rounded' | 'dots' | 'diamond' | 'classy';
+export type QrEyeStyle = 'square' | 'rounded' | 'circle' | 'leaf';
+export type QrFrameStyle = 'none' | 'simple_border' | 'top_banner' | 'bottom_banner' | 'card' | 'badge';
+
+export interface QrCustomizationSettings {
+  templateId?: string;
+  foregroundColor: string;
+  backgroundColor: string;
+  eyeColor: string;
+  dotStyle: QrDotStyle;
+  eyeStyle: QrEyeStyle;
+  frameStyle: QrFrameStyle;
+  frameText: string;
+  frameColor: string;
+  showLogo: boolean;
+  customLogoUrl?: string;
+  showBusinessName: boolean;
+  updatedAt?: string;
+}
+
 export interface GstInvoiceSettings {
   isGstRegistered: boolean;
   gstin?: string;
@@ -121,6 +141,7 @@ export interface BusinessSettings {
   onboardingCompleted?: boolean;
   socialLinks?: BusinessSocialLinks;
   storefrontDesign?: StorefrontDesignSettings;
+  qrCustomization?: QrCustomizationSettings;
   gst?: GstInvoiceSettings;
   ownerName?: string;
   previousSlugs?: string[];
