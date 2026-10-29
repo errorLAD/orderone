@@ -28,11 +28,13 @@ import {
   Lock,
   ArrowRight,
   Package,
+  Settings,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { formatINR, formatDate, formatTime, cn } from '@/lib/utils';
 import { Product, PosBill, Category } from '@/types';
 import { downloadPosBillPdf } from '@/lib/posPdfGenerator';
+import { PosCategoryBar } from '@/components/dashboard/PosCategoryBar';
 
 interface CartItem {
   product: Product;
@@ -41,7 +43,7 @@ interface CartItem {
 }
 
 export default function PosBillingPage() {
-  const { currentBusiness, currentRole } = useApp();
+  const { currentBusiness, currentRole, setCurrentBusiness } = useApp();
 
   // Entitlement Check: Gold or Diamond
   const isGoldPlan =
@@ -67,6 +69,75 @@ export default function PosBillingPage() {
   const [taxRate, setTaxRate] = useState<number>(() => {
     return currentBusiness?.settings?.orderSettings?.taxRatePercentage || 0;
   });
+  const [isCustomTax, setIsCustomTax] = useState<boolean>(false);
+  const [showTaxModal, setShowTaxModal] = useState<boolean>(false);
+  const [modalTaxRate, setModalTaxRate] = useState<number>(() => {
+    return currentBusiness?.settings?.orderSettings?.taxRatePercentage ?? 0;
+  });
+  const [modalGstin, setModalGstin] = useState<string>(() => {
+    return currentBusiness?.settings?.orderSettings?.gstin || currentBusiness?.settings?.gst?.gstin || '';
+  });
+  const [isSavingTax, setIsSavingTax] = useState<boolean>(false);
+
+  // Sync default tax rate when currentBusiness changes or from localStorage cache
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentBusiness?.id) {
+      const cached = localStorage.getItem(`pos_tax_rate_${currentBusiness.id}`);
+      if (cached !== null && !isNaN(Number(cached))) {
+        setTaxRate(Number(cached));
+        return;
+      }
+    }
+    if (currentBusiness?.settings?.orderSettings?.taxRatePercentage !== undefined) {
+      setTaxRate(currentBusiness.settings.orderSettings.taxRatePercentage);
+    }
+  }, [currentBusiness?.id, currentBusiness?.settings?.orderSettings?.taxRatePercentage]);
+
+  // Save Store Default Tax / GST Rate Handler
+  const handleSaveStoreTaxRate = async (rateToSave: number, gstinToSave?: string) => {
+    if (!currentBusiness) return;
+    setIsSavingTax(true);
+    try {
+      const updatedSettings = {
+        ...(currentBusiness.settings || {}),
+        orderSettings: {
+          ...(currentBusiness.settings?.orderSettings || {}),
+          taxRatePercentage: rateToSave,
+          enableGst: rateToSave > 0,
+          gstin: gstinToSave !== undefined ? gstinToSave.trim() : (currentBusiness.settings?.orderSettings?.gstin || ''),
+        },
+      };
+
+      const res = await fetch('/api/businesses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: currentBusiness.id,
+          settings: updatedSettings,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.business) {
+        if (setCurrentBusiness) {
+          setCurrentBusiness(data.business);
+        }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`pos_tax_rate_${currentBusiness.id}`, String(rateToSave));
+        }
+        setTaxRate(rateToSave);
+        setShowTaxModal(false);
+        setSuccessToast(`Store default GST rate saved as ${rateToSave}%!`);
+        setTimeout(() => setSuccessToast(null), 3500);
+      } else {
+        setErrorMessage(data.error || 'Failed to update store tax settings');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error updating tax settings');
+    } finally {
+      setIsSavingTax(false);
+    }
+  };
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash');
   const [notes, setNotes] = useState('');
 
@@ -484,8 +555,8 @@ export default function PosBillingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Product Catalog Picker (7 cols on Desktop) */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Catalog Search & Category Filters */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            {/* Catalog Search & Category Navigation Bar */}
+            <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -504,41 +575,17 @@ export default function PosBillingPage() {
                   </button>
                 )}
               </div>
-
-              {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition',
-                    selectedCategory === 'all'
-                      ? 'bg-slate-900 text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  )}
-                >
-                  All Items ({products.length})
-                </button>
-                {categories.map((cat) => {
-                  const count = products.filter((p) => p.categoryId === cat.id).length;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition',
-                        selectedCategory === cat.id
-                          ? 'bg-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      )}
-                    >
-                      {cat.name} ({count})
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
-            {/* Products Grid */}
+            {/* Horizontal Categories Bar (Reference Match with Images & Active Indicator) */}
+            <PosCategoryBar
+              categories={categories}
+              products={products}
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+
+            {/* Products Grid with Photos */}
             {loadingCatalog ? (
               <div className="bg-white p-12 rounded-2xl border border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-2">
                 <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
@@ -557,6 +604,10 @@ export default function PosBillingPage() {
                 {filteredProducts.map((product) => {
                   const cartItem = cart.find((c) => c.product.id === product.id);
                   const isOutOfStock = typeof product.stockQuantity === 'number' && product.stockQuantity <= 0;
+                  const isLowStock =
+                    typeof product.stockQuantity === 'number' &&
+                    product.stockQuantity > 0 &&
+                    product.stockQuantity <= (product.lowStockThreshold || 5);
                   const price = product.salePrice ?? product.price;
 
                   return (
@@ -564,54 +615,99 @@ export default function PosBillingPage() {
                       key={product.id}
                       onClick={() => !isOutOfStock && handleAddToCart(product)}
                       className={cn(
-                        'p-3 rounded-xl border text-left transition flex flex-col justify-between gap-2.5 relative select-none',
+                        'p-2.5 rounded-2xl border text-left transition flex flex-col justify-between relative select-none group',
                         isOutOfStock
-                          ? 'opacity-60 bg-slate-50 border-slate-200 cursor-not-allowed'
+                          ? 'opacity-65 bg-slate-50 border-slate-200 cursor-not-allowed'
                           : cartItem
-                          ? 'border-indigo-500 bg-indigo-50/40 shadow-2xs ring-1 ring-indigo-500/30 cursor-pointer'
+                          ? 'border-indigo-500 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20 cursor-pointer'
                           : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs cursor-pointer'
                       )}
                     >
-                      {/* Active Quantity Badge in Cart */}
-                      {cartItem && (
-                        <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold shadow-xs">
-                          {cartItem.quantity} in cart
-                        </span>
-                      )}
-
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">
-                          {product.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-extrabold text-slate-900">
-                            {formatINR(price)}
-                          </span>
-                          {product.salePrice && product.price > product.salePrice && (
-                            <span className="text-[10px] text-slate-400 line-through">
-                              {formatINR(product.price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
-                        {typeof product.stockQuantity === 'number' ? (
-                          <span
-                            className={cn(
-                              'font-semibold',
-                              product.stockQuantity <= 5 ? 'text-amber-600' : 'text-slate-500'
-                            )}
-                          >
-                            {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
-                          </span>
+                      {/* Product Item Photo */}
+                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-100 mb-2 shrink-0">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=300&auto=format&fit=crop&q=80';
+                            }}
+                          />
                         ) : (
-                          <span className="text-emerald-600 font-semibold">Available</span>
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400">
+                            <Package className="w-7 h-7 text-slate-300 mb-1" />
+                            <span className="text-[10px] text-slate-400 font-medium">No photo</span>
+                          </div>
                         )}
 
-                        <span className="text-indigo-600 font-bold group-hover:translate-x-0.5 transition-transform">
-                          + Add
-                        </span>
+                        {/* Floating in-cart badge */}
+                        {cartItem && (
+                          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black shadow-md ring-2 ring-white flex items-center gap-1">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            <span>{cartItem.quantity} in bill</span>
+                          </span>
+                        )}
+
+                        {/* Floating stock badge */}
+                        {isOutOfStock ? (
+                          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-rose-600/90 text-white text-[9px] font-bold shadow-2xs backdrop-blur-xs">
+                            Sold Out
+                          </span>
+                        ) : isLowStock ? (
+                          <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-amber-500/90 text-white text-[9px] font-bold shadow-2xs backdrop-blur-xs">
+                            {product.stockQuantity} left
+                          </span>
+                        ) : null}
+
+                        {/* Channel tag */}
+                        {product.salesChannel === 'pos' && (
+                          <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.2 rounded bg-purple-900/80 text-white text-[9px] font-semibold backdrop-blur-xs">
+                            POS Only
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="space-y-1 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">
+                            {product.name}
+                          </h4>
+                          {product.brand && (
+                            <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+                              {product.brand} {product.unit && `• ${product.unit}`}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 mt-1 flex items-end justify-between">
+                          <div>
+                            <div className="text-xs font-black text-slate-900">
+                              {formatINR(price)}
+                            </div>
+                            {product.salePrice && product.price > product.salePrice && (
+                              <div className="text-[10px] text-slate-400 line-through">
+                                {formatINR(product.price)}
+                              </div>
+                            )}
+                          </div>
+
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-0.5',
+                              isOutOfStock
+                                ? 'text-slate-400'
+                                : cartItem
+                                ? 'bg-indigo-600 text-white shadow-2xs'
+                                : 'text-indigo-600 hover:bg-indigo-50'
+                            )}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>{cartItem ? 'Add' : 'Add'}</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -748,20 +844,87 @@ export default function PosBillingPage() {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">
-                  Tax / GST Rate
-                </label>
-                <select
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(Number(e.target.value))}
-                  className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value={0}>0% (Exempt)</option>
-                  <option value={5}>5% GST</option>
-                  <option value={12}>12% GST</option>
-                  <option value={18}>18% GST</option>
-                  <option value={28}>28% GST</option>
-                </select>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                    <span>Tax / GST</span>
+                    <span className="text-slate-400 font-normal">({taxRate}%)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalTaxRate(taxRate);
+                      setModalGstin(currentBusiness?.settings?.orderSettings?.gstin || currentBusiness?.settings?.gst?.gstin || '');
+                      setShowTaxModal(true);
+                    }}
+                    className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline"
+                    title="Configure & Save Store Default Tax Rate"
+                  >
+                    <Settings className="w-2.5 h-2.5" />
+                    <span>Store Default</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 flex-wrap">
+                  {[0, 5, 12, 18, 28].map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => {
+                        setTaxRate(rate);
+                        setIsCustomTax(false);
+                      }}
+                      className={cn(
+                        'px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer',
+                        !isCustomTax && taxRate === rate
+                          ? 'bg-indigo-600 text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      )}
+                    >
+                      {rate === 0 ? '0%' : `${rate}%`}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomTax(!isCustomTax)}
+                    className={cn(
+                      'px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer',
+                      isCustomTax || ![0, 5, 12, 18, 28].includes(taxRate)
+                        ? 'bg-indigo-600 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    )}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {(isCustomTax || ![0, 5, 12, 18, 28].includes(taxRate)) && (
+                  <div className="mt-1.5 flex items-center gap-1.5 animate-fadeIn">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={taxRate}
+                        onChange={(e) => setTaxRate(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                        placeholder="Rate %"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">
+                        %
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveStoreTaxRate(taxRate)}
+                      disabled={isSavingTax}
+                      className="px-2 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition whitespace-nowrap cursor-pointer"
+                      title="Save this rate as store default"
+                    >
+                      {isSavingTax ? 'Saving...' : 'Set Default'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1141,6 +1304,115 @@ export default function PosBillingPage() {
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{downloadingPdf ? 'Exporting PDF...' : 'Download PDF Receipt'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. STORE TAX & GST CONFIGURATION MODAL */}
+      {showTaxModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-sm w-full border border-slate-200 shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                  <Percent className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Store Tax & GST Settings</h3>
+                  <p className="text-[11px] text-slate-500">Configure default tax for counter bills</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTaxModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Default GST / Tax Rate (%)
+                </label>
+                <div className="grid grid-cols-5 gap-1.5 mb-2">
+                  {[0, 5, 12, 18, 28].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setModalTaxRate(r)}
+                      className={cn(
+                        'py-1.5 rounded-lg text-xs font-bold border transition text-center cursor-pointer',
+                        modalTaxRate === r
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-2xs'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      )}
+                    >
+                      {r}%
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={modalTaxRate}
+                    onChange={(e) => setModalTaxRate(Math.max(0, parseFloat(e.target.value) || 0))}
+                    placeholder="Or enter custom %"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Store GSTIN / Tax ID <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={modalGstin}
+                  onChange={(e) => setModalGstin(e.target.value.toUpperCase())}
+                  placeholder="e.g. 27AAAAA0000A1Z5"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Printed automatically on counter bills and downloaded receipts.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowTaxModal(false)}
+                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingTax}
+                onClick={() => handleSaveStoreTaxRate(modalTaxRate, modalGstin)}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isSavingTax ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Store Default</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
