@@ -62,6 +62,7 @@ const DEFAULT_PLANS: PlanData[] = [
     maxCategories: 10,
     description: 'Essential digital menu & customer QR ordering for cafes, tea stalls and restaurants',
     features: [
+      'POS Counter Billing & Instant Receipts',
       'Digital Food & Drink Menu included',
       'Customer QR code ordering (no login required)',
       'Kitchen Menu Orders dashboard & live sound alerts',

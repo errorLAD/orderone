@@ -45,10 +45,10 @@ interface CartItem {
 export default function PosBillingPage() {
   const { currentBusiness, currentRole, setCurrentBusiness } = useApp();
 
-  // Entitlement Check: Gold or Diamond
-  const isGoldPlan =
-    currentBusiness?.subscription?.planId === 'plan_gold' ||
-    currentBusiness?.subscription?.planId === 'plan_diamond';
+  // Entitlement Check: POS is included in Basic, Gold, and Diamond plans
+  const isSubscriptionExpired =
+    currentBusiness?.subscription?.status === 'expired' ||
+    currentBusiness?.subscription?.status === 'suspended';
 
   // Navigation Tabs: Register (Billing) vs History
   const [activeTab, setActiveTab] = useState<'register' | 'history'>('register');
@@ -338,8 +338,8 @@ export default function PosBillingPage() {
   // Submit Bill
   const handleCreateBill = async (options: { viewBillImmediately: boolean }) => {
     if (!currentBusiness) return;
-    if (!isGoldPlan) {
-      setErrorMessage('POS Counter Billing is a Gold Plan feature. Please upgrade your subscription.');
+    if (isSubscriptionExpired) {
+      setErrorMessage('Your business subscription has expired. Please renew your plan to create counter bills.');
       return;
     }
 
@@ -449,12 +449,12 @@ export default function PosBillingPage() {
               <span
                 className={cn(
                   'text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider',
-                  isGoldPlan
-                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                  !isSubscriptionExpired
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-rose-100 text-rose-800 border border-rose-300'
                 )}
               >
-                {isGoldPlan ? '★ Gold Entitlement Active' : 'Gold Feature (Locked)'}
+                {!isSubscriptionExpired ? '✓ Basic Plan Entitlement Active' : 'Subscription Expired'}
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
@@ -513,27 +513,27 @@ export default function PosBillingPage() {
         </div>
       </div>
 
-      {/* 2. Upgrade Banner for Basic Plan Users */}
-      {!isGoldPlan && (
-        <div className="p-4 bg-gradient-to-r from-amber-50 via-amber-50/70 to-orange-50 border border-amber-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
+      {/* 2. Subscription Status Alert (Only if subscription is expired) */}
+      {isSubscriptionExpired && (
+        <div className="p-4 bg-gradient-to-r from-rose-50 via-rose-50/70 to-orange-50 border border-rose-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="p-1 rounded-md bg-amber-200 text-amber-900">
-                <Sparkles className="w-3.5 h-3.5" />
+              <span className="p-1 rounded-md bg-rose-200 text-rose-900">
+                <Lock className="w-3.5 h-3.5" />
               </span>
-              <h2 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                Gold Plan Upgrade Required for POS Counter Billing
+              <h2 className="text-xs font-bold text-rose-950 uppercase tracking-wide">
+                Business Subscription Expired
               </h2>
             </div>
-            <p className="text-[11px] text-amber-800 max-w-2xl">
-              POS Counter Billing is an exclusive Gold tier feature. Upgrade to create counter bills, apply discounts & GST, and download print-ready receipts.
+            <p className="text-[11px] text-rose-800 max-w-2xl">
+              Your business subscription has expired. Please renew your plan to continue creating walk-in counter bills.
             </p>
           </div>
           <Link
             href="/dashboard/subscription"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition shadow-sm shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition shadow-sm shrink-0"
           >
-            <span>Upgrade to Gold (₹149/mo)</span>
+            <span>Renew Subscription</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -1019,10 +1019,10 @@ export default function PosBillingPage() {
               <button
                 type="button"
                 onClick={() => handleCreateBill({ viewBillImmediately: true })}
-                disabled={isSubmitting || cart.length === 0 || !isGoldPlan}
+                disabled={isSubmitting || cart.length === 0 || isSubscriptionExpired}
                 className={cn(
                   'w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs',
-                  !isGoldPlan || cart.length === 0 || isSubmitting
+                  isSubscriptionExpired || cart.length === 0 || isSubmitting
                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                 )}
@@ -1043,10 +1043,10 @@ export default function PosBillingPage() {
               <button
                 type="button"
                 onClick={() => handleCreateBill({ viewBillImmediately: false })}
-                disabled={isSubmitting || cart.length === 0 || !isGoldPlan}
+                disabled={isSubmitting || cart.length === 0 || isSubscriptionExpired}
                 className={cn(
                   'w-full py-2 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border',
-                  !isGoldPlan || cart.length === 0 || isSubmitting
+                  isSubscriptionExpired || cart.length === 0 || isSubmitting
                     ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
                     : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
                 )}

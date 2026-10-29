@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPosBill, getPosBills, getBusinessById } from '@/lib/db';
 import { getCurrentUserFromRequest, isUserAuthorizedForBusiness } from '@/lib/auth';
-import { hasActiveGoldAccess } from '@/lib/subscriptionLimits';
 import { CreatePosBillInput } from '@/types';
 
 // Helper to authenticate user for business
@@ -80,7 +79,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
-    // 1. Verify business & Gold subscription entitlement
+    // 1. Verify business & active subscription entitlement (Included in Basic, Gold, Diamond)
     const business = await getBusinessById(businessId);
     if (!business) {
       return NextResponse.json(
@@ -89,12 +88,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!hasActiveGoldAccess(business)) {
+    const sub = business.subscription;
+    const nowMs = Date.now();
+    const renewsAtMs = sub?.renewsAt ? new Date(sub.renewsAt).getTime() : null;
+    const isExpired =
+      (renewsAtMs && nowMs > renewsAtMs) ||
+      sub?.status === 'expired' ||
+      sub?.status === 'suspended';
+
+    if (isExpired) {
       return NextResponse.json(
         {
           success: false,
-          error: 'UPGRADE_REQUIRED',
-          message: 'POS Counter Billing is an exclusive Gold Plan feature. Upgrade your subscription to create and manage counter bills.',
+          error: 'SUBSCRIPTION_EXPIRED',
+          message: 'Your business subscription has expired. Please renew your plan to create counter bills.',
         },
         { status: 403 }
       );
