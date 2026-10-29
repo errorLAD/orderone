@@ -172,23 +172,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ],
     },
 
-    // 2. Counter & POS Register
-    {
-      id: 'pos_ops',
-      title: 'Counter & POS',
-      collapsible: false,
-      items: [
-        {
-          name: 'POS Counter Billing',
-          href: '/dashboard/pos',
-          icon: Calculator,
-          badge: isGoldPlan ? 'Gold' : null,
-          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
-          isLocked: !isGoldPlan,
-        },
-      ],
-    },
-
     // 2. Core Daily Operations (Prioritized above marketing/display)
     ...(isMenuEnabled
       ? [
@@ -302,7 +285,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ],
     },
 
-    // 4. Settings & Account
+    // 4. Counter & POS Register
+    {
+      id: 'pos_ops',
+      title: 'Counter & POS',
+      collapsible: true,
+      items: [
+        {
+          name: 'POS Counter Billing',
+          href: '/dashboard/pos',
+          icon: Calculator,
+          badge: isGoldPlan ? 'Gold' : null,
+          badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
+          isLocked: !isGoldPlan,
+        },
+      ],
+    },
+
+    // 5. Settings & Account
     {
       id: 'settings',
       title: 'Settings & Billing',
