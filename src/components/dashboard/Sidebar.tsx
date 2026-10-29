@@ -31,6 +31,7 @@ import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 import { getCategoryConfig } from '@/lib/categories';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -373,19 +374,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Brand Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 shrink-0">
-          <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white shadow-xs">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 tracking-tight leading-none text-base">
-                OrderOne<span className="text-indigo-600">.in</span>
-              </div>
-              <div className="text-[10px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">
-                Store • Menu • Tokens
-              </div>
-            </div>
-          </Link>
+          <OrderOneLogo
+            href="/dashboard"
+            onClick={onClose}
+            size="sm"
+            showSubtitle={true}
+            subtitle="Store • Menu • Tokens"
+          />
 
           {/* Mobile Close Button */}
           <button

@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -58,12 +59,9 @@ function AdminLoginForm() {
     <div className="min-h-screen bg-[#070D1E] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Top platform branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 mb-4 shadow-lg shadow-indigo-600/10">
-            <ShieldAlert className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">OrderOne.in</h1>
-          <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">
+        <div className="text-center mb-8 flex flex-col items-center">
+          <OrderOneLogo href="/" size="lg" darkBg={true} />
+          <p className="text-xs text-slate-400 mt-3 uppercase tracking-widest font-semibold">
             Super Admin Control Center
           </p>
         </div>

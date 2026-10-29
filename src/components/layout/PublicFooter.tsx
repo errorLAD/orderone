@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Sparkles, ShieldCheck, Mail, ArrowUpRight } from 'lucide-react';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 
 export function PublicFooter() {
   return (
@@ -12,14 +13,7 @@ export function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-100">
           {/* Brand & Corporate Identity Column */}
           <div className="md:col-span-1 space-y-3">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#4F46E5] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <span className="font-black text-slate-900 text-base tracking-tight">
-                OrderOne<span className="text-[#4F46E5]">.in</span>
-              </span>
-            </Link>
+            <OrderOneLogo href="/" size="sm" />
             <p className="text-xs text-slate-500 leading-relaxed">
               Multi-tenant digital storefront, dining menu, kitchen token, and inventory management platform for Indian retail and food businesses.
             </p>

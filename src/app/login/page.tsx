@@ -24,6 +24,7 @@ import { BUSINESS_CATEGORIES } from '@/lib/categories';
 import { BusinessType } from '@/types';
 import { cn } from '@/lib/utils';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -132,14 +133,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-[#4F46E5] text-white flex items-center justify-center font-black shadow-md">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <span className="text-xl font-bold text-[#0F172A] tracking-tight">
-            OrderOne<span className="text-[#4F46E5]">.in</span>
-          </span>
-        </Link>
+        <div className="flex justify-center mb-4">
+          <OrderOneLogo href="/" size="lg" />
+        </div>
         <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">
           {mode === 'signin' ? 'Sign In to Your Merchant Dashboard' : 'Register Your Business'}
         </h2>

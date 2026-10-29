@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 import { cn, formatINR } from '@/lib/utils';
 import { generateFaqSchema } from '@/lib/seoConfig';
 
@@ -153,24 +154,17 @@ export default function HomePage() {
       {/* Navigation Bar */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 transition-all">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-sm sm:text-base tracking-tight leading-tight">
-                  OrderOne<span className="text-indigo-600">.in</span>
-                </span>
-                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                  ₹{basicPlan.priceMonthly} / 30 Days
-                </span>
-              </div>
-              <div className="text-[9px] font-semibold text-slate-400 tracking-tight leading-none truncate max-w-[130px] sm:max-w-none hidden xs:block">
-                By {PLATFORM_CONFIG.legalCompanyName}
-              </div>
-            </div>
-          </Link>
+          <div className="flex items-center gap-3 min-w-0">
+            <OrderOneLogo
+              href="/"
+              size="md"
+              showSubtitle={true}
+              subtitle={`By ${PLATFORM_CONFIG.legalCompanyName}`}
+            />
+            <span className="hidden lg:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+              ₹{basicPlan.priceMonthly} / 30 Days
+            </span>
+          </div>
 
           <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-600">
             <Link href="/about" className="hover:text-slate-900 transition-colors font-semibold">

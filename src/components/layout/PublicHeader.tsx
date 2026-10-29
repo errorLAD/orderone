@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, ArrowRight, ShieldCheck, Menu, X } from 'lucide-react';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
 
 export function PublicHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,19 +13,12 @@ export function PublicHeader() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 font-sans">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand Logo & Operator Tag */}
-        <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#4F46E5] text-white flex items-center justify-center font-black shadow-xs group-hover:scale-105 transition-transform shrink-0">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm sm:text-base font-black text-[#0F172A] tracking-tight leading-tight">
-              OrderOne<span className="text-[#4F46E5]">.in</span>
-            </div>
-            <div className="text-[8px] sm:text-[9px] font-semibold text-slate-500 tracking-tight leading-none truncate max-w-[130px] sm:max-w-[200px]">
-              By {PLATFORM_CONFIG.legalCompanyName}
-            </div>
-          </div>
-        </Link>
+        <OrderOneLogo
+          href="/"
+          size="md"
+          showSubtitle={true}
+          subtitle={`By ${PLATFORM_CONFIG.legalCompanyName}`}
+        />
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
