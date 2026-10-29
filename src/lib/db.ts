@@ -794,6 +794,34 @@ export async function getProducts(
       }
       return prods;
     }
+
+    // Fallback: If 0 products were returned for this specific sourceType,
+    // check if the business has products created under the alternative sourceType.
+    // This ensures business owners always see their catalog products across storefront, menu, and dashboard.
+    if (sourceType) {
+      let fbSql = 'SELECT * FROM public.products WHERE business_id = $1';
+      const fbParams: any[] = [businessId];
+      if (categoryId) {
+        fbParams.push(categoryId);
+        fbSql += ` AND category_id = $${fbParams.length}`;
+      }
+      if (channel === 'storefront') {
+        fbSql += " AND sales_channel IN ('both', 'storefront')";
+      } else if (channel === 'pos') {
+        fbSql += " AND sales_channel IN ('both', 'pos')";
+      }
+      fbSql += ' ORDER BY sort_order ASC, created_at ASC';
+      const fbRes = await pgQuery(fbSql, fbParams);
+      if (fbRes.rows.length > 0) {
+        const fbProds = fbRes.rows.map(mapRowToProduct);
+        for (const prod of fbProds) {
+          const idx = cachedDb.products.findIndex((item) => item.id === prod.id);
+          if (idx !== -1) cachedDb.products[idx] = prod;
+          else cachedDb.products.push(prod);
+        }
+        return fbProds;
+      }
+    }
   } catch (err) {}
 
   return cachedDb.products
