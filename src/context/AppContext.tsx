@@ -280,9 +280,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Synthesize clean audio chimes for new orders (different tones for Store vs Menu!)
+  // Synthesize clean audio chimes for new orders strictly inside the shop dashboard
   const playOrderChime = (sourceType: OrderSourceType) => {
     if (!soundEnabled) return;
+    // Strict safety guard: NEVER ring on customer-facing storefronts, menus, tracking, or outside dashboard
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/dashboard')) {
+      return;
+    }
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -366,9 +370,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentBusiness?.id]);
 
-  // Real-time SSE Connection
+  // Real-time SSE Connection strictly for authorized merchant dashboard & admin
   useEffect(() => {
     if (!currentBusiness) return;
+    // Do not connect SSE notifications or play alerts on customer storefront, menu, or tracking pages
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/admin')) {
+      return;
+    }
 
     let eventSource: EventSource | null = null;
     let reconnectTimeout: any = null;
@@ -382,7 +390,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (payload.type === 'ORDER_CREATED') {
             const { order, notification } = payload;
             setNotifications((prev) => [notification, ...prev]);
-            playOrderChime(order.sourceType);
+            // Only play chime strictly if currently on the merchant dashboard
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
+              playOrderChime(order.sourceType);
+            }
           }
         } catch (e) {
           console.error('Error parsing SSE event:', e);
