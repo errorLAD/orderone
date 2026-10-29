@@ -341,8 +341,10 @@ export interface SubscriptionPlan {
   name: string;
   slug: string;
   description: string;
-  priceMonthly: number; // e.g. 20 (INR ₹20/month base)
-  priceAnnual: number;  // e.g. 200 (INR ₹200/year)
+  priceMonthly: number;
+  priceAnnual: number;
+  validityDaysMonthly?: number; // e.g. 30 days
+  validityDaysAnnual?: number;  // e.g. 365 days
   features: string[];
   maxProducts: number;
   maxCategories: number;
@@ -421,7 +423,7 @@ export interface SubscriptionHistory {
   businessId: string;
   previousPlanId?: string;
   newPlanId: string;
-  changeType: 'initial' | 'upgrade' | 'downgrade_scheduled' | 'downgrade_applied' | 'downgrade_cancelled' | 'renewal' | 'expired';
+  changeType: 'initial' | 'upgrade' | 'downgrade_scheduled' | 'downgrade_applied' | 'downgrade_cancelled' | 'renewal' | 'expired' | 'admin_adjustment' | 'suspended' | 'manual_reconciliation';
   paymentId?: string;
   amount?: number;
   effectiveDate: string;
@@ -465,6 +467,11 @@ export interface PlatformSettings {
   allowRegistrations: boolean;
   diamondPlanAvailable: boolean;
   supportedCategories: string[];
+  trial?: {
+    enabled: boolean;
+    durationDays: number;
+    planId: string;
+  };
   defaultBranding: {
     primaryColor: string;
     secondaryColor: string;

@@ -297,8 +297,8 @@ export default function SubscriptionPage() {
 
   const currentPlanId = currentBusiness?.subscription?.planId || 'plan_basic';
   const activePlan = plans.find((p) => p.id === currentPlanId) || {
-    name: currentPlanId === 'plan_gold' ? 'Gold' : 'Basic',
-    priceMonthly: currentPlanId === 'plan_gold' ? 99 : 20,
+    name: currentPlanId === 'plan_gold' ? 'Gold' : currentPlanId === 'plan_diamond' ? 'Diamond' : 'Basic',
+    priceMonthly: currentPlanId === 'plan_gold' ? 149 : currentPlanId === 'plan_diamond' ? 249 : 49,
   };
 
   // 30-Day Expiry status calculations
@@ -330,7 +330,7 @@ export default function SubscriptionPage() {
             </span>
           </div>
           <p className="text-xs text-[#64748B] mt-1">
-            OrderOne.in • Operated by <strong className="text-slate-800">{PLATFORM_CONFIG.legalCompanyName}</strong>. Basic ₹20 / 30 days, Gold ₹99 / 30 days.
+            OrderOne.in • Operated by <strong className="text-slate-800">{PLATFORM_CONFIG.legalCompanyName}</strong>. Dynamic cloud pricing & instant Razorpay activation.
           </p>
         </div>
 
@@ -474,7 +474,10 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+        <div className={cn(
+          'grid gap-6',
+          plans.length >= 3 ? 'grid-cols-1 md:grid-cols-3 max-w-5xl' : 'grid-cols-1 md:grid-cols-2 max-w-4xl'
+        )}>
           {plans.map((plan) => {
             const isCurrent = currentPlanId === plan.id;
             const isGold = plan.id === 'plan_gold';
@@ -521,7 +524,7 @@ export default function SubscriptionPage() {
                     {!plan.customUpi && (
                       <div className="flex items-start gap-2 text-slate-400">
                         <X className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                        <span>Custom merchant UPI & dynamic payment QR (Gold only)</span>
+                        <span>Custom merchant UPI & dynamic payment QR</span>
                       </div>
                     )}
                   </div>
@@ -544,13 +547,8 @@ export default function SubscriptionPage() {
                       isExpired ? (
                         'Re-activate Plan with Razorpay (₹' + price + ')'
                       ) : (
-                        'Extend Active Plan (30 Days • ₹' + price + ')'
+                        `Extend Active Plan (${plan.validityDaysMonthly || 30} Days • ₹${price})`
                       )
-                    ) : currentPlanId === 'plan_basic' && isGold ? (
-                      <>
-                        <span>Upgrade to Gold with Razorpay (₹99)</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
                     ) : (
                       <>
                         <span>Select {plan.name} Plan (₹{price})</span>

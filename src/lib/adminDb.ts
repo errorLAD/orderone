@@ -582,46 +582,89 @@ export async function updateAdminPlan(params: {
 
   const priceMonthly = params.updates.priceMonthly !== undefined ? params.updates.priceMonthly : parseFloat(current.price_monthly);
   const priceAnnual = params.updates.priceAnnual !== undefined ? params.updates.priceAnnual : parseFloat(current.price_annual);
+  const validityDaysMonthly = params.updates.validityDaysMonthly !== undefined ? params.updates.validityDaysMonthly : parseInt(current.validity_days_monthly || '30', 10);
+  const validityDaysAnnual = params.updates.validityDaysAnnual !== undefined ? params.updates.validityDaysAnnual : parseInt(current.validity_days_annual || '365', 10);
   const maxProducts = params.updates.maxProducts !== undefined ? params.updates.maxProducts : current.max_products;
   const maxCategories = params.updates.maxCategories !== undefined ? params.updates.maxCategories : current.max_categories;
+  const maxStaff = params.updates.maxStaff !== undefined ? params.updates.maxStaff : (current.max_staff || 1);
   const description = params.updates.description !== undefined ? params.updates.description : current.description;
   const isVisible = params.updates.isVisible !== undefined ? params.updates.isVisible : current.is_visible;
+  const isPopular = params.updates.isPopular !== undefined ? params.updates.isPopular : current.is_popular;
   const allowsStore = params.updates.allowsStore !== undefined ? params.updates.allowsStore : current.allows_store;
+  const allowsMenu = params.updates.allowsMenu !== undefined ? params.updates.allowsMenu : current.allows_menu;
   const customUpi = params.updates.customUpi !== undefined ? params.updates.customUpi : current.custom_upi;
+  const features = params.updates.features !== undefined ? params.updates.features : (typeof current.features === 'string' ? JSON.parse(current.features) : current.features || []);
 
   await pgQuery(
     `UPDATE public.subscription_plans
      SET price_monthly = $1,
          price_annual = $2,
-         max_products = $3,
-         max_categories = $4,
-         description = $5,
-         is_visible = $6,
-         allows_store = $7,
-         custom_upi = $8
-     WHERE id = $9;`,
+         validity_days_monthly = $3,
+         validity_days_annual = $4,
+         max_products = $5,
+         max_categories = $6,
+         max_staff = $7,
+         description = $8,
+         is_visible = $9,
+         is_popular = $10,
+         allows_store = $11,
+         allows_menu = $12,
+         custom_upi = $13,
+         features = $14
+     WHERE id = $15;`,
     [
       priceMonthly,
       priceAnnual,
+      validityDaysMonthly,
+      validityDaysAnnual,
       maxProducts,
       maxCategories,
+      maxStaff,
       description,
       isVisible,
+      isPopular,
       allowsStore,
+      allowsMenu,
       customUpi,
+      JSON.stringify(features),
       params.planId,
     ]
   );
 
+  // If diamond plan visibility changed, keep platform_settings in sync
+  if (params.planId === 'plan_diamond' && params.updates.isVisible !== undefined) {
+    const platSettings = await getPlatformSettings();
+    platSettings.diamondPlanAvailable = Boolean(params.updates.isVisible);
+    await pgQuery(
+      `UPDATE public.platform_settings SET settings = $1, updated_at = NOW() WHERE id = 'global'`,
+      [JSON.stringify(platSettings)]
+    );
+  }
+
   await logAdminAction({
     adminUser: params.adminUser,
     action: 'plan.update',
-    details: `Updated plan ${current.name} (${params.planId}). Price: ₹${priceMonthly}, Limits: ${maxProducts} items/${maxCategories} cats. Reason: ${params.reason}`,
+    details: `Updated plan ${current.name} (${params.planId}). Monthly: ₹${priceMonthly} (${validityDaysMonthly}d), Annual: ₹${priceAnnual} (${validityDaysAnnual}d), Limits: ${maxProducts} items/${maxCategories} cats. Reason: ${params.reason}`,
     targetEntity: 'plan',
     targetId: params.planId,
     reason: params.reason,
     beforeValues: current,
-    afterValues: { priceMonthly, priceAnnual, maxProducts, maxCategories, description, isVisible, allowsStore, customUpi },
+    afterValues: {
+      priceMonthly,
+      priceAnnual,
+      validityDaysMonthly,
+      validityDaysAnnual,
+      maxProducts,
+      maxCategories,
+      maxStaff,
+      description,
+      isVisible,
+      isPopular,
+      allowsStore,
+      allowsMenu,
+      customUpi,
+      features,
+    },
   });
 
   return { success: true };
@@ -728,44 +771,131 @@ export async function adjustBusinessSubscription(params: {
   businessId: string;
   newPlanId: string;
   newStatus: string;
+  effectiveDate?: string;
+  expiresAt?: string;
   extendDays?: number;
+  scheduleDowngrade?: boolean;
   reason: string;
   adminUser: User;
 }) {
-  const bizRes = await pgQuery(`SELECT * FROM public.businesses WHERE id = $1;`, [params.businessId]);
+  const [bizRes, targetPlanRes] = await Promise.all([
+    pgQuery(`SELECT * FROM public.businesses WHERE id = $1;`, [params.businessId]),
+    pgQuery(`SELECT * FROM public.subscription_plans WHERE id = $1;`, [params.newPlanId]),
+  ]);
+
   if (bizRes.rows.length === 0) throw new Error('Business not found');
+  if (targetPlanRes.rows.length === 0) throw new Error('Target plan not found');
 
   const biz = bizRes.rows[0];
-  const sub = typeof biz.subscription === 'string' ? JSON.parse(biz.subscription) : biz.subscription;
+  const targetPlan = targetPlanRes.rows[0];
+  const sub = typeof biz.subscription === 'string' ? JSON.parse(biz.subscription) : { ...biz.subscription };
   const prevSub = { ...sub };
+  const settings = typeof biz.settings === 'string' ? JSON.parse(biz.settings) : { ...biz.settings };
 
-  sub.planId = params.newPlanId;
-  sub.status = params.newStatus;
+  // Case A: Schedule Downgrade for period end
+  if (params.scheduleDowngrade) {
+    const downgradeDate = params.effectiveDate || sub.renewsAt || new Date(Date.now() + 30 * 86400000).toISOString();
+    sub.scheduledDowngradePlanId = params.newPlanId;
+    sub.scheduledDowngradeDate = downgradeDate;
 
-  if (params.extendDays && params.extendDays > 0) {
+    await pgQuery(
+      `UPDATE public.businesses 
+       SET subscription = $1, updated_at = NOW() 
+       WHERE id = $2;`,
+      [JSON.stringify(sub), params.businessId]
+    );
+
+    await pgQuery(
+      `INSERT INTO public.subscription_history (id, business_id, previous_plan_id, new_plan_id, change_type, effective_date, expires_at, notes, created_at)
+       VALUES ($1, $2, $3, $4, 'downgrade_scheduled', $5, $6, $7, NOW());`,
+      [generateId('sub_hist'), params.businessId, prevSub.planId, params.newPlanId, downgradeDate, sub.renewsAt || null, params.reason]
+    );
+
+    await logAdminAction({
+      adminUser: params.adminUser,
+      action: 'subscription.downgrade_scheduled',
+      details: `Scheduled downgrade for business ${biz.name} to plan ${params.newPlanId} effective on ${downgradeDate}. Reason: ${params.reason}`,
+      targetEntity: 'subscription',
+      targetId: params.businessId,
+      reason: params.reason,
+      beforeValues: prevSub,
+      afterValues: sub,
+      businessId: params.businessId,
+    });
+
+    return { success: true, scheduled: true, effectiveDate: downgradeDate };
+  }
+
+  // Case B: Immediate Plan Assignment / Upgrade / Downgrade / Suspension
+  let newExpiry: string;
+  if (params.expiresAt && !isNaN(new Date(params.expiresAt).getTime())) {
+    newExpiry = new Date(params.expiresAt).toISOString();
+  } else if (params.extendDays && params.extendDays > 0) {
     const currentExpiry = sub.renewsAt ? new Date(sub.renewsAt) : new Date();
     const baseTime = currentExpiry > new Date() ? currentExpiry.getTime() : Date.now();
-    sub.renewsAt = new Date(baseTime + params.extendDays * 86400000).toISOString();
+    newExpiry = new Date(baseTime + params.extendDays * 86400000).toISOString();
+  } else {
+    const valDays = parseInt(targetPlan.validity_days_monthly || '30', 10);
+    newExpiry = new Date(Date.now() + valDays * 86400000).toISOString();
   }
+
+  const effectiveDate = params.effectiveDate && !isNaN(new Date(params.effectiveDate).getTime())
+    ? new Date(params.effectiveDate).toISOString()
+    : new Date().toISOString();
+
+  sub.planId = params.newPlanId;
+  sub.status = params.newStatus as any;
+  sub.renewsAt = newExpiry;
+  sub.amount = parseFloat(targetPlan.price_monthly || '0');
+  delete sub.scheduledDowngradePlanId;
+  delete sub.scheduledDowngradeDate;
+
+  // Preserve existing products, categories, orders, and business data
+  // Only adjust module active flag if plan does not permit store
+  if (!settings.modules) settings.modules = { store: true, menu: true };
+  if (!targetPlan.allows_store) settings.modules.store = false;
+  if (targetPlan.allows_store) settings.modules.store = true;
 
   await pgQuery(
     `UPDATE public.businesses 
-     SET subscription = $1, updated_at = NOW() 
-     WHERE id = $2;`,
-    [JSON.stringify(sub), params.businessId]
+     SET subscription = $1, settings = $2, updated_at = NOW() 
+     WHERE id = $3;`,
+    [JSON.stringify(sub), JSON.stringify(settings), params.businessId]
   );
 
-  // Record subscription history
+  let changeType: string = 'admin_adjustment';
+  if (params.newStatus === 'suspended') {
+    changeType = 'suspended';
+  } else if (params.newPlanId !== prevSub.planId) {
+    const prevPlanRes = await pgQuery(`SELECT price_monthly FROM public.subscription_plans WHERE id = $1`, [prevSub.planId]);
+    const prevPrice = parseFloat(prevPlanRes.rows[0]?.price_monthly || '0');
+    const newPrice = parseFloat(targetPlan.price_monthly || '0');
+    changeType = newPrice >= prevPrice ? 'upgrade' : 'downgrade_applied';
+  } else if (params.extendDays || params.expiresAt) {
+    changeType = 'renewal';
+  }
+
+  // Record in subscription history
   await pgQuery(
-    `INSERT INTO public.subscription_history (id, business_id, previous_plan_id, new_plan_id, change_type, notes, effective_date, created_at)
-     VALUES ($1, $2, $3, $4, 'admin_adjustment', $5, NOW(), NOW());`,
-    [generateId('sub_hist'), params.businessId, prevSub.planId, params.newPlanId, params.reason]
+    `INSERT INTO public.subscription_history (id, business_id, previous_plan_id, new_plan_id, change_type, amount, effective_date, expires_at, notes, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW());`,
+    [
+      generateId('sub_hist'),
+      params.businessId,
+      prevSub.planId,
+      params.newPlanId,
+      changeType,
+      sub.amount,
+      effectiveDate,
+      newExpiry,
+      params.reason,
+    ]
   );
 
   await logAdminAction({
     adminUser: params.adminUser,
-    action: 'subscription.adjust',
-    details: `Adjusted subscription for business ${biz.name} to plan ${params.newPlanId}, status ${params.newStatus}. Reason: ${params.reason}`,
+    action: `subscription.${changeType}`,
+    details: `Adjusted subscription for business ${biz.name} to plan ${params.newPlanId}, status ${params.newStatus}, expiry ${newExpiry}. Reason: ${params.reason}`,
     targetEntity: 'subscription',
     targetId: params.businessId,
     reason: params.reason,
@@ -774,7 +904,124 @@ export async function adjustBusinessSubscription(params: {
     businessId: params.businessId,
   });
 
-  return { success: true };
+  return { success: true, subscription: sub };
+}
+
+export async function reconcileManualPayment(params: {
+  businessId: string;
+  planId: string;
+  billingCycle: 'monthly' | 'annual';
+  amount: number;
+  paymentMethod: string;
+  paymentReference: string;
+  reason: string;
+  adminUser: User;
+}) {
+  const [bizRes, planRes] = await Promise.all([
+    pgQuery(`SELECT * FROM public.businesses WHERE id = $1;`, [params.businessId]),
+    pgQuery(`SELECT * FROM public.subscription_plans WHERE id = $1;`, [params.planId]),
+  ]);
+
+  if (bizRes.rows.length === 0) throw new Error('Business not found');
+  if (planRes.rows.length === 0) throw new Error('Selected plan not found');
+
+  const biz = bizRes.rows[0];
+  const targetPlan = planRes.rows[0];
+  const sub = typeof biz.subscription === 'string' ? JSON.parse(biz.subscription) : { ...biz.subscription };
+  const prevSub = { ...sub };
+  const settings = typeof biz.settings === 'string' ? JSON.parse(biz.settings) : { ...biz.settings };
+
+  const daysToAdd = params.billingCycle === 'annual'
+    ? parseInt(targetPlan.validity_days_annual || '365', 10)
+    : parseInt(targetPlan.validity_days_monthly || '30', 10);
+
+  const nowMs = Date.now();
+  const startsAt = new Date(nowMs).toISOString();
+  const expiresAt = new Date(nowMs + daysToAdd * 86400000).toISOString();
+  const paymentId = generateId('subpay');
+
+  // 1. Create verified payment record in subscription_payments
+  await pgQuery(
+    `INSERT INTO public.subscription_payments (
+      id, business_id, plan_id, amount, currency, billing_cycle, status,
+      payment_reference, payment_method, payment_provider, starts_at, expires_at,
+      verification_status, notes, created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, 'INR', $5, 'completed',
+      $6, $7, 'manual_admin', $8, $9,
+      'verified', $10, NOW(), NOW()
+    );`,
+    [
+      paymentId,
+      params.businessId,
+      params.planId,
+      params.amount,
+      params.billingCycle,
+      params.paymentReference,
+      params.paymentMethod,
+      startsAt,
+      expiresAt,
+      `Manual administrative reconciliation by ${params.adminUser.email}. Reason: ${params.reason}`,
+    ]
+  );
+
+  // 2. Activate subscription on business
+  sub.planId = params.planId;
+  sub.status = 'active';
+  sub.billingCycle = params.billingCycle;
+  sub.renewsAt = expiresAt;
+  sub.startsAt = startsAt;
+  sub.amount = params.amount;
+  sub.lastPaymentId = paymentId;
+  delete sub.scheduledDowngradePlanId;
+  delete sub.scheduledDowngradeDate;
+
+  if (!settings.modules) settings.modules = { store: true, menu: true };
+  if (!targetPlan.allows_store) settings.modules.store = false;
+  if (targetPlan.allows_store) settings.modules.store = true;
+
+  await pgQuery(
+    `UPDATE public.businesses 
+     SET subscription = $1, settings = $2, updated_at = NOW() 
+     WHERE id = $3;`,
+    [JSON.stringify(sub), JSON.stringify(settings), params.businessId]
+  );
+
+  // 3. Record in subscription history
+  await pgQuery(
+    `INSERT INTO public.subscription_history (
+      id, business_id, previous_plan_id, new_plan_id, change_type, payment_id,
+      amount, effective_date, expires_at, notes, created_at
+    ) VALUES (
+      $1, $2, $3, $4, 'manual_reconciliation', $5,
+      $6, NOW(), $7, $8, NOW()
+    );`,
+    [
+      generateId('sub_hist'),
+      params.businessId,
+      prevSub.planId,
+      params.planId,
+      paymentId,
+      params.amount,
+      expiresAt,
+      `Manual payment reconciliation (${params.paymentMethod} • Ref: ${params.paymentReference}). Reason: ${params.reason}`,
+    ]
+  );
+
+  // 4. Log in audit logs
+  await logAdminAction({
+    adminUser: params.adminUser,
+    action: 'payment.manual_reconcile',
+    details: `Manual payment reconciled for ${biz.name}: ₹${params.amount} via ${params.paymentMethod} (Ref: ${params.paymentReference}). Activated plan ${params.planId} until ${expiresAt}. Reason: ${params.reason}`,
+    targetEntity: 'subscription_payment',
+    targetId: paymentId,
+    reason: params.reason,
+    beforeValues: prevSub,
+    afterValues: sub,
+    businessId: params.businessId,
+  });
+
+  return { success: true, paymentId, subscription: sub };
 }
 
 // ==========================================

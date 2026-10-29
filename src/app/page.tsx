@@ -32,14 +32,91 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { PublicFooter } from '@/components/layout/PublicFooter';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
-import { formatINR } from '@/lib/utils';
+import { cn, formatINR } from '@/lib/utils';
 import { generateFaqSchema } from '@/lib/seoConfig';
+
+interface PlanData {
+  id: string;
+  name: string;
+  priceMonthly: number;
+  priceAnnual: number;
+  maxProducts: number;
+  maxCategories: number;
+  description: string;
+  features: string[];
+  isVisible: boolean;
+  isPopular?: boolean;
+  allowsStore: boolean;
+  allowsMenu?: boolean;
+  customUpi: boolean;
+}
+
+const DEFAULT_PLANS: PlanData[] = [
+  {
+    id: 'plan_basic',
+    name: 'Basic',
+    priceMonthly: 49,
+    priceAnnual: 490,
+    maxProducts: 20,
+    maxCategories: 10,
+    description: 'Essential digital menu & customer QR ordering for cafes, tea stalls and restaurants',
+    features: [
+      'Digital Food & Drink Menu included',
+      'Customer QR code ordering (no login required)',
+      'Kitchen Menu Orders dashboard & live sound alerts',
+      'Instant M-00101 kitchen token generation',
+    ],
+    isVisible: true,
+    isPopular: false,
+    allowsStore: false,
+    allowsMenu: true,
+    customUpi: false,
+  },
+  {
+    id: 'plan_gold',
+    name: 'Gold',
+    priceMonthly: 149,
+    priceAnnual: 1490,
+    maxProducts: 50,
+    maxCategories: 30,
+    description: 'Complete dual-channel suite with custom merchant UPI QR code configuration',
+    features: [
+      'Both Store & Menu modules included simultaneously',
+      'Custom UPI ID & QR Code setup for customer checkout',
+      'Direct bank payments (GPay, PhonePe, Paytm, BHIM)',
+      'Separate Store Orders (S-) and Menu Orders (M-)',
+      'Retail product catalog, barcode, and stock inventory',
+      'Public TV queue token display & sales analytics',
+    ],
+    isVisible: true,
+    isPopular: true,
+    allowsStore: true,
+    allowsMenu: true,
+    customUpi: true,
+  },
+];
 
 export default function HomePage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [activeTab, setActiveTab] = useState<'store' | 'menu' | 'tokens' | 'tv'>('store');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [plans, setPlans] = useState<PlanData[]>(DEFAULT_PLANS);
+
+  React.useEffect(() => {
+    fetch('/api/subscriptions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+          setPlans(data.plans);
+        }
+      })
+      .catch((err) => console.error('Failed to load dynamic plans on home:', err));
+  }, []);
+
+  const basicPlan = plans.find((p) => p.id === 'plan_basic') || plans[0] || DEFAULT_PLANS[0];
+  const goldPlan = plans.find((p) => p.id === 'plan_gold') || plans[1] || DEFAULT_PLANS[1];
+  const visiblePlans = plans.filter((p) => p.isVisible !== false);
 
   const faqs = [
     {
@@ -51,8 +128,8 @@ export default function HomePage() {
       a: 'Zero registration is required! Customers simply scan the QR code on the table or storefront banner with their phone camera, browse items, and tap submit. They receive an immediate token number and private live tracking link.',
     },
     {
-      q: 'How does the ₹20/month subscription pricing work?',
-      a: 'Our Micro Starter plan is designed specifically for small Indian merchants, tea stalls, juice corners, and bakeries. At just ₹20 per month (or ₹200 billed annually), you receive full digital catalog capabilities, automated tokens, and QR poster downloads.',
+      q: `How does the ₹${basicPlan.priceMonthly}/month subscription pricing work?`,
+      a: `Our starter plan is designed specifically for small Indian merchants, tea stalls, juice corners, and bakeries. At just ₹${basicPlan.priceMonthly} per month (or ₹${basicPlan.priceAnnual} billed annually), you receive full digital catalog capabilities, automated tokens, and QR poster downloads.`,
     },
     {
       q: 'Can I display orders on a wall-mounted TV or tablet?',
@@ -86,7 +163,7 @@ export default function HomePage() {
                   OrderOne<span className="text-indigo-600">.in</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60">
-                  ₹20 / 30 Days
+                  ₹{basicPlan.priceMonthly} / 30 Days
                 </span>
               </div>
               <div className="text-[9px] font-semibold text-slate-400 tracking-tight leading-none truncate max-w-[130px] sm:max-w-none hidden xs:block">
@@ -168,7 +245,7 @@ export default function HomePage() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                Plans & Pricing (from ₹20/mo)
+                Plans & Pricing (from ₹{basicPlan.priceMonthly}/mo)
               </a>
               <a
                 href="#faq"
@@ -210,7 +287,7 @@ export default function HomePage() {
             Unified SaaS Engine • <span className="font-semibold text-slate-900">Separate Store & Dining Pipelines</span>
           </span>
           <span className="text-[10px] font-semibold tracking-wide uppercase px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
-            from ₹20/mo
+            from ₹{basicPlan.priceMonthly}/mo
           </span>
         </div>
 
@@ -285,7 +362,7 @@ export default function HomePage() {
             <div className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-200/60 flex items-center justify-center">
               <Check className="w-2.5 h-2.5 text-emerald-600 stroke-[3]" />
             </div>
-            <span className="font-medium text-slate-700">Micro Starter from ₹20/mo</span>
+            <span className="font-medium text-slate-700">Micro Starter from ₹{basicPlan.priceMonthly}/mo</span>
           </div>
         </div>
       </section>
@@ -593,7 +670,7 @@ export default function HomePage() {
         </Card>
       </section>
 
-      {/* Pricing Section (₹20/mo entry plan) */}
+      {/* Dynamic Pricing Section */}
       <section id="pricing" className="py-16 px-4 sm:px-6 max-w-5xl mx-auto w-full">
         <div className="text-center mb-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-2xs">
@@ -603,7 +680,7 @@ export default function HomePage() {
             Simple, Transparent Pricing for Indian Businesses
           </h2>
           <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto font-normal">
-            Start at just ₹20 per month. No hidden commissions, no per-transaction cuts.
+            Start at just ₹{basicPlan.priceMonthly} per month. No hidden commissions, no per-transaction cuts.
           </p>
 
           {/* Monthly / Annual Toggle */}
@@ -634,175 +711,183 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Pricing Cards (Basic ₹20/mo and Gold ₹99/mo) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Plan 1: Basic */}
-          <Card className="p-7 flex flex-col justify-between border-slate-200/90 shadow-soft hover:shadow-card transition-all bg-white rounded-3xl">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-black text-slate-900 text-lg">Basic</h3>
-                <Badge variant="indigo">Menu Tier</Badge>
-              </div>
-              <p className="text-xs text-slate-500">Essential digital menu & customer QR ordering for cafes, tea stalls and restaurants</p>
+        {/* Dynamic Pricing Cards */}
+        <div className={cn(
+          'grid gap-8 mx-auto',
+          visiblePlans.length >= 3 ? 'grid-cols-1 md:grid-cols-3 max-w-5xl' : 'grid-cols-1 md:grid-cols-2 max-w-4xl'
+        )}>
+          {visiblePlans.map((plan) => {
+            const isGold = plan.id === 'plan_gold';
+            const isDiamond = plan.id === 'plan_diamond';
+            const price = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
 
-              <div className="my-5">
-                <span className="text-4xl font-black text-slate-900 tracking-tight">
-                  {billingCycle === 'annual' ? '₹200' : '₹20'}
-                </span>
-                <span className="text-xs text-slate-500 ml-1.5 font-medium">
-                  {billingCycle === 'annual' ? '/ year' : '/ month'}
-                </span>
-              </div>
+            return (
+              <Card
+                key={plan.id}
+                className={cn(
+                  'p-7 flex flex-col justify-between transition-all bg-white rounded-3xl relative',
+                  isGold
+                    ? 'border-[#4F46E5] shadow-card ring-2 ring-[#4F46E5]/20'
+                    : isDiamond
+                    ? 'border-purple-500 shadow-card ring-2 ring-purple-500/20'
+                    : 'border-slate-200/90 shadow-soft hover:shadow-card'
+                )}
+              >
+                {plan.isPopular && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 rounded-full bg-[#4F46E5] text-white font-black text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Most Popular
+                    </span>
+                  </div>
+                )}
 
-              <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Digital Food & Drink Menu</strong> included</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Customer QR code ordering (no login required)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Kitchen Menu Orders dashboard & live sound alerts</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Instant M-00101 kitchen token generation</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <span className="text-slate-300 font-bold ml-0.5 mr-1">✕</span>
-                  <span>Retail Store module (Locked)</span>
-                </div>
-                <div className="flex items-center gap-2 text-slate-400">
-                  <span className="text-slate-300 font-bold ml-0.5 mr-1">✕</span>
-                  <span>Custom merchant UPI QR setup (Locked)</span>
-                </div>
-              </div>
-            </div>
+                <div>
+                  <div className="flex justify-between items-center mb-2 mt-1">
+                    <h3 className="font-black text-slate-900 text-lg">{plan.name}</h3>
+                    <Badge variant={isGold ? 'success' : isDiamond ? 'indigo' : 'indigo'}>
+                      {isDiamond ? 'Enterprise' : isGold ? 'Store + Menu + Custom UPI' : 'Menu Tier'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 min-h-[32px]">{plan.description}</p>
 
-            <div className="pt-6 mt-4 border-t border-slate-100">
-              <Link href="/login">
-                <Button variant="outline" className="w-full py-2.5 font-bold">
-                  Start with Basic (₹20/mo)
-                </Button>
-              </Link>
-            </div>
-          </Card>
+                  <div className="my-5">
+                    <span className="text-4xl font-black text-slate-900 tracking-tight">
+                      ₹{price}
+                    </span>
+                    <span className="text-xs text-slate-500 ml-1.5 font-medium">
+                      {billingCycle === 'annual' ? '/ year' : '/ month'}
+                    </span>
+                  </div>
 
-          {/* Plan 2: Gold */}
-          <Card className="p-7 flex flex-col justify-between border-[#4F46E5] shadow-card relative ring-2 ring-[#4F46E5]/20 bg-white rounded-3xl">
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-              <span className="px-3 py-1 rounded-full bg-[#4F46E5] text-white font-black text-[10px] uppercase tracking-wider shadow-sm">
-                ★ Recommended for Stores & Restaurants
-              </span>
-            </div>
+                  <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-700">
+                    {plan.features.map((feat, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                    {!plan.allowsStore && (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <span className="text-slate-300 font-bold ml-0.5 mr-1">✕</span>
+                        <span>Retail Store module (Locked)</span>
+                      </div>
+                    )}
+                    {!plan.customUpi && (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <span className="text-slate-300 font-bold ml-0.5 mr-1">✕</span>
+                        <span>Custom merchant UPI QR setup (Locked)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-2 mt-1">
-                <h3 className="font-black text-slate-900 text-lg">Gold</h3>
-                <Badge variant="success">Store + Menu + Custom UPI</Badge>
-              </div>
-              <p className="text-xs text-slate-500">Complete dual-channel suite with custom merchant UPI QR code configuration</p>
-
-              <div className="my-5">
-                <span className="text-4xl font-black text-slate-900 tracking-tight">
-                  {billingCycle === 'annual' ? '₹990' : '₹99'}
-                </span>
-                <span className="text-xs text-slate-500 ml-1.5 font-medium">
-                  {billingCycle === 'annual' ? '/ year' : '/ month'}
-                </span>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-700">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Both Store & Menu modules</strong> included simultaneously</span>
+                <div className="pt-6 mt-4 border-t border-slate-100">
+                  <Link href="/login">
+                    <Button
+                      variant={isGold || isDiamond ? 'primary' : 'outline'}
+                      className="w-full py-2.5 font-bold shadow-xs"
+                    >
+                      Start with {plan.name} (₹{price}/{billingCycle === 'annual' ? 'yr' : 'mo'})
+                    </Button>
+                  </Link>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Custom UPI ID & QR Code setup</strong> for customer checkout</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Direct bank payments (GPay, PhonePe, Paytm, BHIM)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Separate Store Orders (S-) and Menu Orders (M-)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Retail product catalog, barcode, and stock inventory</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Public TV queue token display & sales analytics</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6 mt-4 border-t border-slate-100">
-              <Link href="/login">
-                <Button variant="primary" className="w-full py-2.5 font-bold shadow-md">
-                  Get Started with Gold (₹99/mo)
-                </Button>
-              </Link>
-            </div>
-          </Card>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Feature Comparison Table */}
         <div className="mt-12 bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden max-w-4xl mx-auto">
           <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <h3 className="font-bold text-slate-900 text-xs sm:text-sm">Plan Feature Comparison</h3>
-            <span className="text-[11px] text-slate-500">Monthly billing period</span>
+            <span className="text-[11px] text-slate-500">Live active pricing tier matrix</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-[#64748B] font-semibold bg-white">
                   <th className="p-3.5">Feature</th>
-                  <th className="p-3.5 text-center">Basic</th>
-                  <th className="p-3.5 text-center text-[#4F46E5] font-bold">Gold</th>
+                  {visiblePlans.map((p) => (
+                    <th
+                      key={p.id}
+                      className={cn(
+                        'p-3.5 text-center font-bold',
+                        p.id === 'plan_gold' ? 'text-[#4F46E5]' : 'text-slate-900'
+                      )}
+                    >
+                      {p.name}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 <tr>
-                  <td className="p-3.5 font-semibold">Monthly price</td>
-                  <td className="p-3.5 text-center font-black text-slate-900">₹20</td>
-                  <td className="p-3.5 text-center font-black text-[#4F46E5]">₹99</td>
+                  <td className="p-3.5 font-semibold">Monthly Price</td>
+                  {visiblePlans.map((p) => (
+                    <td key={p.id} className="p-3.5 text-center font-black text-slate-900">
+                      ₹{p.priceMonthly}
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Menu module</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5 font-semibold">Annual Price</td>
+                  {visiblePlans.map((p) => (
+                    <td key={p.id} className="p-3.5 text-center font-black text-slate-900">
+                      ₹{p.priceAnnual}
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Store module</td>
-                  <td className="p-3.5 text-center text-red-500 font-semibold">Locked</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5">Product / Item Quota</td>
+                  {visiblePlans.map((p) => (
+                    <td key={p.id} className="p-3.5 text-center font-bold text-slate-900">
+                      {p.maxProducts} items
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Menu orders</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5">Category Quota</td>
+                  {visiblePlans.map((p) => (
+                    <td key={p.id} className="p-3.5 text-center font-bold text-slate-900">
+                      {p.maxCategories} categories
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Store orders</td>
-                  <td className="p-3.5 text-center text-slate-400">Not included</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5">Menu Module</td>
+                  {visiblePlans.map((p) => (
+                    <td key={p.id} className="p-3.5 text-center text-emerald-600 font-bold">
+                      Included
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Custom UPI QR configuration</td>
-                  <td className="p-3.5 text-center text-slate-400">Not included</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5">Store Module</td>
+                  {visiblePlans.map((p) => (
+                    <td
+                      key={p.id}
+                      className={cn(
+                        'p-3.5 text-center font-bold',
+                        p.allowsStore ? 'text-emerald-600' : 'text-slate-400'
+                      )}
+                    >
+                      {p.allowsStore ? 'Included' : 'Locked'}
+                    </td>
+                  ))}
                 </tr>
                 <tr>
-                  <td className="p-3.5">Product inventory</td>
-                  <td className="p-3.5 text-center text-slate-400">Not included</td>
-                  <td className="p-3.5 text-center text-emerald-600 font-bold">Included</td>
+                  <td className="p-3.5">Custom UPI QR Configuration</td>
+                  {visiblePlans.map((p) => (
+                    <td
+                      key={p.id}
+                      className={cn(
+                        'p-3.5 text-center font-bold',
+                        p.customUpi ? 'text-emerald-600' : 'text-slate-400'
+                      )}
+                    >
+                      {p.customUpi ? 'Included' : 'Locked'}
+                    </td>
+                  ))}
                 </tr>
               </tbody>
             </table>

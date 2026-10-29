@@ -25,6 +25,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUserFromRequest(req);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Direct subscription changes require Super Admin authorization. Please complete payment checkout.' },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { businessId, planId, billingCycle } = body;
 

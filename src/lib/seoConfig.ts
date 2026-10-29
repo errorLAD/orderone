@@ -116,9 +116,9 @@ export function generatePlatformSchema() {
         operatingSystem: 'All web browsers (Desktop, Tablet, Mobile)',
         offers: {
           '@type': 'Offer',
-          price: '20.00',
+          price: '49.00',
           priceCurrency: 'INR',
-          description: 'Basic plan starting at ₹20 for 30 days',
+          description: 'Basic plan starting at ₹49 for 30 days',
         },
         description:
           'Unified digital storefront, dining menu QR, order token queuing, and UPI/GST management for Indian businesses.',

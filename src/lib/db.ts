@@ -483,7 +483,7 @@ export async function createCategory(data: Omit<Category, 'id' | 'createdAt'>): 
   if (data.sourceType === 'store') {
     const access = await checkBusinessModuleAccess(data.businessId, 'store');
     if (!access.allowed) {
-      throw new Error(access.message || 'Store categories require the Gold plan (₹99/mo). Please upgrade.');
+      throw new Error(access.message || 'Store categories require an upgraded subscription plan. Please upgrade.');
     }
   }
 
@@ -604,7 +604,7 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
   if (data.sourceType === 'store') {
     const access = await checkBusinessModuleAccess(data.businessId, 'store');
     if (!access.allowed) {
-      throw new Error(access.message || 'Store products require the Gold plan (₹99/mo). Please upgrade.');
+      throw new Error(access.message || 'Store products require an upgraded subscription plan. Please upgrade.');
     }
   }
 
@@ -799,7 +799,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   if (input.sourceType === 'store') {
     const access = await checkBusinessModuleAccess(input.businessId, 'store');
     if (!access.allowed) {
-      throw new Error(access.message || 'Store orders require the Gold subscription plan (₹99/mo). Please upgrade to Gold.');
+      throw new Error(access.message || 'Store orders require an active Store-enabled subscription tier. Please upgrade.');
     }
     if (!business.settings.modules.store) {
       throw new Error('Digital Store is currently disabled for this business');
@@ -1603,14 +1603,14 @@ export async function checkBusinessModuleAccess(
   ].includes(biz.type);
 
   if (module === 'store') {
-    // Basic plan (₹20/mo) includes Materials & Inventory for Hardware and Retail businesses
+    // Starter plan includes Materials & Inventory for Hardware and Retail businesses
     if (isStoreCategory || plan?.allowsStore !== false) {
       return { allowed: true, plan };
     }
     return {
       allowed: false,
       plan,
-      message: 'Store module requires the Gold plan (₹99/mo) or a retail/hardware business category.',
+      message: 'Store module requires an upgraded subscription plan or a retail/hardware business category.',
     };
   }
 
@@ -1645,7 +1645,7 @@ export async function saveBusinessUpiSettings(
 ): Promise<BusinessUpiSettings> {
   const biz = await getBusinessById(businessId);
   if (!biz || !hasActiveGoldAccess(biz)) {
-    throw new Error('Custom UPI payment configuration requires the Gold subscription plan (₹99/month). Please upgrade your subscription to enable direct UPI customer payments.');
+    throw new Error('Custom UPI payment configuration requires an upgraded subscription plan with UPI support. Please upgrade your subscription to enable direct UPI customer payments.');
   }
 
   const isEnabled = data.isEnabled !== false;
@@ -1811,8 +1811,9 @@ export async function completeRazorpaySubscriptionPayment(params: {
 
   const nowMs = Date.now();
   const startsAt = new Date(nowMs).toISOString();
-  // 30 days of validity calculated on server: 30 * 24 * 60 * 60 * 1000
-  const daysToAdd = payment.billingCycle === 'annual' ? 365 : 30;
+  const daysToAdd = payment.billingCycle === 'annual'
+    ? (plan.validityDaysAnnual || 365)
+    : (plan.validityDaysMonthly || 30);
   const expiresAt = new Date(nowMs + daysToAdd * 86400000).toISOString();
 
   // 1. Update subscription_payments record
@@ -2231,7 +2232,9 @@ export async function updateBusinessSubscription(
   if (!business || !plan) return null;
 
   const amount = billingCycle === 'annual' ? plan.priceAnnual : plan.priceMonthly;
-  const daysToAdd = billingCycle === 'annual' ? 365 : 30;
+  const daysToAdd = billingCycle === 'annual'
+    ? (plan.validityDaysAnnual || 365)
+    : (plan.validityDaysMonthly || 30);
 
   business.subscription = {
     planId,

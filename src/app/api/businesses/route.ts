@@ -111,13 +111,55 @@ export async function POST(req: NextRequest) {
       onboardingCompleted: false,
     };
 
-    const businessSubscription = {
-      planId: 'plan_basic',
-      status: 'active' as const,
-      billingCycle: 'monthly' as const,
-      renewsAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-      amount: 20,
-    };
+    // Load trial and plan configuration dynamically from platform_settings and subscription_plans
+    let trialEnabled = true;
+    let trialDays = 7;
+    let trialPlanId = 'plan_gold';
+
+    try {
+      const platRes = await pgQuery(`SELECT settings FROM public.platform_settings WHERE id = 'global';`);
+      if (platRes.rows.length > 0) {
+        const pSettings = typeof platRes.rows[0].settings === 'string' ? JSON.parse(platRes.rows[0].settings) : platRes.rows[0].settings;
+        if (pSettings?.trial) {
+          trialEnabled = pSettings.trial.enabled !== false;
+          trialDays = parseInt(pSettings.trial.durationDays || '7', 10);
+          trialPlanId = pSettings.trial.planId || 'plan_gold';
+        }
+      }
+    } catch (tErr) {
+      console.error('Failed to load trial settings in businesses route:', tErr);
+    }
+
+    let businessSubscription: any;
+    if (trialEnabled) {
+      businessSubscription = {
+        planId: trialPlanId,
+        status: 'trial' as const,
+        billingCycle: 'monthly' as const,
+        renewsAt: new Date(Date.now() + trialDays * 86400000).toISOString(),
+        startsAt: new Date().toISOString(),
+        amount: 0,
+      };
+    } else {
+      let basicPrice = 49;
+      let basicValidity = 30;
+      try {
+        const planRes = await pgQuery(`SELECT price_monthly, validity_days_monthly FROM public.subscription_plans WHERE id = 'plan_basic';`);
+        if (planRes.rows.length > 0) {
+          basicPrice = parseFloat(planRes.rows[0].price_monthly || '49');
+          basicValidity = parseInt(planRes.rows[0].validity_days_monthly || '30', 10);
+        }
+      } catch {}
+
+      businessSubscription = {
+        planId: 'plan_basic',
+        status: 'active' as const,
+        billingCycle: 'monthly' as const,
+        renewsAt: new Date(Date.now() + basicValidity * 86400000).toISOString(),
+        startsAt: new Date().toISOString(),
+        amount: basicPrice,
+      };
+    }
 
     const newBiz = await createBusiness({
       name: bizName,

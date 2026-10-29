@@ -211,6 +211,8 @@ export function mapRowToSubscriptionPlan(r: any): SubscriptionPlan {
     description: r.description || '',
     priceMonthly: parseFloat(r.price_monthly),
     priceAnnual: parseFloat(r.price_annual),
+    validityDaysMonthly: parseInt(r.validity_days_monthly, 10) || 30,
+    validityDaysAnnual: parseInt(r.validity_days_annual, 10) || 365,
     features: typeof r.features === 'string' ? JSON.parse(r.features) : r.features || [],
     maxProducts: r.max_products !== undefined && r.max_products !== null ? parseInt(r.max_products, 10) : (isGold ? 50 : isDiamond ? 99999 : 20),
     maxCategories: r.max_categories !== undefined && r.max_categories !== null ? parseInt(r.max_categories, 10) : (isGold ? 30 : isDiamond ? 9999 : 10),

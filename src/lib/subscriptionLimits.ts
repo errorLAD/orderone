@@ -17,16 +17,16 @@ export const PLAN_LIMITS: { [planId: string]: PlanLimitConfig } = {
   plan_basic: {
     planId: 'plan_basic',
     name: 'Basic',
-    priceMonthly: 20,
+    priceMonthly: 49,
     maxProducts: 20,
     maxCategories: 10,
-    allowsStore: false, // Menu only (except hardware/retail category special allowance)
+    allowsStore: false,
     allowsMenu: true,
   },
   plan_gold: {
     planId: 'plan_gold',
     name: 'Gold',
-    priceMonthly: 99,
+    priceMonthly: 149,
     maxProducts: 50,
     maxCategories: 30,
     allowsStore: true,
@@ -35,7 +35,7 @@ export const PLAN_LIMITS: { [planId: string]: PlanLimitConfig } = {
   plan_diamond: {
     planId: 'plan_diamond',
     name: 'Diamond',
-    priceMonthly: 150,
+    priceMonthly: 249,
     maxProducts: 99999,
     maxCategories: 9999,
     allowsStore: true,
@@ -221,14 +221,51 @@ export async function getEffectivePlanLimits(businessId: string): Promise<PlanLi
 
       // If subscription is expired or suspended, downgrade limits to basic
       if (status === 'expired' || status === 'suspended') {
+        const basicRes = await pgQuery(
+          `SELECT sp.max_products, sp.max_categories, sp.name AS plan_name, sp.price_monthly, sp.allows_store, sp.allows_menu
+           FROM public.subscription_plans sp WHERE sp.id = 'plan_basic'`
+        );
+        if (basicRes.rows.length > 0) {
+          const bRow = basicRes.rows[0];
+          return {
+            planId: 'plan_basic',
+            name: bRow.plan_name || 'Basic',
+            priceMonthly: parseFloat(bRow.price_monthly || '49'),
+            maxProducts: parseInt(bRow.max_products, 10),
+            maxCategories: parseInt(bRow.max_categories || '10', 10),
+            allowsStore: bRow.allows_store === true,
+            allowsMenu: bRow.allows_menu === true,
+          };
+        }
         return PLAN_LIMITS.plan_basic;
       }
 
-      if (row.max_products !== null && row.max_products !== undefined && planId === sub.planId) {
+      if (planId !== sub.planId) {
+        // Scheduled downgrade active plan
+        const targetRes = await pgQuery(
+          `SELECT sp.max_products, sp.max_categories, sp.name AS plan_name, sp.price_monthly, sp.allows_store, sp.allows_menu
+           FROM public.subscription_plans sp WHERE sp.id = $1`,
+          [planId]
+        );
+        if (targetRes.rows.length > 0) {
+          const tRow = targetRes.rows[0];
+          return {
+            planId,
+            name: tRow.plan_name || 'Basic',
+            priceMonthly: parseFloat(tRow.price_monthly || '49'),
+            maxProducts: parseInt(tRow.max_products, 10),
+            maxCategories: parseInt(tRow.max_categories || '10', 10),
+            allowsStore: tRow.allows_store === true,
+            allowsMenu: tRow.allows_menu === true,
+          };
+        }
+      }
+
+      if (row.max_products !== null && row.max_products !== undefined) {
         return {
           planId,
           name: row.plan_name || (planId === 'plan_gold' ? 'Gold' : planId === 'plan_diamond' ? 'Diamond' : 'Basic'),
-          priceMonthly: parseFloat(row.price_monthly || (planId === 'plan_gold' ? '99' : '20')),
+          priceMonthly: parseFloat(row.price_monthly || (planId === 'plan_gold' ? '149' : '49')),
           maxProducts: parseInt(row.max_products, 10),
           maxCategories: parseInt(row.max_categories || (planId === 'plan_gold' ? '30' : '10'), 10),
           allowsStore: row.allows_store === true,
