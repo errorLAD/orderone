@@ -1,0 +1,1530 @@
+{
+  "businesses": [
+    {
+      "id": "biz_5o3yrnr_mvq8u007",
+      "slug": "sri-ram-krishna-traders",
+      "name": "Sri Ram Krishna Traders",
+      "type": "restaurant",
+      "category": "restaurant",
+      "ownerId": "user_05ovmrl_mvq8u007",
+      "ownerName": "krishna kumar",
+      "description": "Sri Ram Krishna Traders - Restaurant",
+      "email": "krishna@gmail.com",
+      "phone": "7004197301",
+      "address": "Chowk, Gangwara, Chandan Patti, Darbhanga, Bihar",
+      "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp",
+      "isStoreOpen": true,
+      "onlineOrderingEnabled": true,
+      "settings": {
+        "modules": {
+          "menu": true,
+          "store": false
+        },
+        "ownerName": "krishna kumar",
+        "isStoreOpen": true,
+        "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp",
+        "orderSettings": {
+          "enableGst": true,
+          "deliveryFee": 30,
+          "currencyCode": "INR",
+          "enableDineIn": true,
+          "minStoreOrder": 50,
+          "currencySymbol": "₹",
+          "enableDelivery": true,
+          "enableTakeaway": true,
+          "autoAcceptOrders": false,
+          "taxRatePercentage": 0
+        },
+        "operatingHours": "09:00 AM - 09:00 PM (Daily)",
+        "tokenPrefixMenu": "M-",
+        "storefrontDesign": {
+          "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp"
+        },
+        "tokenPrefixStore": "S-",
+        "onboardingCompleted": false,
+        "onlineOrderingEnabled": true
+      },
+      "subscription": {
+        "amount": 20,
+        "planId": "plan_basic",
+        "status": "active",
+        "renewsAt": "2026-11-26T05:26:59.816Z",
+        "billingCycle": "monthly"
+      },
+      "createdAt": "2026-10-27T05:26:59.719Z",
+      "updatedAt": "2026-10-29T15:24:59.133Z"
+    },
+    {
+      "id": "biz_n5190tt_mvq8x8vh",
+      "slug": "sri-ram-krishna-traders-skco",
+      "name": "Sri Ram Krishna Traders",
+      "type": "hardware",
+      "category": "hardware",
+      "ownerId": "user_gf991qy_mvq8x8vh",
+      "ownerName": "Ram Krishna Sharma",
+      "description": "Sri Ram Krishna Traders - Hardware & Building Materials",
+      "email": "krishna1@gmail.com",
+      "phone": "7004689858",
+      "address": "Chowk, Gangwara, Chandan Patti, Darbhanga, Bihar",
+      "logoUrl": "/uploads/logos/logos_1793098731721_m6tzcoa.jpg",
+      "isStoreOpen": true,
+      "onlineOrderingEnabled": true,
+      "settings": {
+        "modules": {
+          "menu": false,
+          "store": true
+        },
+        "ownerName": "Ram Krishna Sharma",
+        "isStoreOpen": true,
+        "orderSettings": {
+          "enableGst": false,
+          "deliveryFee": 30,
+          "currencyCode": "INR",
+          "enableDineIn": false,
+          "minStoreOrder": 50,
+          "currencySymbol": "₹",
+          "enableDelivery": true,
+          "enableTakeaway": true,
+          "operatingHours": "08:00 AM - 09:00 PM (Daily)",
+          "autoAcceptOrders": false,
+          "taxRatePercentage": 0
+        },
+        "operatingHours": "09:00 AM - 09:00 PM (Daily)",
+        "tokenPrefixMenu": "M-",
+        "tokenPrefixStore": "S-",
+        "onboardingCompleted": true,
+        "onlineOrderingEnabled": true
+      },
+      "subscription": {
+        "amount": 20,
+        "planId": "plan_basic",
+        "status": "active",
+        "renewsAt": "2026-11-26T05:29:31.257Z",
+        "billingCycle": "monthly"
+      },
+      "createdAt": "2026-10-27T05:29:31.181Z",
+      "updatedAt": "2026-10-27T11:02:19.519Z"
+    },
+    {
+      "id": "biz_yxqjlv9_mvqqf92r",
+      "slug": "shri-ram-krishna-trader",
+      "name": "Shri Ram krishna trader",
+      "type": "hardware",
+      "category": "hardware",
+      "ownerId": "user_cw736y9_mvp4pxih",
+      "ownerName": "HELLO",
+      "description": "Shri Ram krishna trader - Hardware & Building Materials",
+      "email": "callabhimishra@gmail.com",
+      "phone": "7004197301",
+      "address": "Delhi",
+      "logoUrl": "/uploads/logos/logos_1793119532749_5cjtkoj.webp",
+      "isStoreOpen": true,
+      "onlineOrderingEnabled": true,
+      "settings": {
+        "modules": {
+          "menu": false,
+          "store": true
+        },
+        "ownerName": "HELLO",
+        "isStoreOpen": true,
+        "socialLinks": {
+          "youtube": "",
+          "facebook": "",
+          "instagram": "",
+          "googleBusiness": "https://share.google/7uGW1fbsjKrqXoH3j",
+          "youtubeEnabled": false,
+          "facebookEnabled": false,
+          "instagramEnabled": false,
+          "googleBusinessEnabled": true
+        },
+        "orderSettings": {
+          "enableGst": false,
+          "deliveryFee": 30,
+          "currencyCode": "INR",
+          "enableDineIn": false,
+          "minStoreOrder": 50,
+          "currencySymbol": "₹",
+          "enableDelivery": true,
+          "enableTakeaway": true,
+          "operatingHours": "08:00 AM - 09:00 PM (Daily)",
+          "autoAcceptOrders": false,
+          "taxRatePercentage": 0
+        },
+        "operatingHours": "09:00 AM - 09:00 PM (Daily)",
+        "tokenPrefixMenu": "M-",
+        "tokenPrefixStore": "S-",
+        "onboardingCompleted": true,
+        "onlineOrderingEnabled": true
+      },
+      "subscription": {
+        "amount": 20,
+        "planId": "plan_basic",
+        "status": "active",
+        "renewsAt": "2026-11-26T13:39:24.723Z",
+        "billingCycle": "monthly"
+      },
+      "createdAt": "2026-10-27T13:39:24.723Z",
+      "updatedAt": "2026-10-27T16:49:02.945Z"
+    },
+    {
+      "id": "biz_sdu7mxo_mvs458a5",
+      "slug": "royal-kitchen",
+      "name": "Royal kitchen",
+      "type": "restaurant",
+      "category": "restaurant",
+      "ownerId": "user_bioobkv_mvs458a5",
+      "ownerName": "Abhishek mishra",
+      "description": "Royal kitchen - Restaurant",
+      "email": "call2abhimishra@gmail.com",
+      "phone": "8375007409",
+      "address": "Buiness",
+      "logoUrl": "/uploads/logos/logos_1793205118635_n7yal8g.png",
+      "isStoreOpen": true,
+      "onlineOrderingEnabled": true,
+      "settings": {
+        "modules": {
+          "menu": true,
+          "store": true
+        },
+        "ownerName": "Abhishek mishra",
+        "isStoreOpen": true,
+        "orderSettings": {
+          "enableGst": false,
+          "deliveryFee": 30,
+          "currencyCode": "INR",
+          "enableDineIn": true,
+          "minStoreOrder": 50,
+          "currencySymbol": "₹",
+          "enableDelivery": true,
+          "enableTakeaway": true,
+          "autoAcceptOrders": false,
+          "taxRatePercentage": 0,
+          "tableRoomLabelMode": "table",
+          "customTableRoomLabel": "Table Number"
+        },
+        "operatingHours": "09:00 AM - 09:00 PM (Daily)",
+        "tokenPrefixMenu": "M-",
+        "tokenPrefixStore": "S-",
+        "onboardingCompleted": false,
+        "onlineOrderingEnabled": true
+      },
+      "subscription": {
+        "amount": 149,
+        "planId": "plan_gold",
+        "status": "active",
+        "renewsAt": "2026-12-27T12:51:18.150Z",
+        "billingCycle": "monthly"
+      },
+      "createdAt": "2026-10-28T12:51:17.933Z",
+      "updatedAt": "2026-10-29T08:23:32.504Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "user_admin",
+      "email": "admin@platform.com",
+      "name": "Platform Super Admin",
+      "role": "admin",
+      "createdAt": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "user_owner_annapurna",
+      "email": "owner@annapurna.in",
+      "name": "Venkatesh Iyer",
+      "role": "owner",
+      "businessId": "biz_annapurna",
+      "createdAt": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "user_staff_annapurna",
+      "email": "staff@annapurna.in",
+      "name": "Ramesh Kumar",
+      "role": "staff",
+      "businessId": "biz_annapurna",
+      "permissions": [
+        "orders.view",
+        "orders.update",
+        "tokens.manage"
+      ],
+      "createdAt": "2026-01-11T10:00:00.000Z"
+    },
+    {
+      "id": "user_owner_10elj6p_mvqqb909",
+      "email": "test_nobiz_user@orderone.test",
+      "name": "Fresh Mart & Provision Owner",
+      "role": "owner",
+      "businessId": "biz_2cxtkds_mvqqb8vj",
+      "createdAt": "2026-10-27T13:36:18.009Z"
+    },
+    {
+      "id": "user_owner_k1wv2p9_mvqqf97x",
+      "email": "callabhimishra@gmail.com",
+      "name": "Shri Ram krishna trader Owner",
+      "role": "owner",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "createdAt": "2026-10-27T13:39:24.909Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_qxodx7x_mvq8u0ld",
+      "businessId": "biz_5o3yrnr_mvq8u007",
+      "sourceType": "menu",
+      "name": "Starters & Appetizers",
+      "slug": "featured",
+      "sortOrder": 1,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-27T05:30:27.920Z"
+    },
+    {
+      "id": "cat_jkdvsrk_mvq8x93x",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "name": "Cement & Aggregates",
+      "slug": "featured",
+      "sortOrder": 1,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-27T05:32:58.912Z"
+    },
+    {
+      "id": "cat_b3tg9oz_mvqqf9c6",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "name": "Featured Products",
+      "slug": "featured-products",
+      "sortOrder": 1,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-27T13:39:25.062Z"
+    },
+    {
+      "id": "cat_92gae5e_mvtjaqw6",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Pizzas",
+      "slug": "pizzas",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277791694_253fynv.png",
+      "sortOrder": 1,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:43:15.750Z"
+    },
+    {
+      "id": "cat_bth1y7e_mvqeqmyk",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "name": "Steel, Rebars & Mesh",
+      "slug": "steel-rebars-mesh",
+      "description": "Hardware & Building Materials product category",
+      "imageUrl": "/uploads/categories/categories_1793088735320_2et9skc.jpg",
+      "sortOrder": 2,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-27T08:12:20.540Z"
+    },
+    {
+      "id": "cat_f6d6jts_mvtjbdmx",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Rolls",
+      "slug": "rolls",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277821485_a0iu1eh.png",
+      "sortOrder": 2,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:43:45.225Z"
+    },
+    {
+      "id": "cat_m2m7x0d_mvtjc3kw",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Burger",
+      "slug": "burger",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277854545_53f5p2d.png",
+      "sortOrder": 3,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:44:18.848Z"
+    },
+    {
+      "id": "cat_jpgmmgz_mvtjcw91",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Chinese",
+      "slug": "chinese",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277893339_gj84hzm.png",
+      "sortOrder": 4,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:44:56.005Z"
+    },
+    {
+      "id": "cat_e23mgza_mvtjdc7x",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Dessert",
+      "slug": "dessert",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277913333_duthlj9.png",
+      "sortOrder": 5,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:45:16.701Z"
+    },
+    {
+      "id": "cat_l0yg62l_mvtjdy07",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "North Indian",
+      "slug": "north-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277940574_ay1na68.png",
+      "sortOrder": 6,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:45:44.935Z"
+    },
+    {
+      "id": "cat_9wfh29d_mvtjegqw",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "South Indian",
+      "slug": "south-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277966229_ml594jo.png",
+      "sortOrder": 7,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:46:09.224Z"
+    },
+    {
+      "id": "cat_4mdrho6_mvtjfie8",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "South Indian",
+      "slug": "south-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793278014150_8skupk0.png",
+      "sortOrder": 8,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:46:58.016Z"
+    },
+    {
+      "id": "cat_cbkvnaq_mvtjg2dl",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Ice cream",
+      "slug": "ice-cream",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793278040813_ukcgps2.png",
+      "sortOrder": 9,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:47:23.913Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod_0k6q7j2_mvqqfqoq",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "categoryId": "cat_b3tg9oz_mvqqf9c6",
+      "sourceType": "store",
+      "name": "UltraTech Super Cement (50kg Bag)",
+      "description": "OPC 53 grade high-strength construction cement for RCC slab and pillars",
+      "price": 385,
+      "sku": "CEM-ULT-50KG",
+      "brand": "UltraTech",
+      "unit": "bag",
+      "minOrderQty": 1,
+      "stockQuantity": 197,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "sortOrder": 0,
+      "dietaryFlags": {},
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-27T13:39:47.546Z",
+      "updatedAt": "2026-10-27T13:39:47.546Z"
+    },
+    {
+      "id": "prod_bqcd9oq_mvs45f0l",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "categoryId": null,
+      "sourceType": "menu",
+      "name": "Paneer Butter Masala",
+      "description": "Rich creamy cottage cheese curry with butter makhani gravy",
+      "price": 220,
+      "unit": "portion",
+      "minOrderQty": 1,
+      "stockQuantity": 44,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "sortOrder": 0,
+      "dietaryFlags": {
+        "isVegetarian": true
+      },
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-28T12:51:26.661Z",
+      "updatedAt": "2026-10-28T12:51:26.661Z"
+    },
+    {
+      "id": "prod_n05pxch_mvqfjh2t",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "categoryId": "cat_jkdvsrk_mvq8x93x",
+      "sourceType": "store",
+      "name": "ACC CEMENT",
+      "price": 305,
+      "sku": "ACC-ACC-544-BA",
+      "brand": "ACC",
+      "unit": "bag",
+      "minOrderQty": 2,
+      "stockQuantity": 1,
+      "lowStockThreshold": 5,
+      "isAvailable": true,
+      "salesChannel": "both",
+      "imageUrl": "/uploads/products/products_1793090055373_et36jjn.png",
+      "sortOrder": 1,
+      "dietaryFlags": {},
+      "variants": [],
+      "addOns": [],
+      "createdAt": "2026-10-27T08:34:45.941Z",
+      "updatedAt": "2026-10-27T08:34:45.941Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "ord_ab3hldb_mvtk5pdo",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00101",
+      "trackingId": "e5cdb94ebd9cf6e44f3b40f7",
+      "customer": {
+        "name": "Guest Customer",
+        "notes": ""
+      },
+      "items": [
+        {
+          "price": 220,
+          "quantity": 1,
+          "itemTotal": 220,
+          "productId": "prod_bqcd9oq_mvs45f0l",
+          "productName": "Paneer Butter Masala"
+        }
+      ],
+      "subtotal": 220,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 220,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "dine_in",
+      "queueToken": "M-00101",
+      "taxBreakdown": {
+        "cgst": 0,
+        "igst": 0,
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00101",
+        "taxableAmount": 220,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
+      },
+      "invoiceNumber": "INV-00101",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Menu",
+          "status": "new",
+          "timestamp": "2026-10-29T13:07:20.124Z"
+        }
+      ],
+      "createdAt": "2026-10-29T13:07:20.124Z",
+      "updatedAt": "2026-10-29T13:07:20.124Z"
+    },
+    {
+      "id": "ord_eud8yk2_mvs0vtsd",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00103",
+      "trackingId": "27aa98bcbeea022e3c50dcd4",
+      "customer": {
+        "name": "Social Flow Test Customer",
+        "phone": "9988776655"
+      },
+      "items": [
+        {
+          "price": 385,
+          "quantity": 1,
+          "itemTotal": 385,
+          "productId": "prod_0k6q7j2_mvqqfqoq",
+          "productName": "UltraTech Super Cement (50kg Bag)"
+        }
+      ],
+      "subtotal": 385,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 385,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00103",
+      "taxBreakdown": {
+        "cgst": 0,
+        "igst": 0,
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00103",
+        "taxableAmount": 385,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
+      },
+      "invoiceNumber": "INV-00103",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-28T11:20:00.397Z"
+        }
+      ],
+      "createdAt": "2026-10-28T11:20:00.397Z",
+      "updatedAt": "2026-10-28T11:20:00.397Z"
+    },
+    {
+      "id": "ord_rqxrjwt_mvs091f9",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00102",
+      "trackingId": "73a1ac411829a383ad8e9746",
+      "customer": {
+        "name": "Test Customer Alert System",
+        "phone": "9876543210",
+        "address": "MG Road, Bangalore"
+      },
+      "items": [
+        {
+          "price": 385,
+          "quantity": 1,
+          "itemTotal": 385,
+          "productId": "prod_0k6q7j2_mvqqfqoq",
+          "productName": "UltraTech Super Cement (50kg Bag)"
+        }
+      ],
+      "subtotal": 385,
+      "tax": 0,
+      "deliveryFee": 30,
+      "discount": 0,
+      "total": 415,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "delivery",
+      "queueToken": "S-00102",
+      "taxBreakdown": {
+        "cgst": 0,
+        "igst": 0,
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00102",
+        "taxableAmount": 385,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
+      },
+      "invoiceNumber": "INV-00102",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-28T11:02:17.205Z"
+        }
+      ],
+      "createdAt": "2026-10-28T11:02:17.205Z",
+      "updatedAt": "2026-10-28T11:02:17.205Z"
+    },
+    {
+      "id": "ord_t2zhyda_mvs072gf",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00101",
+      "trackingId": "290dd2f186bd8b67c6d54f9b",
+      "customer": {
+        "name": "Test Customer Alert System",
+        "phone": "9876543210",
+        "address": "MG Road, Bangalore"
+      },
+      "items": [
+        {
+          "price": 385,
+          "quantity": 1,
+          "itemTotal": 385,
+          "productId": "prod_0k6q7j2_mvqqfqoq",
+          "productName": "UltraTech Super Cement (50kg Bag)"
+        }
+      ],
+      "subtotal": 385,
+      "tax": 0,
+      "deliveryFee": 30,
+      "discount": 0,
+      "total": 415,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "delivery",
+      "queueToken": "S-00101",
+      "taxBreakdown": {
+        "cgst": 0,
+        "igst": 0,
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00101",
+        "taxableAmount": 385,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
+      },
+      "invoiceNumber": "INV-00101",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-28T11:00:45.232Z"
+        }
+      ],
+      "createdAt": "2026-10-28T11:00:45.232Z",
+      "updatedAt": "2026-10-28T11:00:45.232Z"
+    },
+    {
+      "id": "ord_4v5m4kc_mvqiqeqo",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00107",
+      "trackingId": "d8d4c1455cbebf7b46d9ff79",
+      "customer": {
+        "name": "Sunil Contractor",
+        "phone": "9876543210"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 1,
+          "itemTotal": 305,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 305,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 305,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "new",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00107",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T10:04:08.352Z"
+        }
+      ],
+      "createdAt": "2026-10-27T10:04:08.352Z",
+      "updatedAt": "2026-10-27T10:04:08.352Z"
+    },
+    {
+      "id": "ord_1fb88wf_mvqhhquk",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00106",
+      "trackingId": "c82c1f4ac81594203e1b1001",
+      "customer": {
+        "name": "RAM RAM",
+        "notes": ""
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 1,
+          "itemTotal": 305,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 305,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 305,
+      "paymentStatus": "pending_verification",
+      "paymentMethod": "upi",
+      "orderStatus": "completed",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00106",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T09:29:24.524Z"
+        },
+        {
+          "note": "Status changed from new to accepted",
+          "status": "accepted",
+          "timestamp": "2026-10-27T09:30:23.900Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from accepted to preparing",
+          "status": "preparing",
+          "timestamp": "2026-10-27T09:30:36.905Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from preparing to ready",
+          "status": "ready",
+          "timestamp": "2026-10-27T09:30:46.323Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from ready to completed",
+          "status": "completed",
+          "timestamp": "2026-10-27T09:30:51.817Z",
+          "updatedBy": "OWNER"
+        }
+      ],
+      "createdAt": "2026-10-27T09:29:24.524Z",
+      "updatedAt": "2026-10-27T09:34:19.336Z"
+    },
+    {
+      "id": "ord_k675hr3_mvqh3mm0",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00105",
+      "trackingId": "9c409e036623910330912a78",
+      "customer": {
+        "name": "Gupta Electricals",
+        "phone": "9845678901",
+        "address": "Gangwara Main Road"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 2,
+          "itemTotal": 610,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 610,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 610,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "ready",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00105",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T09:18:25.848Z"
+        },
+        {
+          "note": "Packed and ready at Bay 1",
+          "status": "ready",
+          "timestamp": "2026-10-27T09:18:26.275Z",
+          "updatedBy": "System"
+        }
+      ],
+      "createdAt": "2026-10-27T09:18:25.848Z",
+      "updatedAt": "2026-10-27T09:21:53.750Z"
+    },
+    {
+      "id": "ord_o0l2wth_mvqh3lnl",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00104",
+      "trackingId": "f3a2dfb443271dff04fe44c5",
+      "customer": {
+        "name": "Manoj Construction",
+        "phone": "9834567890",
+        "address": "Site 12, VIP Road"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 10,
+          "itemTotal": 3050,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 3050,
+      "tax": 0,
+      "deliveryFee": 30,
+      "discount": 0,
+      "total": 3080,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "preparing",
+      "fulfilmentMethod": "delivery",
+      "queueToken": "S-00104",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T09:18:24.609Z"
+        },
+        {
+          "note": "Picking from godown warehouse",
+          "status": "preparing",
+          "timestamp": "2026-10-27T09:18:25.071Z",
+          "updatedBy": "System"
+        }
+      ],
+      "createdAt": "2026-10-27T09:18:24.609Z",
+      "updatedAt": "2026-10-27T09:21:52.546Z"
+    },
+    {
+      "id": "ord_jm2ujz3_mvqgx7c2",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00103",
+      "trackingId": "f7b43baebcfa23a85bf63114",
+      "customer": {
+        "name": "Vikram Contractor",
+        "phone": "9823456789",
+        "address": "Chowk Yard Bay #1"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 3,
+          "itemTotal": 915,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 915,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 915,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "completed",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00103",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T09:13:26.114Z"
+        },
+        {
+          "note": "Picked and ready at Bay 1",
+          "status": "ready",
+          "timestamp": "2026-10-27T09:17:05.982Z",
+          "updatedBy": "System"
+        },
+        {
+          "note": "Handed over to customer",
+          "status": "completed",
+          "timestamp": "2026-10-27T09:17:15.752Z",
+          "updatedBy": "System"
+        }
+      ],
+      "createdAt": "2026-10-27T09:13:26.114Z",
+      "updatedAt": "2026-10-27T09:20:43.222Z"
+    },
+    {
+      "id": "ord_bcdh7be_mvqg94an",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00102",
+      "trackingId": "50cb752b925d09c708622884",
+      "customer": {
+        "name": "Mahesh Builder",
+        "phone": "9812345678",
+        "address": "Chandan Patti Site #2"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 5,
+          "itemTotal": 1525,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 1525,
+      "tax": 0,
+      "deliveryFee": 30,
+      "discount": 0,
+      "total": 1555,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "completed",
+      "fulfilmentMethod": "delivery",
+      "queueToken": "S-00102",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T08:54:42.431Z"
+        },
+        {
+          "note": "All items picked and packed for site delivery",
+          "status": "ready",
+          "timestamp": "2026-10-27T08:56:41.653Z",
+          "updatedBy": "System"
+        },
+        {
+          "note": "Status changed from ready to completed",
+          "status": "completed",
+          "timestamp": "2026-10-27T08:59:36.171Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Ready for dispatch",
+          "status": "ready",
+          "timestamp": "2026-10-27T09:10:23.751Z",
+          "updatedBy": "System"
+        },
+        {
+          "note": "Materials dispatched and gate pass verified",
+          "status": "completed",
+          "timestamp": "2026-10-27T09:13:13.980Z",
+          "updatedBy": "System"
+        }
+      ],
+      "createdAt": "2026-10-27T08:54:42.431Z",
+      "updatedAt": "2026-10-27T09:16:42.026Z"
+    },
+    {
+      "id": "ord_1rkf0ge_mvqg5o8k",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00101",
+      "trackingId": "ab075f484d8fd75b22080771",
+      "customer": {
+        "name": "Ramesh Contractor",
+        "phone": "9876543210",
+        "address": "Gangwara Site #4"
+      },
+      "items": [
+        {
+          "price": 305,
+          "quantity": 2,
+          "itemTotal": 610,
+          "productId": "prod_n05pxch_mvqfjh2t",
+          "productName": "ACC CEMENT"
+        }
+      ],
+      "subtotal": 610,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 610,
+      "paymentStatus": "pay_at_counter",
+      "paymentMethod": "counter",
+      "orderStatus": "completed",
+      "fulfilmentMethod": "pickup",
+      "queueToken": "S-00101",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Store",
+          "status": "new",
+          "timestamp": "2026-10-27T08:52:01.653Z"
+        },
+        {
+          "note": "Status changed from new to accepted",
+          "status": "accepted",
+          "timestamp": "2026-10-27T08:53:04.318Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from accepted to preparing",
+          "status": "preparing",
+          "timestamp": "2026-10-27T08:53:23.963Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from preparing to ready",
+          "status": "ready",
+          "timestamp": "2026-10-27T08:53:25.971Z",
+          "updatedBy": "OWNER"
+        },
+        {
+          "note": "Status changed from ready to completed",
+          "status": "completed",
+          "timestamp": "2026-10-27T08:53:27.270Z",
+          "updatedBy": "OWNER"
+        }
+      ],
+      "createdAt": "2026-10-27T08:52:01.653Z",
+      "updatedAt": "2026-10-27T08:56:55.233Z"
+    }
+  ],
+  "queueTokens": [
+    {
+      "id": "qtok_9ve3ne0_mvqg5ob4",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00101",
+      "sequenceNumber": 1,
+      "orderId": "ord_1rkf0ge_mvqg5o8k",
+      "customerName": "Ramesh Contractor",
+      "status": "waiting",
+      "createdAt": "2026-10-27T08:55:29.140Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_y2glrky_mvqg94gm",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00102",
+      "sequenceNumber": 2,
+      "orderId": "ord_bcdh7be_mvqg94an",
+      "customerName": "Mahesh Builder",
+      "status": "served",
+      "createdAt": "2026-10-27T08:58:10.042Z",
+      "calledAt": "2026-10-27T09:15:29.256Z",
+      "servedAt": "2026-10-27T09:16:41.934Z"
+    },
+    {
+      "id": "qtok_x46rmve_mvqgx7eq",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00103",
+      "sequenceNumber": 3,
+      "orderId": "ord_jm2ujz3_mvqgx7c2",
+      "customerName": "Vikram Contractor",
+      "status": "served",
+      "createdAt": "2026-10-27T09:16:53.604Z",
+      "calledAt": "2026-10-27T09:20:33.867Z",
+      "servedAt": "2026-10-27T09:20:43.143Z"
+    },
+    {
+      "id": "qtok_2ie8anw_mvqh3lq2",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00104",
+      "sequenceNumber": 4,
+      "orderId": "ord_o0l2wth_mvqh3lnl",
+      "customerName": "Manoj Construction",
+      "status": "waiting",
+      "createdAt": "2026-10-27T09:21:52.090Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_8d9bgg3_mvqh3mof",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00105",
+      "sequenceNumber": 5,
+      "orderId": "ord_k675hr3_mvqh3mm0",
+      "customerName": "Gupta Electricals",
+      "status": "called",
+      "createdAt": "2026-10-27T09:21:53.326Z",
+      "calledAt": "2026-10-27T09:21:53.666Z",
+      "servedAt": null
+    },
+    {
+      "id": "qtok_yu1jrav_mvqhhqwz",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00106",
+      "sequenceNumber": 6,
+      "orderId": "ord_1fb88wf_mvqhhquk",
+      "customerName": "RAM RAM",
+      "status": "served",
+      "createdAt": "2026-10-27T09:32:52.000Z",
+      "calledAt": "2026-10-27T09:34:13.729Z",
+      "servedAt": "2026-10-27T09:34:19.223Z"
+    },
+    {
+      "id": "qtok_pjc7md8_mvqiqetv",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "tokenNumber": "S-00107",
+      "sequenceNumber": 7,
+      "orderId": "ord_4v5m4kc_mvqiqeqo",
+      "customerName": "Sunil Contractor",
+      "status": "waiting",
+      "createdAt": "2026-10-27T10:07:35.864Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_mf74r0o_mvs072ip",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00101",
+      "sequenceNumber": 1,
+      "orderId": "ord_t2zhyda_mvs072gf",
+      "customerName": "Test Customer Alert System",
+      "status": "waiting",
+      "createdAt": "2026-10-28T11:04:15.608Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_pacl6mv_mvs091hl",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00102",
+      "sequenceNumber": 2,
+      "orderId": "ord_rqxrjwt_mvs091f9",
+      "customerName": "Test Customer Alert System",
+      "status": "waiting",
+      "createdAt": "2026-10-28T11:05:47.587Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_qmkz8oq_mvs0vtui",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "tokenNumber": "S-00103",
+      "sequenceNumber": 3,
+      "orderId": "ord_eud8yk2_mvs0vtsd",
+      "customerName": "Social Flow Test Customer",
+      "status": "waiting",
+      "createdAt": "2026-10-28T11:23:30.763Z",
+      "calledAt": null,
+      "servedAt": null
+    },
+    {
+      "id": "qtok_chx5p2s_mvtk5pk8",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00101",
+      "sequenceNumber": 1,
+      "orderId": "ord_ab3hldb_mvtk5pdo",
+      "customerName": "Guest Customer",
+      "status": "waiting",
+      "createdAt": "2026-10-29T13:07:20.473Z",
+      "calledAt": null,
+      "servedAt": null
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_87dkl8o_mvtk5pdo",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "title": "New Kitchen Menu Order #M-00101",
+      "message": "Guest Customer placed an order of ₹220.00 (dine_in)",
+      "orderId": "ord_ab3hldb_mvtk5pdo",
+      "tokenNumber": "M-00101",
+      "isRead": false,
+      "createdAt": "2026-10-29T13:07:20.707Z"
+    },
+    {
+      "id": "notif_kayc5ei_mvs0vtsd",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "title": "New Store Order #S-00103",
+      "message": "Social Flow Test Customer placed an order of ₹385.00 (pickup)",
+      "orderId": "ord_eud8yk2_mvs0vtsd",
+      "tokenNumber": "S-00103",
+      "isRead": false,
+      "createdAt": "2026-10-28T11:23:30.848Z"
+    },
+    {
+      "id": "notif_yq6c6wh_mvs091f9",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "title": "New Store Order #S-00102",
+      "message": "Test Customer Alert System placed an order of ₹415.00 (delivery)",
+      "orderId": "ord_rqxrjwt_mvs091f9",
+      "tokenNumber": "S-00102",
+      "isRead": false,
+      "createdAt": "2026-10-28T11:05:47.672Z"
+    },
+    {
+      "id": "notif_f04kvg3_mvs072gg",
+      "businessId": "biz_yxqjlv9_mvqqf92r",
+      "sourceType": "store",
+      "title": "New Store Order #S-00101",
+      "message": "Test Customer Alert System placed an order of ₹415.00 (delivery)",
+      "orderId": "ord_t2zhyda_mvs072gf",
+      "tokenNumber": "S-00101",
+      "isRead": false,
+      "createdAt": "2026-10-28T11:04:15.692Z"
+    },
+    {
+      "id": "notif_f30hwwd_mvqiqeqo",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00107",
+      "message": "Sunil Contractor placed an order of ₹305.00 (pickup)",
+      "orderId": "ord_4v5m4kc_mvqiqeqo",
+      "tokenNumber": "S-00107",
+      "isRead": false,
+      "createdAt": "2026-10-27T10:07:35.979Z"
+    },
+    {
+      "id": "notif_jvjq3jh_mvqhhquk",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00106",
+      "message": "RAM RAM placed an order of ₹305.00 (pickup)",
+      "orderId": "ord_1fb88wf_mvqhhquk",
+      "tokenNumber": "S-00106",
+      "isRead": false,
+      "createdAt": "2026-10-27T09:32:52.080Z"
+    },
+    {
+      "id": "notif_saow0qt_mvqh3mm0",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00105",
+      "message": "Gupta Electricals placed an order of ₹610.00 (pickup)",
+      "orderId": "ord_k675hr3_mvqh3mm0",
+      "tokenNumber": "S-00105",
+      "isRead": false,
+      "createdAt": "2026-10-27T09:21:53.411Z"
+    },
+    {
+      "id": "notif_f3pw0xq_mvqh3lnl",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00104",
+      "message": "Manoj Construction placed an order of ₹3080.00 (delivery)",
+      "orderId": "ord_o0l2wth_mvqh3lnl",
+      "tokenNumber": "S-00104",
+      "isRead": false,
+      "createdAt": "2026-10-27T09:21:52.174Z"
+    },
+    {
+      "id": "notif_iy6z2ge_mvqgx7c2",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00103",
+      "message": "Vikram Contractor placed an order of ₹915.00 (pickup)",
+      "orderId": "ord_jm2ujz3_mvqgx7c2",
+      "tokenNumber": "S-00103",
+      "isRead": false,
+      "createdAt": "2026-10-27T09:16:53.692Z"
+    },
+    {
+      "id": "notif_p3kftka_mvqg94an",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00102",
+      "message": "Mahesh Builder placed an order of ₹1555.00 (delivery)",
+      "orderId": "ord_bcdh7be_mvqg94an",
+      "tokenNumber": "S-00102",
+      "isRead": false,
+      "createdAt": "2026-10-27T08:58:10.130Z"
+    },
+    {
+      "id": "notif_lx8wz83_mvqg5o8l",
+      "businessId": "biz_n5190tt_mvq8x8vh",
+      "sourceType": "store",
+      "title": "New Store Order #S-00101",
+      "message": "Ramesh Contractor placed an order of ₹610.00 (pickup)",
+      "orderId": "ord_1rkf0ge_mvqg5o8k",
+      "tokenNumber": "S-00101",
+      "isRead": false,
+      "createdAt": "2026-10-27T08:55:29.237Z"
+    }
+  ],
+  "subscriptionPlans": [
+    {
+      "id": "plan_basic",
+      "name": "Basic",
+      "slug": "basic",
+      "description": "Essential digital catalog, materials and order tracking for businesses",
+      "priceMonthly": 49,
+      "priceAnnual": 490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
+      "features": [
+        "POS Counter Billing & Instant Receipts",
+        "Up to 20 products or menu items",
+        "Up to 10 categories",
+        "Materials and Store Catalog (for Hardware and Retail)",
+        "Digital Food Menu (for Restaurants and Cafes)",
+        "Customer Orders and Token Queue (S- and M-)",
+        "Storefront QR Codes"
+      ],
+      "maxProducts": 20,
+      "maxCategories": 10,
+      "maxStaff": 1,
+      "allowsStore": false,
+      "allowsMenu": true,
+      "allowsTvDisplay": false,
+      "allowsAnalytics": true,
+      "isPopular": false,
+      "isVisible": true,
+      "customUpi": false
+    },
+    {
+      "id": "plan_gold",
+      "name": "Gold",
+      "slug": "gold",
+      "description": "Complete retail store + dining menu suite with custom UPI QR payment collection",
+      "priceMonthly": 149,
+      "priceAnnual": 1490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
+      "features": [
+        "Both Store & Menu modules included simultaneously",
+        "Custom UPI ID & QR Code setup for customer checkout",
+        "Direct bank payments (GPay, PhonePe, Paytm, BHIM)",
+        "Separate Store Orders (S-) and Menu Orders (M-)",
+        "Retail product catalog, barcode, and stock inventory",
+        "Public TV queue token display & sales analytics"
+      ],
+      "maxProducts": 50,
+      "maxCategories": 30,
+      "maxStaff": 5,
+      "allowsStore": true,
+      "allowsMenu": true,
+      "allowsTvDisplay": true,
+      "allowsAnalytics": true,
+      "isPopular": true,
+      "isVisible": true,
+      "customUpi": true
+    },
+    {
+      "id": "plan_diamond",
+      "name": "Diamond",
+      "slug": "diamond",
+      "description": "Premium enterprise tier for high-volume operations (Admin Managed)",
+      "priceMonthly": 249,
+      "priceAnnual": 2490,
+      "validityDaysMonthly": 30,
+      "validityDaysAnnual": 365,
+      "features": [
+        "Unlimited products & stores",
+        "Multi-counter POS stations",
+        "Priority 24/7 dedicated account manager",
+        "Custom domain branding",
+        "Automated GST tax filing export",
+        "Dedicated SLA"
+      ],
+      "maxProducts": 99999,
+      "maxCategories": 9999,
+      "maxStaff": 50,
+      "allowsStore": true,
+      "allowsMenu": true,
+      "allowsTvDisplay": true,
+      "allowsAnalytics": true,
+      "isPopular": false,
+      "isVisible": false,
+      "customUpi": true
+    }
+  ],
+  "auditLogs": [
+    {
+      "action": "SUBSCRIPTION_DOWNGRADE_SCHEDULED",
+      "businessId": "biz_annapurna",
+      "details": "{\"fromPlan\":\"plan_gold\",\"toPlan\":\"plan_basic\",\"effectiveDate\":\"2026-11-26T17:52:43.956Z\"}",
+      "id": "audit_nzi1dtl_mvqzh1bi",
+      "timestamp": "2026-10-27T17:52:44.526Z"
+    },
+    {
+      "action": "SUBSCRIPTION_UPGRADED",
+      "businessId": "biz_annapurna",
+      "details": "{\"entityType\":\"subscription\",\"paymentId\":\"subpay_09xf3aj_mvqzh0ml\",\"previousPlanId\":\"plan_basic\",\"newPlanId\":\"plan_gold\",\"amount\":99,\"razorpayPaymentId\":\"pay_upg_1793123563710\",\"expiresAt\":\"2026-11-26T17:52:43.956Z\"}",
+      "id": "audit_90fat74_mvqzh12g",
+      "timestamp": "2026-10-27T17:52:44.200Z"
+    },
+    {
+      "action": "SUBSCRIPTION_RENEWED",
+      "businessId": "biz_annapurna",
+      "details": "{\"entityType\":\"subscription\",\"paymentId\":\"subpay_qq6zdkl_mvqzgzw7\",\"previousPlanId\":\"plan_gold\",\"newPlanId\":\"plan_gold\",\"amount\":99,\"razorpayPaymentId\":\"pay_test_123456\",\"expiresAt\":\"2026-11-26T17:52:43.007Z\"}",
+      "id": "audit_xedt89a_mvqzh0cd",
+      "timestamp": "2026-10-27T17:52:43.261Z"
+    },
+    {
+      "action": "SUBSCRIPTION_DOWNGRADE_SCHEDULED",
+      "businessId": "biz_annapurna",
+      "details": "{\"fromPlan\":\"plan_gold\",\"toPlan\":\"plan_basic\",\"effectiveDate\":\"2026-11-26T17:20:04.644Z\"}",
+      "id": "audit_ck9grqr_mvqyb1kj",
+      "timestamp": "2026-10-27T17:20:05.299Z"
+    },
+    {
+      "action": "SUBSCRIPTION_UPGRADED",
+      "businessId": "biz_annapurna",
+      "details": "{\"entityType\":\"subscription\",\"paymentId\":\"subpay_gw1zgjf_mvqyb0s5\",\"previousPlanId\":\"plan_basic\",\"newPlanId\":\"plan_gold\",\"amount\":99,\"razorpayPaymentId\":\"pay_upg_1793121604369\",\"expiresAt\":\"2026-11-26T17:20:04.644Z\"}",
+      "id": "audit_cl28u5s_mvqyb1a3",
+      "timestamp": "2026-10-27T17:20:04.923Z"
+    },
+    {
+      "action": "SUBSCRIPTION_RENEWED",
+      "businessId": "biz_annapurna",
+      "details": "{\"entityType\":\"subscription\",\"paymentId\":\"subpay_0ctfibg_mvqyazyl\",\"previousPlanId\":\"plan_gold\",\"newPlanId\":\"plan_gold\",\"amount\":99,\"razorpayPaymentId\":\"pay_test_123456\",\"expiresAt\":\"2026-11-26T17:20:03.582Z\"}",
+      "id": "audit_4606x8l_mvqyb0gt",
+      "timestamp": "2026-10-27T17:20:03.869Z"
+    },
+    {
+      "action": "SUBSCRIPTION_ACTIVATED",
+      "businessId": "biz_royal_grocery",
+      "details": "{\"entityType\":\"subscription\",\"entityId\":\"subpay_3o0tpue_mvp6g8yc\",\"planId\":\"plan_gold\",\"amount\":99,\"reference\":\"UTR235094154602\"}",
+      "id": "audit_vodsb1q_mvp6g9xg",
+      "timestamp": "2026-10-26T11:32:33.988Z"
+    },
+    {
+      "action": "SUBSCRIPTION_ACTIVATED",
+      "businessId": "biz_royal_grocery",
+      "details": "{\"entityType\":\"subscription\",\"entityId\":\"subpay_fl2qz3c_mvp5hcm4\",\"planId\":\"plan_gold\",\"amount\":99,\"reference\":\"UTR968188650308\"}",
+      "id": "audit_qrce72v_mvp5hd5b",
+      "timestamp": "2026-10-26T11:05:25.199Z"
+    },
+    {
+      "action": "SUBSCRIPTION_ACTIVATED",
+      "businessId": "biz_royal_grocery",
+      "details": "{\"entityType\":\"subscription\",\"entityId\":\"subpay_iqrkgoz_mvp5g3qn\",\"planId\":\"plan_gold\",\"amount\":99,\"reference\":\"UTR442517817385\"}",
+      "id": "audit_ydcj00l_mvp5g4td",
+      "timestamp": "2026-10-26T11:04:27.745Z"
+    },
+    {
+      "action": "SUBSCRIPTION_ACTIVATED",
+      "businessId": "biz_royal_grocery",
+      "details": "{\"entityType\":\"subscription\",\"entityId\":\"subpay_ss8eoa1_mvp580u5\",\"planId\":\"plan_gold\",\"amount\":99,\"reference\":\"UTR223862132130\"}",
+      "id": "audit_8o93zfc_mvp581a9",
+      "timestamp": "2026-10-26T10:58:09.921Z"
+    },
+    {
+      "action": "SUBSCRIPTION_ACTIVATED",
+      "businessId": "biz_royal_grocery",
+      "details": "{\"entityType\":\"subscription\",\"entityId\":\"subpay_hrs3d19_mvp57kf2\",\"planId\":\"plan_gold\",\"amount\":99,\"reference\":\"UTR411703029480\"}",
+      "id": "audit_y4r1wiv_mvp57ld5",
+      "timestamp": "2026-10-26T10:57:49.289Z"
+    }
+  ],
+  "sequences": {
+    "biz_annapurna_store": 103,
+    "biz_annapurna_menu": 101,
+    "biz_s0ep3uy_mvq8gl79_store": 101,
+    "biz_n5190tt_mvq8x8vh_store": 107,
+    "biz_2cxtkds_mvqqb8vj_store": 100,
+    "biz_2cxtkds_mvqqb8vj_menu": 100,
+    "biz_yxqjlv9_mvqqf92r_store": 103,
+    "biz_yxqjlv9_mvqqf92r_menu": 100
+  }
+}

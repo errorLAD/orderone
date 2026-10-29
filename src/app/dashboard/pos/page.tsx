@@ -32,15 +32,18 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { formatINR, formatDate, formatTime, cn } from '@/lib/utils';
-import { Product, PosBill, Category } from '@/types';
+import { Product, PosBill, Category, ProductVariant } from '@/types';
 import { downloadPosBillPdf } from '@/lib/posPdfGenerator';
 import { PosCategoryBar } from '@/components/dashboard/PosCategoryBar';
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-  unitPrice: number;
-}
+import {
+  PosProductEntryModal,
+  PosProductEntryData,
+} from '@/components/dashboard/PosProductEntryModal';
+import {
+  PosBillingRegister,
+  CartItem,
+} from '@/components/dashboard/PosBillingRegister';
+import { PosMobileBottomBar } from '@/components/dashboard/PosMobileBottomBar';
 
 export default function PosBillingPage() {
   const { currentBusiness, currentRole, setCurrentBusiness } = useApp();
@@ -78,6 +81,18 @@ export default function PosBillingPage() {
     return currentBusiness?.settings?.orderSettings?.gstin || currentBusiness?.settings?.gst?.gstin || '';
   });
   const [isSavingTax, setIsSavingTax] = useState<boolean>(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash');
+  const [notes, setNotes] = useState('');
+
+  // Mobile Billing Drawer & Product Entry Bottom Sheet State
+  const [isMobileBillOpen, setIsMobileBillOpen] = useState(false);
+  const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [entryProduct, setEntryProduct] = useState<Product | null>(null);
+  const [entryVariant, setEntryVariant] = useState<ProductVariant | undefined>(undefined);
+  const [entryQuantity, setEntryQuantity] = useState<number>(1);
+  const [entryUnitPrice, setEntryUnitPrice] = useState<number | undefined>(undefined);
+  const [entryUnit, setEntryUnit] = useState<string | undefined>(undefined);
+  const [isEntryExisting, setIsEntryExisting] = useState(false);
 
   // Sync default tax rate when currentBusiness changes or from localStorage cache
   useEffect(() => {
@@ -138,8 +153,6 @@ export default function PosBillingPage() {
       setIsSavingTax(false);
     }
   };
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash');
-  const [notes, setNotes] = useState('');
 
   // Creation State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -234,51 +247,145 @@ export default function PosBillingPage() {
     });
   }, [products, selectedCategory, searchQuery]);
 
-  // Cart Operations
-  const handleAddToCart = (product: Product) => {
+  // Open Product Entry Modal / Bottom Sheet
+  const handleOpenProductEntry = (product: Product, variant?: ProductVariant) => {
+    const targetVariant =
+      variant || (product.variants && product.variants.length > 0 ? product.variants[0] : undefined);
+    const existingItem = cart.find(
+      (c) => c.product.id === product.id && c.selectedVariant?.id === targetVariant?.id
+    );
+
+    setEntryProduct(product);
+    setEntryVariant(targetVariant);
+    if (existingItem) {
+      setEntryQuantity(existingItem.quantity);
+      setEntryUnitPrice(existingItem.unitPrice);
+      setEntryUnit(existingItem.unit || targetVariant?.unit || product.unit || 'pcs');
+      setIsEntryExisting(true);
+    } else {
+      setEntryQuantity(1);
+      setEntryUnitPrice(
+        targetVariant ? targetVariant.price : (product.salePrice ?? product.price ?? 0)
+      );
+      setEntryUnit(targetVariant?.unit || product.unit || 'pcs');
+      setIsEntryExisting(false);
+    }
+    setEntryModalOpen(true);
+  };
+
+  // Save from Product Entry Modal / Bottom Sheet
+  const handleSaveProductEntry = (data: PosProductEntryData) => {
+    const { product, variant, unitPrice, quantity, unit, size } = data;
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        // Check stock if tracked
-        if (
-          typeof product.stockQuantity === 'number' &&
-          existing.quantity + 1 > product.stockQuantity
-        ) {
-          setErrorMessage(`Only ${product.stockQuantity} unit(s) available in stock for "${product.name}".`);
-          return prev;
-        }
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+      const existingIndex = prev.findIndex(
+        (item) => item.product.id === product.id && item.selectedVariant?.id === variant?.id
+      );
+      if (existingIndex > -1) {
+        const copy = [...prev];
+        copy[existingIndex] = {
+          product,
+          quantity,
+          unitPrice,
+          selectedVariant: variant,
+          unit,
+          size,
+        };
+        return copy;
       } else {
-        if (
-          typeof product.stockQuantity === 'number' &&
-          product.stockQuantity <= 0
-        ) {
-          setErrorMessage(`"${product.name}" is currently out of stock.`);
+        return [
+          ...prev,
+          {
+            product,
+            quantity,
+            unitPrice,
+            selectedVariant: variant,
+            unit,
+            size,
+          },
+        ];
+      }
+    });
+    setEntryModalOpen(false);
+    setErrorMessage(null);
+  };
+
+  // Edit an existing cart item from the register
+  const handleEditCartItem = (cartItem: CartItem) => {
+    setEntryProduct(cartItem.product);
+    setEntryVariant(cartItem.selectedVariant);
+    setEntryQuantity(cartItem.quantity);
+    setEntryUnitPrice(cartItem.unitPrice);
+    setEntryUnit(cartItem.unit || cartItem.selectedVariant?.unit || cartItem.product.unit || 'pcs');
+    setIsEntryExisting(true);
+    setEntryModalOpen(true);
+  };
+
+  // Cart Operations
+  const handleAddToCart = (product: Product, variant?: ProductVariant) => {
+    const variantId = variant?.id;
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.product.id === product.id && item.selectedVariant?.id === variantId
+      );
+      const targetPrice = variant ? variant.price : (product.salePrice ?? product.price);
+      const targetUnit = variant?.unit || product.unit || 'pcs';
+      const availableStock = variant && typeof variant.stockQuantity === 'number'
+        ? variant.stockQuantity
+        : product.stockQuantity;
+
+      if (existingIndex > -1) {
+        const existing = prev[existingIndex];
+        if (typeof availableStock === 'number' && existing.quantity + 1 > availableStock) {
+          setErrorMessage(
+            `Only ${availableStock} unit(s) available in stock for "${product.name}${
+              variant ? ` (${variant.name})` : ''
+            }".`
+          );
           return prev;
         }
-        return [...prev, { product, quantity: 1, unitPrice: product.salePrice ?? product.price }];
+        const copy = [...prev];
+        copy[existingIndex] = { ...existing, quantity: existing.quantity + 1 };
+        return copy;
+      } else {
+        if (typeof availableStock === 'number' && availableStock <= 0) {
+          setErrorMessage(
+            `"${product.name}${variant ? ` (${variant.name})` : ''}" is currently out of stock.`
+          );
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            product,
+            quantity: 1,
+            unitPrice: targetPrice,
+            selectedVariant: variant,
+            unit: targetUnit,
+            size: variant?.size || variant?.name || product.size,
+          },
+        ];
       }
     });
     setErrorMessage(null);
   };
 
-  const handleUpdateQuantity = (productId: string, delta: number) => {
+  const handleUpdateQuantity = (productId: string, delta: number, variantId?: string) => {
     setCart((prev) => {
       return prev
         .map((item) => {
-          if (item.product.id === productId) {
+          if (item.product.id === productId && item.selectedVariant?.id === variantId) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
-            if (
-              typeof item.product.stockQuantity === 'number' &&
-              newQty > item.product.stockQuantity
-            ) {
+            const availableStock =
+              item.selectedVariant && typeof item.selectedVariant.stockQuantity === 'number'
+                ? item.selectedVariant.stockQuantity
+                : item.product.stockQuantity;
+
+            if (typeof availableStock === 'number' && newQty > availableStock) {
               setErrorMessage(
-                `Only ${item.product.stockQuantity} unit(s) available for "${item.product.name}".`
+                `Only ${availableStock} unit(s) available for "${item.product.name}${
+                  item.selectedVariant ? ` (${item.selectedVariant.name})` : ''
+                }".`
               );
               return item;
             }
@@ -291,8 +398,12 @@ export default function PosBillingPage() {
     setErrorMessage(null);
   };
 
-  const handleRemoveItem = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const handleRemoveItem = (productId: string, variantId?: string) => {
+    setCart((prev) =>
+      prev.filter(
+        (item) => !(item.product.id === productId && item.selectedVariant?.id === variantId)
+      )
+    );
   };
 
   const handleClearRegister = () => {
@@ -363,7 +474,15 @@ export default function PosBillingPage() {
         customerPhone: customerPhone.trim() || undefined,
         items: cart.map((item) => ({
           productId: item.product.id,
-          productName: item.product.name,
+          productName: item.selectedVariant
+            ? `${item.product.name} (${item.selectedVariant.name})`
+            : item.product.size
+            ? `${item.product.name} (${item.product.size})`
+            : item.product.name,
+          variantId: item.selectedVariant?.id,
+          variantName: item.selectedVariant?.name,
+          size: item.size || item.selectedVariant?.size || item.product.size,
+          unit: item.unit || item.selectedVariant?.unit || item.product.unit,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
         })),
@@ -410,6 +529,7 @@ export default function PosBillingPage() {
 
       // Reset Register
       handleClearRegister();
+      setIsMobileBillOpen(false);
 
       // Show receipt modal if requested
       if (options.viewBillImmediately) {
@@ -434,7 +554,7 @@ export default function PosBillingPage() {
   };
 
   return (
-    <div className="space-y-3.5 max-w-7xl mx-auto pb-12">
+    <div className="space-y-3.5 max-w-7xl mx-auto pb-24 lg:pb-12">
       {/* 1. Compact Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div className="flex items-center gap-2.5">
@@ -472,7 +592,7 @@ export default function PosBillingPage() {
               setModalTaxRate(taxRate);
               setShowTaxModal(true);
             }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer"
             title="Configure Store Tax / GST Rate"
           >
             <Settings className="w-3.5 h-3.5 text-indigo-600" />
@@ -483,7 +603,7 @@ export default function PosBillingPage() {
             <button
               onClick={() => setActiveTab('register')}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer',
                 activeTab === 'register'
                   ? 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -500,7 +620,7 @@ export default function PosBillingPage() {
             <button
               onClick={() => setActiveTab('history')}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer',
                 activeTab === 'history'
                   ? 'bg-white text-slate-900 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -567,9 +687,9 @@ export default function PosBillingPage() {
       {/* 3. TAB 1: COUNTER REGISTER (Split Grid: Left Catalog, Right Register) */}
       {activeTab === 'register' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column: Product Catalog Picker (7 cols on Desktop) */}
+          {/* Left Column: Product Catalog Picker (12 cols on mobile, 7 cols on Desktop) */}
           <div className="lg:col-span-7 space-y-3">
-            {/* Unified Compact Search & Categories Bar (Saves massive vertical space) */}
+            {/* Unified Compact Search & Categories Bar */}
             <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -583,7 +703,7 @@ export default function PosBillingPage() {
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -614,11 +734,17 @@ export default function PosBillingPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[640px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[660px] overflow-y-auto pr-1">
                 {filteredProducts.map((product) => {
-                  const cartItem = cart.find((c) => c.product.id === product.id);
-                  const isOutOfStock = typeof product.stockQuantity === 'number' && product.stockQuantity <= 0;
+                  const productInCartCount = cart
+                    .filter((c) => c.product.id === product.id)
+                    .reduce((sum, c) => sum + c.quantity, 0);
+                  const hasVariants = Boolean(product.variants && product.variants.length > 0);
+                  const isOutOfStock = hasVariants
+                    ? product.variants!.every((v) => typeof v.stockQuantity === 'number' && v.stockQuantity <= 0)
+                    : typeof product.stockQuantity === 'number' && product.stockQuantity <= 0;
                   const isLowStock =
+                    !hasVariants &&
                     typeof product.stockQuantity === 'number' &&
                     product.stockQuantity > 0 &&
                     product.stockQuantity <= (product.lowStockThreshold || 5);
@@ -627,12 +753,15 @@ export default function PosBillingPage() {
                   return (
                     <div
                       key={product.id}
-                      onClick={() => !isOutOfStock && handleAddToCart(product)}
+                      onClick={() => {
+                        if (isOutOfStock) return;
+                        handleOpenProductEntry(product);
+                      }}
                       className={cn(
                         'p-2.5 rounded-2xl border text-left transition flex flex-col justify-between relative select-none group',
                         isOutOfStock
                           ? 'opacity-65 bg-slate-50 border-slate-200 cursor-not-allowed'
-                          : cartItem
+                          : productInCartCount > 0
                           ? 'border-indigo-500 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20 cursor-pointer'
                           : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs cursor-pointer'
                       )}
@@ -657,10 +786,10 @@ export default function PosBillingPage() {
                         )}
 
                         {/* Floating in-cart badge */}
-                        {cartItem && (
+                        {productInCartCount > 0 && (
                           <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black shadow-md ring-2 ring-white flex items-center gap-1">
                             <Check className="w-2.5 h-2.5 stroke-[3]" />
-                            <span>{cartItem.quantity} in bill</span>
+                            <span>{productInCartCount} in bill</span>
                           </span>
                         )}
 
@@ -689,12 +818,60 @@ export default function PosBillingPage() {
                           <h4 className="text-xs font-bold text-slate-900 line-clamp-2 leading-tight">
                             {product.name}
                           </h4>
-                          {product.brand && (
-                            <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
-                              {product.brand} {product.unit && `• ${product.unit}`}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                            {product.size && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-bold text-[9px] border border-amber-200/80">
+                                {product.size}
+                              </span>
+                            )}
+                            {product.unit && (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                per {product.unit}
+                              </span>
+                            )}
+                            {product.brand && (
+                              <span className="text-[10px] text-slate-400 font-medium truncate">
+                                • {product.brand}
+                              </span>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Variants / Sizes Quick Chips */}
+                        {hasVariants && (
+                          <div className="pt-1.5 border-t border-slate-100 flex flex-wrap gap-1">
+                            {product.variants!.map((v) => {
+                              const vInCart = cart.find(
+                                (c) => c.product.id === product.id && c.selectedVariant?.id === v.id
+                              );
+                              const vOutOfStock = typeof v.stockQuantity === 'number' && v.stockQuantity <= 0;
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  disabled={vOutOfStock}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!vOutOfStock) handleOpenProductEntry(product, v);
+                                  }}
+                                  className={cn(
+                                    'px-1.5 py-0.5 rounded text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer',
+                                    vOutOfStock
+                                      ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through'
+                                      : vInCart
+                                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                                      : 'bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border-indigo-200/70'
+                                  )}
+                                  title={vOutOfStock ? 'Out of stock' : `Configure ${v.name} (${formatINR(v.price)})`}
+                                >
+                                  <span>{v.name}</span>
+                                  <span className="opacity-80 font-normal">({formatINR(v.price)})</span>
+                                  {vInCart && <span className="font-black">×{vInCart.quantity}</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         <div className="pt-2 border-t border-slate-100 mt-1 flex items-end justify-between">
                           <div>
@@ -708,19 +885,21 @@ export default function PosBillingPage() {
                             )}
                           </div>
 
-                          <span
-                            className={cn(
-                              'px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-0.5',
-                              isOutOfStock
-                                ? 'text-slate-400'
-                                : cartItem
-                                ? 'bg-indigo-600 text-white shadow-2xs'
-                                : 'text-indigo-600 hover:bg-indigo-50'
-                            )}
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>{cartItem ? 'Add' : 'Add'}</span>
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-0.5 cursor-pointer',
+                                isOutOfStock
+                                  ? 'text-slate-400'
+                                  : productInCartCount > 0
+                                  ? 'bg-indigo-600 text-white shadow-2xs'
+                                  : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                              )}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>{productInCartCount > 0 ? `${productInCartCount} in bill` : 'Add'}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -730,334 +909,116 @@ export default function PosBillingPage() {
             )}
           </div>
 
-          {/* Right Column: Billing Register / Terminal (5 cols on Desktop) */}
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-4 sticky top-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Current Register Bill</h3>
-                <p className="text-[11px] text-slate-500">
-                  {cart.length === 0 ? 'No items in bill' : `${cart.length} unique item(s) selected`}
-                </p>
-              </div>
-              {cart.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearRegister}
-                  className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1"
-                >
-                  <Trash2 className="w-3 h-3" /> Clear
-                </button>
-              )}
-            </div>
+          {/* Right Column: Billing Register / Terminal (5 cols on Desktop, hidden on mobile) */}
+          <div className="hidden lg:block lg:col-span-5">
+            <PosBillingRegister
+              cart={cart}
+              customerName={customerName}
+              setCustomerName={setCustomerName}
+              customerPhone={customerPhone}
+              setCustomerPhone={setCustomerPhone}
+              discountType={discountType}
+              setDiscountType={setDiscountType}
+              discountValue={discountValue}
+              setDiscountValue={setDiscountValue}
+              taxRate={taxRate}
+              setTaxRate={setTaxRate}
+              isCustomTax={isCustomTax}
+              setIsCustomTax={setIsCustomTax}
+              onOpenTaxModal={() => {
+                setModalTaxRate(taxRate);
+                setShowTaxModal(true);
+              }}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              notes={notes}
+              setNotes={setNotes}
+              calculations={calculations}
+              isSubmitting={isSubmitting}
+              isSubscriptionExpired={isSubscriptionExpired}
+              handleCreateBill={handleCreateBill}
+              handleClearRegister={handleClearRegister}
+              handleUpdateQuantity={handleUpdateQuantity}
+              handleRemoveItem={handleRemoveItem}
+              onEditItem={handleEditCartItem}
+              isMobileDrawer={false}
+            />
+          </div>
+        </div>
+      )}
 
-            {/* Optional Customer Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mb-1">
-                  <User className="w-3 h-3" /> Customer Name (Opt)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ramesh Kumar"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1 mb-1">
-                  <Phone className="w-3 h-3" /> Mobile Number (Opt)
-                </label>
-                <input
-                  type="tel"
-                  placeholder="10-digit number"
-                  maxLength={10}
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
+      {/* Mobile Sticky Running Total & Checkout Bar */}
+      {activeTab === 'register' && (
+        <PosMobileBottomBar
+          cart={cart}
+          grandTotal={calculations.grandTotal}
+          onViewBill={() => setIsMobileBillOpen(true)}
+        />
+      )}
 
-            {/* Cart Items List */}
-            {cart.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 space-y-2 border border-dashed border-slate-200 rounded-xl">
-                <Calculator className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-xs font-semibold text-slate-600">Register is empty</p>
-                <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                  Click any product from the catalog on the left to add items to this counter bill.
-                </p>
-              </div>
-            ) : (
-              <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
-                {cart.map((item) => (
-                  <div key={item.product.id} className="pt-2 first:pt-0 flex items-center justify-between gap-3 text-xs">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-slate-800 truncate">{item.product.name}</p>
-                      <p className="text-[11px] text-slate-400">
-                        {formatINR(item.unitPrice)} × {item.quantity} = <span className="font-semibold text-slate-700">{formatINR(item.unitPrice * item.quantity)}</span>
-                      </p>
-                    </div>
-
-                    {/* Quantity Selector */}
-                    <div className="flex items-center gap-1.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200/60 shrink-0">
-                      <button
-                        onClick={() => handleUpdateQuantity(item.product.id, -1)}
-                        className="w-5 h-5 rounded bg-white text-slate-700 flex items-center justify-center hover:bg-slate-200 font-bold shadow-2xs"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="w-5 text-center font-bold text-slate-800 text-xs">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => handleUpdateQuantity(item.product.id, 1)}
-                        className="w-5 h-5 rounded bg-white text-slate-700 flex items-center justify-center hover:bg-slate-200 font-bold shadow-2xs"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => handleRemoveItem(item.product.id)}
-                      className="text-slate-400 hover:text-rose-600 p-1"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Discounts & Taxes Inputs */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-              <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center justify-between mb-1">
-                  <span>Discount</span>
-                  <button
-                    type="button"
-                    onClick={() => setDiscountType((d) => (d === 'fixed' ? 'percentage' : 'fixed'))}
-                    className="text-indigo-600 hover:underline lowercase font-bold"
-                  >
-                    ({discountType === 'fixed' ? '₹ flat' : '% pct'})
-                  </button>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] font-bold">
-                    {discountType === 'fixed' ? '₹' : '%'}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                    <span>Tax / GST</span>
-                    <span className="text-slate-400 font-normal">({taxRate}%)</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModalTaxRate(taxRate);
-                      setModalGstin(currentBusiness?.settings?.orderSettings?.gstin || currentBusiness?.settings?.gst?.gstin || '');
-                      setShowTaxModal(true);
-                    }}
-                    className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline"
-                    title="Configure & Save Store Default Tax Rate"
-                  >
-                    <Settings className="w-2.5 h-2.5" />
-                    <span>Store Default</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1 flex-wrap">
-                  {[0, 5, 12, 18, 28].map((rate) => (
-                    <button
-                      key={rate}
-                      type="button"
-                      onClick={() => {
-                        setTaxRate(rate);
-                        setIsCustomTax(false);
-                      }}
-                      className={cn(
-                        'px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer',
-                        !isCustomTax && taxRate === rate
-                          ? 'bg-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      )}
-                    >
-                      {rate === 0 ? '0%' : `${rate}%`}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomTax(!isCustomTax)}
-                    className={cn(
-                      'px-2 py-1 rounded-md text-[10px] font-bold transition cursor-pointer',
-                      isCustomTax || ![0, 5, 12, 18, 28].includes(taxRate)
-                        ? 'bg-indigo-600 text-white shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    )}
-                  >
-                    Custom
-                  </button>
-                </div>
-
-                {(isCustomTax || ![0, 5, 12, 18, 28].includes(taxRate)) && (
-                  <div className="mt-1.5 flex items-center gap-1.5 animate-fadeIn">
-                    <div className="relative flex-1">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        value={taxRate}
-                        onChange={(e) => setTaxRate(Math.max(0, parseFloat(e.target.value) || 0))}
-                        className="w-full px-2 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
-                        placeholder="Rate %"
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] font-bold">
-                        %
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleSaveStoreTaxRate(taxRate)}
-                      disabled={isSavingTax}
-                      className="px-2 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition whitespace-nowrap cursor-pointer"
-                      title="Save this rate as store default"
-                    >
-                      {isSavingTax ? 'Saving...' : 'Set Default'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Payment Method Selector */}
-            <div className="space-y-1.5 pt-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Payment Method
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={cn(
-                    'py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition',
-                    paymentMethod === 'cash'
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-2xs'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <Banknote className="w-3.5 h-3.5" />
-                  <span>Cash</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('upi')}
-                  className={cn(
-                    'py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition',
-                    paymentMethod === 'upi'
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-2xs'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>UPI / QR</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={cn(
-                    'py-2 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition',
-                    paymentMethod === 'card'
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-2xs'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  )}
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Card</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Calculations Breakdown */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-              <div className="flex items-center justify-between text-slate-600">
-                <span>Subtotal:</span>
-                <span className="font-semibold text-slate-900">{formatINR(calculations.subtotal)}</span>
-              </div>
-              {calculations.discountAmount > 0 && (
-                <div className="flex items-center justify-between text-emerald-600">
-                  <span>Discount {discountType === 'percentage' ? `(${discountValue}%)` : ''}:</span>
-                  <span className="font-bold">- {formatINR(calculations.discountAmount)}</span>
-                </div>
-              )}
-              {calculations.taxAmount > 0 && (
-                <div className="flex items-center justify-between text-slate-600">
-                  <span>Tax / GST ({taxRate}%):</span>
-                  <span className="font-semibold text-slate-900">+ {formatINR(calculations.taxAmount)}</span>
-                </div>
-              )}
-              <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
-                <span className="text-xs font-extrabold text-slate-900 uppercase">Grand Total:</span>
-                <span className="text-lg font-black text-indigo-600">{formatINR(calculations.grandTotal)}</span>
-              </div>
-            </div>
-
-            {/* Primary Action Buttons */}
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => handleCreateBill({ viewBillImmediately: true })}
-                disabled={isSubmitting || cart.length === 0 || isSubscriptionExpired}
-                className={cn(
-                  'w-full py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-xs',
-                  isSubscriptionExpired || cart.length === 0 || isSubmitting
-                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                )}
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Processing Bill...</span>
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4" />
-                    <span>Create & View Bill</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleCreateBill({ viewBillImmediately: false })}
-                disabled={isSubmitting || cart.length === 0 || isSubscriptionExpired}
-                className={cn(
-                  'w-full py-2 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border',
-                  isSubscriptionExpired || cart.length === 0 || isSubmitting
-                    ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed'
-                    : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-                )}
-              >
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Quick Bill & Clear (Next Customer)</span>
-              </button>
+      {/* Mobile Full Bill Drawer / Bottom Sheet */}
+      {isMobileBillOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex flex-col justify-end animate-fadeIn"
+          onClick={() => setIsMobileBillOpen(false)}
+        >
+          <div
+            className="bg-white rounded-t-3xl max-h-[92vh] w-full flex flex-col overflow-hidden shadow-2xl animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mt-2.5 mb-1 shrink-0" />
+            <div className="overflow-y-auto flex-1">
+              <PosBillingRegister
+                cart={cart}
+                customerName={customerName}
+                setCustomerName={setCustomerName}
+                customerPhone={customerPhone}
+                setCustomerPhone={setCustomerPhone}
+                discountType={discountType}
+                setDiscountType={setDiscountType}
+                discountValue={discountValue}
+                setDiscountValue={setDiscountValue}
+                taxRate={taxRate}
+                setTaxRate={setTaxRate}
+                isCustomTax={isCustomTax}
+                setIsCustomTax={setIsCustomTax}
+                onOpenTaxModal={() => {
+                  setModalTaxRate(taxRate);
+                  setShowTaxModal(true);
+                }}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                notes={notes}
+                setNotes={setNotes}
+                calculations={calculations}
+                isSubmitting={isSubmitting}
+                isSubscriptionExpired={isSubscriptionExpired}
+                handleCreateBill={handleCreateBill}
+                handleClearRegister={handleClearRegister}
+                handleUpdateQuantity={handleUpdateQuantity}
+                handleRemoveItem={handleRemoveItem}
+                onEditItem={handleEditCartItem}
+                isMobileDrawer={true}
+                onCloseMobileDrawer={() => setIsMobileBillOpen(false)}
+              />
             </div>
           </div>
         </div>
       )}
+
+      {/* Product Entry Compact Popup / Bottom Sheet */}
+      <PosProductEntryModal
+        isOpen={entryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+        product={entryProduct}
+        initialVariant={entryVariant}
+        initialQuantity={entryQuantity}
+        initialUnitPrice={entryUnitPrice}
+        initialUnit={entryUnit}
+        isExistingInCart={isEntryExisting}
+        onSave={handleSaveProductEntry}
+        onRemove={handleRemoveItem}
+      />
 
       {/* 4. TAB 2: POS SALES HISTORY */}
       {activeTab === 'history' && (
@@ -1076,7 +1037,7 @@ export default function PosBillingPage() {
             </div>
             <button
               onClick={fetchHistory}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
             >
               <RefreshCw className={cn('w-3.5 h-3.5', loadingHistory && 'animate-spin')} />
               <span>Refresh Records</span>
@@ -1155,7 +1116,7 @@ export default function PosBillingPage() {
                           <td className="py-3 px-4 text-center">
                             <button
                               onClick={() => setActiveModalBill(bill)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 transition cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>View Bill</span>
@@ -1186,7 +1147,7 @@ export default function PosBillingPage() {
               </div>
               <button
                 onClick={() => setActiveModalBill(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1306,7 +1267,7 @@ export default function PosBillingPage() {
               <button
                 type="button"
                 onClick={() => setActiveModalBill(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-200 transition cursor-pointer"
               >
                 Close Receipt
               </button>
@@ -1314,7 +1275,7 @@ export default function PosBillingPage() {
                 type="button"
                 onClick={() => handleDownloadPdf(activeModalBill)}
                 disabled={downloadingPdf}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition flex items-center gap-1.5 shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{downloadingPdf ? 'Exporting PDF...' : 'Download PDF Receipt'}</span>
@@ -1340,7 +1301,7 @@ export default function PosBillingPage() {
               </div>
               <button
                 onClick={() => setShowTaxModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1406,7 +1367,7 @@ export default function PosBillingPage() {
               <button
                 type="button"
                 onClick={() => setShowTaxModal(false)}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
               >
                 Cancel
               </button>

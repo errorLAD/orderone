@@ -7,10 +7,12 @@
       "type": "restaurant",
       "category": "restaurant",
       "ownerId": "user_05ovmrl_mvq8u007",
+      "ownerName": "krishna kumar",
       "description": "Sri Ram Krishna Traders - Restaurant",
       "email": "krishna@gmail.com",
       "phone": "7004197301",
       "address": "Chowk, Gangwara, Chandan Patti, Darbhanga, Bihar",
+      "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp",
       "isStoreOpen": true,
       "onlineOrderingEnabled": true,
       "settings": {
@@ -18,8 +20,21 @@
           "menu": true,
           "store": false
         },
+        "ownerName": "krishna kumar",
+        "isStoreOpen": true,
+        "socialLinks": {
+          "youtube": "",
+          "facebook": "",
+          "instagram": "",
+          "googleBusiness": "https://share.google/5KTYE8QvpNQHOZiPh",
+          "youtubeEnabled": false,
+          "facebookEnabled": false,
+          "instagramEnabled": false,
+          "googleBusinessEnabled": true
+        },
+        "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp",
         "orderSettings": {
-          "enableGst": false,
+          "enableGst": true,
           "deliveryFee": 30,
           "currencyCode": "INR",
           "enableDineIn": true,
@@ -32,9 +47,11 @@
         },
         "operatingHours": "09:00 AM - 09:00 PM (Daily)",
         "tokenPrefixMenu": "M-",
+        "storefrontDesign": {
+          "coverImageUrl": "/uploads/covers/covers_1793287285128_1lvlf3g.webp"
+        },
         "tokenPrefixStore": "S-",
         "onboardingCompleted": false,
-        "isStoreOpen": true,
         "onlineOrderingEnabled": true
       },
       "subscription": {
@@ -45,7 +62,7 @@
         "billingCycle": "monthly"
       },
       "createdAt": "2026-10-27T05:26:59.719Z",
-      "updatedAt": "2026-10-27T05:26:59.719Z"
+      "updatedAt": "2026-10-29T15:31:21.870Z"
     },
     {
       "id": "biz_n5190tt_mvq8x8vh",
@@ -181,6 +198,14 @@
         },
         "ownerName": "Abhishek mishra",
         "isStoreOpen": true,
+        "upiSettings": {
+          "upiId": "8375007409@kotak811",
+          "storeUrl": "https://www.orderone.in/store/royal-kitchen",
+          "isEnabled": true,
+          "payeeName": "Royal kitchen",
+          "updatedAt": "2026-10-29T16:25:35.374Z",
+          "businessId": "biz_sdu7mxo_mvs458a5"
+        },
         "orderSettings": {
           "enableGst": false,
           "deliveryFee": 30,
@@ -209,7 +234,7 @@
         "billingCycle": "monthly"
       },
       "createdAt": "2026-10-28T12:51:17.933Z",
-      "updatedAt": "2026-10-29T08:20:01.171Z"
+      "updatedAt": "2026-10-29T16:25:35.913Z"
     }
   ],
   "users": [
@@ -267,6 +292,7 @@
       "slug": "featured",
       "sortOrder": 1,
       "isActive": true,
+      "salesChannel": "both",
       "createdAt": "2026-10-27T05:30:27.920Z"
     },
     {
@@ -277,6 +303,7 @@
       "slug": "featured",
       "sortOrder": 1,
       "isActive": true,
+      "salesChannel": "both",
       "createdAt": "2026-10-27T05:32:58.912Z"
     },
     {
@@ -287,17 +314,21 @@
       "slug": "featured-products",
       "sortOrder": 1,
       "isActive": true,
+      "salesChannel": "both",
       "createdAt": "2026-10-27T13:39:25.062Z"
     },
     {
-      "id": "cat_s82zi09_mvs458yn",
+      "id": "cat_92gae5e_mvtjaqw6",
       "businessId": "biz_sdu7mxo_mvs458a5",
       "sourceType": "menu",
-      "name": "Starters & Appetizers",
-      "slug": "featured",
+      "name": "Pizzas",
+      "slug": "pizzas",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277791694_253fynv.png",
       "sortOrder": 1,
       "isActive": true,
-      "createdAt": "2026-10-28T12:51:18.924Z"
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:43:15.750Z"
     },
     {
       "id": "cat_bth1y7e_mvqeqmyk",
@@ -309,7 +340,112 @@
       "imageUrl": "/uploads/categories/categories_1793088735320_2et9skc.jpg",
       "sortOrder": 2,
       "isActive": true,
+      "salesChannel": "both",
       "createdAt": "2026-10-27T08:12:20.540Z"
+    },
+    {
+      "id": "cat_f6d6jts_mvtjbdmx",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Rolls",
+      "slug": "rolls",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277821485_a0iu1eh.png",
+      "sortOrder": 2,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:43:45.225Z"
+    },
+    {
+      "id": "cat_m2m7x0d_mvtjc3kw",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Burger",
+      "slug": "burger",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277854545_53f5p2d.png",
+      "sortOrder": 3,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:44:18.848Z"
+    },
+    {
+      "id": "cat_jpgmmgz_mvtjcw91",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Chinese",
+      "slug": "chinese",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277893339_gj84hzm.png",
+      "sortOrder": 4,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:44:56.005Z"
+    },
+    {
+      "id": "cat_e23mgza_mvtjdc7x",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Dessert",
+      "slug": "dessert",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277913333_duthlj9.png",
+      "sortOrder": 5,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:45:16.701Z"
+    },
+    {
+      "id": "cat_l0yg62l_mvtjdy07",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "North Indian",
+      "slug": "north-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277940574_ay1na68.png",
+      "sortOrder": 6,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:45:44.935Z"
+    },
+    {
+      "id": "cat_9wfh29d_mvtjegqw",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "South Indian",
+      "slug": "south-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793277966229_ml594jo.png",
+      "sortOrder": 7,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:46:09.224Z"
+    },
+    {
+      "id": "cat_4mdrho6_mvtjfie8",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "South Indian",
+      "slug": "south-indian",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793278014150_8skupk0.png",
+      "sortOrder": 8,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:46:58.016Z"
+    },
+    {
+      "id": "cat_cbkvnaq_mvtjg2dl",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "name": "Ice cream",
+      "slug": "ice-cream",
+      "description": "Restaurant product category",
+      "imageUrl": "/uploads/categories/categories_1793278040813_ukcgps2.png",
+      "sortOrder": 9,
+      "isActive": true,
+      "salesChannel": "both",
+      "createdAt": "2026-10-29T12:47:23.913Z"
     }
   ],
   "products": [
@@ -328,6 +464,7 @@
       "stockQuantity": 197,
       "lowStockThreshold": 5,
       "isAvailable": true,
+      "salesChannel": "both",
       "sortOrder": 0,
       "dietaryFlags": {},
       "variants": [],
@@ -338,16 +475,17 @@
     {
       "id": "prod_bqcd9oq_mvs45f0l",
       "businessId": "biz_sdu7mxo_mvs458a5",
-      "categoryId": "cat_s82zi09_mvs458yn",
+      "categoryId": null,
       "sourceType": "menu",
       "name": "Paneer Butter Masala",
       "description": "Rich creamy cottage cheese curry with butter makhani gravy",
       "price": 220,
       "unit": "portion",
       "minOrderQty": 1,
-      "stockQuantity": 50,
+      "stockQuantity": 44,
       "lowStockThreshold": 5,
       "isAvailable": true,
+      "salesChannel": "both",
       "sortOrder": 0,
       "dietaryFlags": {
         "isVegetarian": true
@@ -371,6 +509,7 @@
       "stockQuantity": 1,
       "lowStockThreshold": 5,
       "isAvailable": true,
+      "salesChannel": "both",
       "imageUrl": "/uploads/products/products_1793090055373_et36jjn.png",
       "sortOrder": 1,
       "dietaryFlags": {},
@@ -381,6 +520,57 @@
     }
   ],
   "orders": [
+    {
+      "id": "ord_ab3hldb_mvtk5pdo",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00101",
+      "trackingId": "e5cdb94ebd9cf6e44f3b40f7",
+      "customer": {
+        "name": "Guest Customer",
+        "notes": ""
+      },
+      "items": [
+        {
+          "price": 220,
+          "quantity": 1,
+          "itemTotal": 220,
+          "productId": "prod_bqcd9oq_mvs45f0l",
+          "productName": "Paneer Butter Masala"
+        }
+      ],
+      "subtotal": 220,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 220,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "dine_in",
+      "queueToken": "M-00101",
+      "taxBreakdown": {
+        "cgst": 0,
+        "igst": 0,
+        "sgst": 0,
+        "gstRate": 0,
+        "gstAmount": 0,
+        "invoiceNumber": "INV-00101",
+        "taxableAmount": 220,
+        "isTaxInclusive": false,
+        "isGstApplicable": false
+      },
+      "invoiceNumber": "INV-00101",
+      "statusHistory": [
+        {
+          "note": "Order placed via Digital Menu",
+          "status": "new",
+          "timestamp": "2026-10-29T13:07:20.124Z"
+        }
+      ],
+      "createdAt": "2026-10-29T13:07:20.124Z",
+      "updatedAt": "2026-10-29T13:07:20.124Z"
+    },
     {
       "id": "ord_eud8yk2_mvs0vtsd",
       "businessId": "biz_yxqjlv9_mvqqf92r",
@@ -1041,9 +1231,33 @@
       "createdAt": "2026-10-28T11:23:30.763Z",
       "calledAt": null,
       "servedAt": null
+    },
+    {
+      "id": "qtok_chx5p2s_mvtk5pk8",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00101",
+      "sequenceNumber": 1,
+      "orderId": "ord_ab3hldb_mvtk5pdo",
+      "customerName": "Guest Customer",
+      "status": "waiting",
+      "createdAt": "2026-10-29T13:07:20.473Z",
+      "calledAt": null,
+      "servedAt": null
     }
   ],
   "notifications": [
+    {
+      "id": "notif_87dkl8o_mvtk5pdo",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "title": "New Kitchen Menu Order #M-00101",
+      "message": "Guest Customer placed an order of ₹220.00 (dine_in)",
+      "orderId": "ord_ab3hldb_mvtk5pdo",
+      "tokenNumber": "M-00101",
+      "isRead": false,
+      "createdAt": "2026-10-29T13:07:20.707Z"
+    },
     {
       "id": "notif_kayc5ei_mvs0vtsd",
       "businessId": "biz_yxqjlv9_mvqqf92r",
@@ -1166,6 +1380,7 @@
       "validityDaysMonthly": 30,
       "validityDaysAnnual": 365,
       "features": [
+        "POS Counter Billing & Instant Receipts",
         "Up to 20 products or menu items",
         "Up to 10 categories",
         "Materials and Store Catalog (for Hardware and Retail)",

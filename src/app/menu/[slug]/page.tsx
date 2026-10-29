@@ -117,11 +117,12 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
 
   const fetchMenuData = async () => {
     try {
-      const bizRes = await fetch(`/api/businesses?slug=${params.slug}`);
-      const bizData = await bizRes.json();
+      // Single unified API call — replaces 3 sequential fetches
+      const sfRes = await fetch(`/api/storefront/${params.slug}?sourceType=menu&channel=storefront`);
+      const sfData = await sfRes.json();
 
-      if (bizData.success && bizData.business) {
-        const biz: Business = bizData.business;
+      if (sfData.success && sfData.business) {
+        const biz: Business = sfData.business;
         setBusiness(biz);
 
         if (typeof document !== 'undefined') {
@@ -139,12 +140,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
           return;
         }
 
-        const [catRes, prodRes] = await Promise.all([
-          fetch(`/api/categories?businessId=${biz.id}&sourceType=menu&channel=storefront`),
-          fetch(`/api/products?businessId=${biz.id}&sourceType=menu&channel=storefront`),
-        ]);
-        const catData = await catRes.json();
-        const prodData = await prodRes.json();
+        const catData = { success: true, categories: sfData.categories || [] };
+        const prodData = { success: true, products: sfData.products || [] };
 
         // Fallback: If menu has 0 items but store has items, route to store
         if (
@@ -172,7 +169,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
 
   useEffect(() => {
     fetchMenuData();
-    const interval = setInterval(fetchMenuData, 4000);
+    // Poll every 30 s — frequent enough to reflect menu changes, light enough on Supabase
+    const interval = setInterval(fetchMenuData, 30000);
     return () => clearInterval(interval);
   }, [params.slug]);
 
@@ -443,7 +441,7 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const designSettings = business?.settings?.storefrontDesign;
   const activeTemplate = designSettings?.templateId || 'classic';
   const activeColors = designSettings?.colors || DEFAULT_STOREFRONT_COLORS;
-  const activeCover = designSettings?.coverImageUrl;
+  const activeCover = business?.coverImageUrl || business?.settings?.coverImageUrl || designSettings?.coverImageUrl;
   const buttonTextColor = getContrastTextColor(activeColors.button);
 
   return (

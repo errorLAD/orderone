@@ -20,6 +20,9 @@ import {
   PosBill,
   PosBillItem,
   CreatePosBillInput,
+  StorefrontDesignSettings,
+  QrCustomizationSettings,
+  GstInvoiceSettings,
 } from '@/types';
 import { generateId, generateTrackingId } from './utils';
 import { resolveBusinessByIdOrSlug, generateUniqueBusinessSlug } from './slug';
@@ -116,32 +119,43 @@ function saveDatabase(): void {
 // Synchronize in-memory cache with live Supabase PostgreSQL
 export async function syncWithPostgres(): Promise<boolean> {
   try {
-    const bizRes = await pgQuery('SELECT * FROM public.businesses ORDER BY created_at ASC');
+    const [bizRes, catRes, prodRes, ordRes, qRes, notifRes, planRes] = await Promise.all([
+      pgQuery('SELECT * FROM public.businesses ORDER BY created_at ASC'),
+      pgQuery('SELECT * FROM public.categories ORDER BY sort_order ASC'),
+      pgQuery('SELECT * FROM public.products ORDER BY sort_order ASC'),
+      pgQuery('SELECT * FROM public.orders ORDER BY created_at DESC LIMIT 500'),
+      pgQuery('SELECT * FROM public.queue_tokens ORDER BY created_at ASC LIMIT 200'),
+      pgQuery('SELECT * FROM public.notifications ORDER BY created_at DESC LIMIT 100'),
+      pgQuery('SELECT * FROM public.subscription_plans ORDER BY price_monthly ASC'),
+    ]);
+
     if (bizRes.rows.length > 0) {
       cachedDb.businesses = bizRes.rows.map(mapRowToBusiness);
     }
-    const catRes = await pgQuery('SELECT * FROM public.categories ORDER BY sort_order ASC');
     if (catRes.rows.length > 0) {
       cachedDb.categories = catRes.rows.map(mapRowToCategory);
     }
-    const prodRes = await pgQuery('SELECT * FROM public.products ORDER BY sort_order ASC');
     if (prodRes.rows.length > 0) {
       cachedDb.products = prodRes.rows.map(mapRowToProduct);
     }
-    const ordRes = await pgQuery('SELECT * FROM public.orders ORDER BY created_at DESC');
-    cachedDb.orders = ordRes.rows.map(mapRowToOrder);
-
-    const qRes = await pgQuery('SELECT * FROM public.queue_tokens ORDER BY created_at ASC');
-    cachedDb.queueTokens = qRes.rows.map(mapRowToQueueToken);
-
-    const notifRes = await pgQuery('SELECT * FROM public.notifications ORDER BY created_at DESC LIMIT 50');
-    cachedDb.notifications = notifRes.rows.map(mapRowToNotification);
-    const planRes = await pgQuery('SELECT * FROM public.subscription_plans ORDER BY price_monthly ASC');
+    if (ordRes.rows.length > 0) {
+      cachedDb.orders = ordRes.rows.map(mapRowToOrder);
+    }
+    if (qRes.rows.length > 0) {
+      cachedDb.queueTokens = qRes.rows.map(mapRowToQueueToken);
+    }
+    if (notifRes.rows.length > 0) {
+      cachedDb.notifications = notifRes.rows.map(mapRowToNotification);
+    }
     if (planRes.rows.length > 0) {
       cachedDb.subscriptionPlans = planRes.rows.map(mapRowToSubscriptionPlan);
     }
+
+    // Persist latest PG sync into local file cache so cold restarts load the real database
+    saveDatabase();
     return true;
   } catch (err) {
+    console.error('syncWithPostgres failed:', err);
     return false;
   }
 }
@@ -194,7 +208,12 @@ export async function getBusinessById(businessId: string): Promise<Business | nu
        WHERE b.id = $1`,
       [businessId]
     );
-    if (res.rows.length > 0) business = mapRowToBusiness(res.rows[0]);
+    if (res.rows.length > 0) {
+      business = mapRowToBusiness(res.rows[0]);
+      const idx = cachedDb.businesses.findIndex((b) => b.id === businessId);
+      if (idx !== -1) cachedDb.businesses[idx] = business;
+      else cachedDb.businesses.push(business);
+    }
   } catch (err) {}
   if (!business) {
     business = cachedDb.businesses.find((b) => b.id === businessId) || null;
@@ -231,7 +250,12 @@ export async function getBusinessById(businessId: string): Promise<Business | nu
 export async function getBusinessBySlug(slug: string): Promise<Business | null> {
   try {
     const resolved = await resolveBusinessByIdOrSlug(slug);
-    if (resolved) return resolved;
+    if (resolved) {
+      const idx = cachedDb.businesses.findIndex((b) => b.id === resolved.id);
+      if (idx !== -1) cachedDb.businesses[idx] = resolved;
+      else cachedDb.businesses.push(resolved);
+      return resolved;
+    }
   } catch (err) {
     console.error('getBusinessBySlug postgres resolution error:', err);
   }
@@ -255,7 +279,11 @@ export async function getAllBusinesses(): Promise<Business[]> {
        LEFT JOIN public.users u ON b.owner_id = u.id 
        ORDER BY b.created_at ASC`
     );
-    if (res.rows.length > 0) return res.rows.map(mapRowToBusiness);
+    if (res.rows.length > 0) {
+      const items = res.rows.map(mapRowToBusiness);
+      cachedDb.businesses = items;
+      return items;
+    }
   } catch (err) {}
   return [...cachedDb.businesses];
 }
@@ -270,7 +298,15 @@ export async function getBusinessesByOwnerId(ownerId: string): Promise<Business[
        ORDER BY b.created_at ASC`,
       [ownerId]
     );
-    if (res.rows.length > 0) return res.rows.map(mapRowToBusiness);
+    if (res.rows.length > 0) {
+      const items = res.rows.map(mapRowToBusiness);
+      for (const b of items) {
+        const idx = cachedDb.businesses.findIndex((x) => x.id === b.id);
+        if (idx !== -1) cachedDb.businesses[idx] = b;
+        else cachedDb.businesses.push(b);
+      }
+      return items;
+    }
   } catch (err) {}
   return cachedDb.businesses.filter((b) => b.ownerId === ownerId);
 }
@@ -349,35 +385,95 @@ export async function updateBusiness(
   businessId: string,
   updates: Partial<Business>
 ): Promise<Business | null> {
-  const index = cachedDb.businesses.findIndex((b) => b.id === businessId);
-  if (index === -1) return null;
+  // 1. Fetch live current state from PostgreSQL first
+  let current: Business | null = await getBusinessById(businessId);
+  if (!current) {
+    current = cachedDb.businesses.find((b) => b.id === businessId) || null;
+  }
+  if (!current) return null;
 
-  const current = cachedDb.businesses[index];
-
-  // Deep-merge settings if provided
-  let newSettings = current.settings;
+  // Deep-merge settings if provided to preserve existing configurations (storefront design, QR, GST, etc.)
+  let newSettings = { ...(current.settings || {}) };
   if (updates.settings) {
     newSettings = {
-      ...current.settings,
+      ...newSettings,
       ...updates.settings,
-      orderSettings: {
-        ...current.settings.orderSettings,
-        ...(updates.settings.orderSettings || {}),
-      },
+      modules: updates.settings.modules
+        ? {
+            ...(current.settings?.modules || { store: true, menu: true }),
+            ...updates.settings.modules,
+          }
+        : (current.settings?.modules || { store: true, menu: true }),
+      orderSettings: updates.settings.orderSettings
+        ? {
+            ...(current.settings?.orderSettings || {}),
+            ...updates.settings.orderSettings,
+          }
+        : (current.settings?.orderSettings || {}),
+      socialLinks: updates.settings.socialLinks
+        ? {
+            ...(current.settings?.socialLinks || {}),
+            ...updates.settings.socialLinks,
+          }
+        : current.settings?.socialLinks,
+      storefrontDesign: updates.settings.storefrontDesign
+        ? ({
+            ...(current.settings?.storefrontDesign || {}),
+            ...updates.settings.storefrontDesign,
+          } as StorefrontDesignSettings)
+        : current.settings?.storefrontDesign,
+      qrCustomization: updates.settings.qrCustomization
+        ? ({
+            ...(current.settings?.qrCustomization || {}),
+            ...updates.settings.qrCustomization,
+          } as QrCustomizationSettings)
+        : current.settings?.qrCustomization,
+      gst: updates.settings.gst
+        ? ({
+            ...(current.settings?.gst || {}),
+            ...updates.settings.gst,
+          } as GstInvoiceSettings)
+        : current.settings?.gst,
     };
   }
 
-  // Synchronize isStoreOpen & onlineOrderingEnabled between top-level & settings
-  let isStoreOpen = current.isStoreOpen ?? current.settings.isStoreOpen ?? true;
-  if (updates.isStoreOpen !== undefined) isStoreOpen = updates.isStoreOpen;
-  if (updates.settings?.isStoreOpen !== undefined) isStoreOpen = updates.settings.isStoreOpen;
+  const newSubscription = updates.subscription
+    ? { ...(current.subscription || {}), ...updates.subscription }
+    : current.subscription;
 
-  let onlineOrderingEnabled = current.onlineOrderingEnabled ?? current.settings.onlineOrderingEnabled ?? true;
-  if (updates.onlineOrderingEnabled !== undefined) onlineOrderingEnabled = updates.onlineOrderingEnabled;
-  if (updates.settings?.onlineOrderingEnabled !== undefined) onlineOrderingEnabled = updates.settings.onlineOrderingEnabled;
+  // Synchronize isStoreOpen & onlineOrderingEnabled between top-level & settings
+  let isStoreOpen = updates.isStoreOpen !== undefined
+    ? updates.isStoreOpen
+    : (updates.settings?.isStoreOpen !== undefined
+      ? updates.settings.isStoreOpen
+      : (current.isStoreOpen ?? current.settings?.isStoreOpen ?? true));
+
+  let onlineOrderingEnabled = updates.onlineOrderingEnabled !== undefined
+    ? updates.onlineOrderingEnabled
+    : (updates.settings?.onlineOrderingEnabled !== undefined
+      ? updates.settings.onlineOrderingEnabled
+      : (current.onlineOrderingEnabled ?? current.settings?.onlineOrderingEnabled ?? true));
 
   newSettings.isStoreOpen = isStoreOpen;
   newSettings.onlineOrderingEnabled = onlineOrderingEnabled;
+
+  const coverImageUrl = updates.coverImageUrl !== undefined
+    ? (updates.coverImageUrl ? updates.coverImageUrl.trim() : '')
+    : (updates.settings?.coverImageUrl !== undefined
+      ? updates.settings.coverImageUrl
+      : (current.coverImageUrl || current.settings?.coverImageUrl || current.settings?.storefrontDesign?.coverImageUrl || ''));
+
+  if (coverImageUrl) {
+    newSettings.coverImageUrl = coverImageUrl;
+    if (newSettings.storefrontDesign) {
+      newSettings.storefrontDesign.coverImageUrl = coverImageUrl;
+    }
+  } else if (updates.coverImageUrl === null || updates.coverImageUrl === '') {
+    delete newSettings.coverImageUrl;
+    if (newSettings.storefrontDesign) {
+      delete newSettings.storefrontDesign.coverImageUrl;
+    }
+  }
 
   if (updates.ownerName) {
     newSettings.ownerName = updates.ownerName.trim();
@@ -404,17 +500,18 @@ export async function updateBusiness(
     }
   }
 
-  cachedDb.businesses[index] = {
+  const b: Business = {
     ...current,
     ...updates,
     slug: targetSlug,
     isStoreOpen,
     onlineOrderingEnabled,
     ownerName: updates.ownerName ? updates.ownerName.trim() : (current.ownerName || newSettings.ownerName),
+    coverImageUrl: coverImageUrl || undefined,
     settings: newSettings,
+    subscription: newSubscription,
     updatedAt: new Date().toISOString(),
   };
-  const b = cachedDb.businesses[index];
 
   if (updates.ownerName && b.ownerId) {
     try {
@@ -450,8 +547,15 @@ export async function updateBusiness(
     console.error('pg updateBusiness error:', err);
   }
 
+  const idx = cachedDb.businesses.findIndex((item) => item.id === businessId);
+  if (idx !== -1) {
+    cachedDb.businesses[idx] = b;
+  } else {
+    cachedDb.businesses.push(b);
+  }
+
   saveDatabase();
-  return cachedDb.businesses[index];
+  return b;
 }
 
 // 2. Categories
@@ -474,13 +578,59 @@ export async function getCategories(
     }
     sql += ' ORDER BY sort_order ASC, created_at ASC';
     const res = await pgQuery(sql, params);
-    return res.rows.map(mapRowToCategory);
+    if (res.rows.length > 0) {
+      const cats = res.rows.map(mapRowToCategory);
+      for (const cat of cats) {
+        const idx = cachedDb.categories.findIndex((item) => item.id === cat.id);
+        if (idx !== -1) cachedDb.categories[idx] = cat;
+        else cachedDb.categories.push(cat);
+      }
+      return cats;
+    }
+
+    // Fallback: If 0 categories were returned for this specific sourceType,
+    // check if the business has categories created under the alternative sourceType.
+    // This ensures business owners always see their catalog categories across storefront, menu, and dashboard.
+    if (sourceType) {
+      let fbSql = 'SELECT * FROM public.categories WHERE business_id = $1';
+      const fbParams: any[] = [businessId];
+      if (channel === 'storefront') {
+        fbSql += " AND sales_channel IN ('both', 'storefront')";
+      } else if (channel === 'pos') {
+        fbSql += " AND sales_channel IN ('both', 'pos')";
+      }
+      fbSql += ' ORDER BY sort_order ASC, created_at ASC';
+      const fbRes = await pgQuery(fbSql, fbParams);
+      if (fbRes.rows.length > 0) {
+        const fbCats = fbRes.rows.map(mapRowToCategory);
+        for (const cat of fbCats) {
+          const idx = cachedDb.categories.findIndex((item) => item.id === cat.id);
+          if (idx !== -1) cachedDb.categories[idx] = cat;
+          else cachedDb.categories.push(cat);
+        }
+        return fbCats;
+      }
+    }
   } catch (err) {}
 
-  return cachedDb.categories
+  const exactMatches = cachedDb.categories
     .filter((c) => {
       if (c.businessId !== businessId) return false;
       if (sourceType && c.sourceType !== sourceType) return false;
+      if (channel === 'storefront' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'storefront') return false;
+      if (channel === 'pos' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'pos') return false;
+      return true;
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (exactMatches.length > 0 || !sourceType) {
+    return exactMatches;
+  }
+
+  // Fallback in cache: return categories for this business regardless of sourceType
+  return cachedDb.categories
+    .filter((c) => {
+      if (c.businessId !== businessId) return false;
       if (channel === 'storefront' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'storefront') return false;
       if (channel === 'pos' && c.salesChannel && c.salesChannel !== 'both' && c.salesChannel !== 'pos') return false;
       return true;
@@ -491,13 +641,26 @@ export async function getCategories(
 export async function getCategoryById(id: string): Promise<Category | null> {
   try {
     const res = await pgQuery('SELECT * FROM public.categories WHERE id = $1', [id]);
-    if (res.rows.length > 0) return mapRowToCategory(res.rows[0]);
+    if (res.rows.length > 0) {
+      const cat = mapRowToCategory(res.rows[0]);
+      const idx = cachedDb.categories.findIndex((c) => c.id === id);
+      if (idx !== -1) cachedDb.categories[idx] = cat;
+      else cachedDb.categories.push(cat);
+      return cat;
+    }
   } catch (err) {}
   return cachedDb.categories.find((c) => c.id === id) || null;
 }
 
 export async function createCategory(data: Omit<Category, 'id' | 'createdAt'>): Promise<Category> {
-  if (data.sourceType === 'store') {
+  let sourceType = data.sourceType;
+  if (!sourceType) {
+    const biz = await getBusinessById(data.businessId);
+    const isFood = biz && ['restaurant', 'cafe', 'bakery', 'cloud_kitchen', 'food_truck', 'icecream', 'juice_bar', 'juice_chaat', 'hotel'].includes((biz.category || biz.type || '').toLowerCase());
+    sourceType = isFood ? 'menu' : 'store';
+  }
+
+  if (sourceType === 'store') {
     const access = await checkBusinessModuleAccess(data.businessId, 'store');
     if (!access.allowed) {
       throw new Error(access.message || 'Store categories require an upgraded subscription plan. Please upgrade.');
@@ -519,6 +682,7 @@ export async function createCategory(data: Omit<Category, 'id' | 'createdAt'>): 
 
   const cat: Category = {
     ...data,
+    sourceType,
     slug,
     isActive: data.isActive !== false,
     salesChannel,
@@ -544,10 +708,16 @@ export async function updateCategory(
   id: string,
   updates: Partial<Category>
 ): Promise<Category | null> {
-  const index = cachedDb.categories.findIndex((c) => c.id === id);
-  if (index === -1) return null;
-  cachedDb.categories[index] = { ...cachedDb.categories[index], ...updates };
-  const c = cachedDb.categories[index];
+  let current: Category | null = await getCategoryById(id);
+  if (!current) {
+    current = cachedDb.categories.find((c) => c.id === id) || null;
+  }
+  if (!current) return null;
+
+  const c: Category = {
+    ...current,
+    ...updates,
+  };
 
   try {
     await pgQuery(`
@@ -559,21 +729,31 @@ export async function updateCategory(
     console.error('pg updateCategory error:', err);
   }
 
+  const idx = cachedDb.categories.findIndex((item) => item.id === id);
+  if (idx !== -1) {
+    cachedDb.categories[idx] = c;
+  } else {
+    cachedDb.categories.push(c);
+  }
+
   saveDatabase();
-  return cachedDb.categories[index];
+  return c;
 }
 
 export async function deleteCategory(id: string): Promise<boolean> {
-  const initialLen = cachedDb.categories.length;
-  cachedDb.categories = cachedDb.categories.filter((c) => c.id !== id);
-
+  let deletedFromPg = false;
   try {
-    await pgQuery('DELETE FROM public.categories WHERE id = $1', [id]);
+    const res = await pgQuery('DELETE FROM public.categories WHERE id = $1', [id]);
+    deletedFromPg = (res.rowCount ?? 0) > 0;
   } catch (err) {
     console.error('pg deleteCategory error:', err);
   }
 
-  if (cachedDb.categories.length !== initialLen) {
+  const initialLen = cachedDb.categories.length;
+  cachedDb.categories = cachedDb.categories.filter((c) => c.id !== id);
+  const deletedFromCache = cachedDb.categories.length !== initialLen;
+
+  if (deletedFromPg || deletedFromCache) {
     saveDatabase();
     return true;
   }
@@ -605,7 +785,15 @@ export async function getProducts(
     }
     sql += ' ORDER BY sort_order ASC, created_at ASC';
     const res = await pgQuery(sql, params);
-    return res.rows.map(mapRowToProduct);
+    if (res.rows.length > 0) {
+      const prods = res.rows.map(mapRowToProduct);
+      for (const prod of prods) {
+        const idx = cachedDb.products.findIndex((item) => item.id === prod.id);
+        if (idx !== -1) cachedDb.products[idx] = prod;
+        else cachedDb.products.push(prod);
+      }
+      return prods;
+    }
   } catch (err) {}
 
   return cachedDb.products
@@ -623,7 +811,13 @@ export async function getProducts(
 export async function getProductById(id: string): Promise<Product | null> {
   try {
     const res = await pgQuery('SELECT * FROM public.products WHERE id = $1', [id]);
-    if (res.rows.length > 0) return mapRowToProduct(res.rows[0]);
+    if (res.rows.length > 0) {
+      const prod = mapRowToProduct(res.rows[0]);
+      const idx = cachedDb.products.findIndex((p) => p.id === id);
+      if (idx !== -1) cachedDb.products[idx] = prod;
+      else cachedDb.products.push(prod);
+      return prod;
+    }
   } catch (err) {}
   return cachedDb.products.find((p) => p.id === id) || null;
 }
@@ -654,10 +848,10 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
     await pgQuery(`
       INSERT INTO public.products (
         id, business_id, category_id, source_type, name, description,
-        price, sale_price, sku, barcode, brand, unit, min_order_qty,
+        price, sale_price, sku, barcode, brand, unit, size, min_order_qty,
         stock_quantity, low_stock_threshold, is_available, sales_channel,
         image_url, sort_order, dietary_flags, variants, add_ons, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
     `, [
       prod.id,
       prod.businessId,
@@ -671,6 +865,7 @@ export async function createProduct(data: Omit<Product, 'id' | 'createdAt' | 'up
       prod.barcode || null,
       prod.brand || null,
       prod.unit || null,
+      prod.size || null,
       prod.minOrderQty || 1,
       prod.stockQuantity !== undefined && prod.stockQuantity !== null ? Number(prod.stockQuantity) : null,
       prod.lowStockThreshold || 5,
@@ -696,32 +891,43 @@ export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<Product | null> {
-  const index = cachedDb.products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
-  cachedDb.products[index] = {
-    ...cachedDb.products[index],
+  let current: Product | null = await getProductById(id);
+  if (!current) {
+    current = cachedDb.products.find((p) => p.id === id) || null;
+  }
+  if (!current) return null;
+
+  const dietaryFlags = updates.dietaryFlags !== undefined
+    ? { ...(current.dietaryFlags || {}), ...updates.dietaryFlags }
+    : (current.dietaryFlags || {});
+
+  const p: Product = {
+    ...current,
     ...updates,
+    dietaryFlags,
+    variants: updates.variants !== undefined ? updates.variants : (current.variants || []),
+    addOns: updates.addOns !== undefined ? updates.addOns : (current.addOns || []),
     updatedAt: new Date().toISOString(),
   };
-  const p = cachedDb.products[index];
 
   try {
     await pgQuery(`
       UPDATE public.products 
       SET name = $1, description = $2, price = $3, sale_price = $4, stock_quantity = $5, 
-          is_available = $6, brand = $7, unit = $8, min_order_qty = $9, sku = $10, 
-          barcode = $11, image_url = $12, category_id = $13, low_stock_threshold = $14,
-          dietary_flags = $15, variants = $16, add_ons = $17, sales_channel = $18, updated_at = NOW()
-      WHERE id = $19
+          is_available = $6, brand = $7, unit = $8, size = $9, min_order_qty = $10, sku = $11, 
+          barcode = $12, image_url = $13, category_id = $14, low_stock_threshold = $15,
+          dietary_flags = $16, variants = $17, add_ons = $18, sales_channel = $19, updated_at = NOW()
+      WHERE id = $20
     `, [
       p.name,
       p.description || null,
       p.price,
-      p.salePrice || null,
-      p.stockQuantity !== undefined ? p.stockQuantity : null,
+      p.salePrice !== undefined && p.salePrice !== null ? Number(p.salePrice) : null,
+      p.stockQuantity !== undefined && p.stockQuantity !== null ? Number(p.stockQuantity) : null,
       p.isAvailable,
       p.brand || null,
       p.unit || null,
+      p.size || null,
       p.minOrderQty || 1,
       p.sku || null,
       p.barcode || null,
@@ -738,21 +944,31 @@ export async function updateProduct(
     console.error('pg updateProduct error:', err);
   }
 
+  const idx = cachedDb.products.findIndex((item) => item.id === id);
+  if (idx !== -1) {
+    cachedDb.products[idx] = p;
+  } else {
+    cachedDb.products.push(p);
+  }
+
   saveDatabase();
-  return cachedDb.products[index];
+  return p;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const initialLen = cachedDb.products.length;
-  cachedDb.products = cachedDb.products.filter((p) => p.id !== id);
-
+  let deletedFromPg = false;
   try {
-    await pgQuery('DELETE FROM public.products WHERE id = $1', [id]);
+    const res = await pgQuery('DELETE FROM public.products WHERE id = $1', [id]);
+    deletedFromPg = (res.rowCount ?? 0) > 0;
   } catch (err) {
     console.error('pg deleteProduct error:', err);
   }
 
-  if (cachedDb.products.length !== initialLen) {
+  const initialLen = cachedDb.products.length;
+  cachedDb.products = cachedDb.products.filter((p) => p.id !== id);
+  const deletedFromCache = cachedDb.products.length !== initialLen;
+
+  if (deletedFromPg || deletedFromCache) {
     saveDatabase();
     return true;
   }
@@ -851,11 +1067,14 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const verifiedItems = [];
 
   for (const itemInput of input.items) {
-    const product = cachedDb.products.find(
-      (p) => p.id === itemInput.productId && p.businessId === input.businessId && p.sourceType === input.sourceType
-    );
-
+    let product: Product | null = await getProductById(itemInput.productId);
     if (!product) {
+      product = cachedDb.products.find(
+        (p) => p.id === itemInput.productId && p.businessId === input.businessId && p.sourceType === input.sourceType
+      ) || null;
+    }
+
+    if (!product || product.businessId !== input.businessId || product.sourceType !== input.sourceType) {
       throw new Error(`Product not found or unavailable for ${input.sourceType}`);
     }
 
@@ -863,8 +1082,19 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       throw new Error(`Item "${product.name}" is currently sold out`);
     }
 
-    // Check retail inventory for Store products
-    if (input.sourceType === 'store' && typeof product.stockQuantity === 'number') {
+    // Check retail inventory for Store products (and variant stock if present)
+    let matchedVariant = undefined;
+    if (itemInput.variantId && product.variants?.length) {
+      matchedVariant = product.variants.find((vr) => vr.id === itemInput.variantId);
+    }
+
+    if (matchedVariant && typeof matchedVariant.stockQuantity === 'number') {
+      if (matchedVariant.stockQuantity < itemInput.quantity) {
+        throw new Error(
+          `Insufficient stock for "${product.name} (${matchedVariant.name})". Available: ${matchedVariant.stockQuantity}, requested: ${itemInput.quantity}`
+        );
+      }
+    } else if (input.sourceType === 'store' && typeof product.stockQuantity === 'number') {
       if (product.stockQuantity < itemInput.quantity) {
         throw new Error(
           `Insufficient stock for "${product.name}". Available: ${product.stockQuantity}, requested: ${itemInput.quantity}`
@@ -875,12 +1105,15 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     let unitPrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
     let selectedVariantObj = undefined;
 
-    if (itemInput.variantId && product.variants?.length) {
-      const v = product.variants.find((vr) => vr.id === itemInput.variantId);
-      if (v) {
-        unitPrice = v.price;
-        selectedVariantObj = { id: v.id, name: v.name, price: v.price };
-      }
+    if (matchedVariant) {
+      unitPrice = matchedVariant.price;
+      selectedVariantObj = {
+        id: matchedVariant.id,
+        name: matchedVariant.name,
+        price: matchedVariant.price,
+        unit: matchedVariant.unit || product.unit,
+        size: matchedVariant.size || product.size,
+      };
     }
 
     const selectedAddOnsObj = [];
@@ -902,13 +1135,22 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       productName: product.name,
       price: unitPrice,
       quantity: itemInput.quantity,
+      unit: matchedVariant?.unit || product.unit,
+      size: matchedVariant?.size || product.size,
       selectedVariant: selectedVariantObj,
       selectedAddOns: selectedAddOnsObj.length ? selectedAddOnsObj : undefined,
       specialInstructions: itemInput.specialInstructions,
       itemTotal,
     });
 
-    // Deduct stock for store products atomically
+    // Deduct stock for store products and variant inventory atomically
+    if (matchedVariant && typeof matchedVariant.stockQuantity === 'number') {
+      matchedVariant.stockQuantity = Math.max(0, matchedVariant.stockQuantity - itemInput.quantity);
+      pgQuery('UPDATE public.products SET variants = $1 WHERE id = $2', [
+        JSON.stringify(product.variants || []),
+        product.id,
+      ]).catch(() => {});
+    }
     if (input.sourceType === 'store' && typeof product.stockQuantity === 'number') {
       product.stockQuantity -= itemInput.quantity;
       if (product.stockQuantity <= 0) {
@@ -1125,6 +1367,11 @@ export async function getOrders(
     sql += ' ORDER BY created_at DESC';
     const res = await pgQuery(sql, params);
     let orders = res.rows.map(mapRowToOrder);
+    for (const ord of orders) {
+      const idx = cachedDb.orders.findIndex((o) => o.id === ord.id);
+      if (idx !== -1) cachedDb.orders[idx] = ord;
+      else cachedDb.orders.unshift(ord);
+    }
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
       orders = orders.filter((o) => {
@@ -1156,7 +1403,13 @@ export async function getOrders(
 export async function getOrderById(orderId: string): Promise<Order | null> {
   try {
     const res = await pgQuery('SELECT * FROM public.orders WHERE id = $1', [orderId]);
-    if (res.rows.length > 0) return mapRowToOrder(res.rows[0]);
+    if (res.rows.length > 0) {
+      const ord = mapRowToOrder(res.rows[0]);
+      const idx = cachedDb.orders.findIndex((o) => o.id === orderId);
+      if (idx !== -1) cachedDb.orders[idx] = ord;
+      else cachedDb.orders.unshift(ord);
+      return ord;
+    }
   } catch (err) {}
   return cachedDb.orders.find((o) => o.id === orderId) || null;
 }
@@ -1164,7 +1417,13 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 export async function getOrderByTrackingId(trackingId: string): Promise<Order | null> {
   try {
     const res = await pgQuery('SELECT * FROM public.orders WHERE tracking_id = $1', [trackingId]);
-    if (res.rows.length > 0) return mapRowToOrder(res.rows[0]);
+    if (res.rows.length > 0) {
+      const ord = mapRowToOrder(res.rows[0]);
+      const idx = cachedDb.orders.findIndex((o) => o.id === ord.id);
+      if (idx !== -1) cachedDb.orders[idx] = ord;
+      else cachedDb.orders.unshift(ord);
+      return ord;
+    }
   } catch (err) {}
   return cachedDb.orders.find((o) => o.trackingId === trackingId) || null;
 }
@@ -1175,12 +1434,19 @@ export async function updateOrderStatus(
   note?: string,
   updatedBy?: string
 ): Promise<Order | null> {
-  const order = cachedDb.orders.find((o) => o.id === orderId);
+  let order: Order | null = await getOrderById(orderId);
+  if (!order) {
+    order = cachedDb.orders.find((o) => o.id === orderId) || null;
+  }
   if (!order) return null;
 
   const previousStatus = order.orderStatus;
   order.orderStatus = newStatus;
   order.updatedAt = new Date().toISOString();
+
+  if (!Array.isArray(order.statusHistory)) {
+    order.statusHistory = [];
+  }
 
   order.statusHistory.push({
     status: newStatus,
@@ -1193,15 +1459,19 @@ export async function updateOrderStatus(
   if ((newStatus === 'cancelled' || newStatus === 'rejected') && previousStatus !== 'cancelled' && previousStatus !== 'rejected') {
     if (order.sourceType === 'store') {
       for (const item of order.items) {
+        try {
+          await pgQuery(
+            'UPDATE public.products SET stock_quantity = stock_quantity + $1, is_available = true WHERE id = $2',
+            [item.quantity, item.productId]
+          );
+        } catch (e) {}
+
         const prod = cachedDb.products.find((p) => p.id === item.productId);
         if (prod && typeof prod.stockQuantity === 'number') {
           prod.stockQuantity += item.quantity;
           if (prod.stockQuantity > 0) {
             prod.isAvailable = true;
           }
-          try {
-            await pgQuery('UPDATE public.products SET stock_quantity = stock_quantity + $1, is_available = true WHERE id = $2', [item.quantity, item.productId]);
-          } catch (e) {}
         }
       }
     }
@@ -1215,14 +1485,6 @@ export async function updateOrderStatus(
   else if (newStatus === 'new' || newStatus === 'accepted' || newStatus === 'preparing') qTokenStatus = 'waiting';
 
   if (order.tokenNumber && qTokenStatus) {
-    const qToken = cachedDb.queueTokens.find(
-      (qt) => qt.businessId === order.businessId && qt.tokenNumber === order.tokenNumber
-    );
-    if (qToken) {
-      qToken.status = qTokenStatus;
-      if (qTokenStatus === 'called') qToken.calledAt = new Date().toISOString();
-      if (qTokenStatus === 'served') qToken.servedAt = new Date().toISOString();
-    }
     try {
       await pgQuery(`
         UPDATE public.queue_tokens
@@ -1233,6 +1495,15 @@ export async function updateOrderStatus(
       `, [qTokenStatus, order.businessId, order.tokenNumber]);
     } catch (e) {
       console.error('pg queue_tokens update error:', e);
+    }
+
+    const qToken = cachedDb.queueTokens.find(
+      (qt) => qt.businessId === order!.businessId && qt.tokenNumber === order!.tokenNumber
+    );
+    if (qToken) {
+      qToken.status = qTokenStatus;
+      if (qTokenStatus === 'called') qToken.calledAt = new Date().toISOString();
+      if (qTokenStatus === 'served') qToken.servedAt = new Date().toISOString();
     }
   }
 
@@ -1246,6 +1517,13 @@ export async function updateOrderStatus(
     console.error('pg updateOrderStatus error:', err);
   }
 
+  const idx = cachedDb.orders.findIndex((o) => o.id === orderId);
+  if (idx !== -1) {
+    cachedDb.orders[idx] = order;
+  } else {
+    cachedDb.orders.unshift(order);
+  }
+
   saveDatabase();
   return order;
 }
@@ -1254,8 +1532,12 @@ export async function updateOrderPaymentStatus(
   orderId: string,
   paymentStatus: 'paid' | 'pending' | 'failed' | 'pay_at_counter' | 'pending_verification'
 ): Promise<Order | null> {
-  const order = cachedDb.orders.find((o) => o.id === orderId);
+  let order: Order | null = await getOrderById(orderId);
+  if (!order) {
+    order = cachedDb.orders.find((o) => o.id === orderId) || null;
+  }
   if (!order) return null;
+
   order.paymentStatus = paymentStatus;
   order.updatedAt = new Date().toISOString();
 
@@ -1267,6 +1549,13 @@ export async function updateOrderPaymentStatus(
     `, [paymentStatus, orderId]);
   } catch (err) {
     console.error('pg updateOrderPaymentStatus error:', err);
+  }
+
+  const idx = cachedDb.orders.findIndex((o) => o.id === orderId);
+  if (idx !== -1) {
+    cachedDb.orders[idx] = order;
+  } else {
+    cachedDb.orders.unshift(order);
   }
 
   saveDatabase();
@@ -1300,30 +1589,39 @@ export async function updateQueueTokenStatus(
   status: 'waiting' | 'called' | 'served' | 'skipped',
   counterNumber?: number
 ): Promise<QueueToken | null> {
-  const token = cachedDb.queueTokens.find((t) => t.id === tokenId);
-  if (!token) return null;
-  token.status = status;
-  if (status === 'called') {
-    token.calledAt = new Date().toISOString();
-    if (counterNumber) token.counterNumber = counterNumber;
-  }
-  if (status === 'served') {
-    token.servedAt = new Date().toISOString();
-  }
+  let token = cachedDb.queueTokens.find((t) => t.id === tokenId) || null;
 
   try {
-    await pgQuery(`
+    const res = await pgQuery(`
       UPDATE public.queue_tokens 
       SET status = $1, counter_number = $2,
           called_at = CASE WHEN $1 = 'called' THEN NOW() ELSE called_at END,
           served_at = CASE WHEN $1 = 'served' THEN NOW() ELSE served_at END
       WHERE id = $3
+      RETURNING *
     `, [status, counterNumber || null, tokenId]);
+    if (res.rows.length > 0) {
+      token = mapRowToQueueToken(res.rows[0]);
+    }
   } catch (err) {
     console.error('pg updateQueueTokenStatus error:', err);
   }
 
-  saveDatabase();
+  if (token) {
+    token.status = status;
+    if (status === 'called') {
+      token.calledAt = new Date().toISOString();
+      if (counterNumber) token.counterNumber = counterNumber;
+    }
+    if (status === 'served') {
+      token.servedAt = new Date().toISOString();
+    }
+    const idx = cachedDb.queueTokens.findIndex((t) => t.id === tokenId);
+    if (idx !== -1) cachedDb.queueTokens[idx] = token;
+    else cachedDb.queueTokens.unshift(token);
+    saveDatabase();
+  }
+
   return token;
 }
 
@@ -2332,7 +2630,11 @@ export async function updateBusinessSubscription(
 
   // Update memory cache
   const idx = cachedDb.businesses.findIndex((b) => b.id === businessId);
-  if (idx !== -1) cachedDb.businesses[idx] = business;
+  if (idx !== -1) {
+    cachedDb.businesses[idx] = business;
+  } else {
+    cachedDb.businesses.push(business);
+  }
   saveDatabase();
 
   return business;
@@ -2353,12 +2655,39 @@ export async function addAuditLog(data: Omit<AuditLog, 'id' | 'timestamp'>): Pro
 }
 
 export async function getPlatformOverview() {
+  try {
+    const [bizCountRes, orderCountRes, revenueRes, activeSubRes, plansRes] = await Promise.all([
+      pgQuery('SELECT COUNT(*) as count FROM public.businesses'),
+      pgQuery('SELECT COUNT(*) as count FROM public.orders'),
+      pgQuery("SELECT COALESCE(SUM(total), 0) as total FROM public.orders WHERE payment_status = 'paid'"),
+      pgQuery("SELECT COUNT(*) as count FROM public.businesses WHERE subscription->>'status' = 'active'"),
+      pgQuery('SELECT * FROM public.subscription_plans ORDER BY price_monthly ASC'),
+    ]);
+
+    const totalBusinesses = parseInt(bizCountRes.rows[0]?.count || '0', 10);
+    const totalOrders = parseInt(orderCountRes.rows[0]?.count || '0', 10);
+    const totalRevenue = parseFloat(revenueRes.rows[0]?.total || '0');
+    const activeSubscriptions = parseInt(activeSubRes.rows[0]?.count || '0', 10);
+    const plans = plansRes.rows.map(mapRowToSubscriptionPlan);
+
+    return {
+      totalBusinesses,
+      totalOrders,
+      totalRevenue,
+      activeSubscriptions,
+      businesses: cachedDb.businesses,
+      plans,
+    };
+  } catch (e) {
+    console.error('getPlatformOverview error:', e);
+  }
+
   const totalBusinesses = cachedDb.businesses.length;
   const totalOrders = cachedDb.orders.length;
   const totalRevenue = cachedDb.orders
     .filter((o) => o.paymentStatus === 'paid')
     .reduce((sum, o) => sum + o.total, 0);
-  const activeSubscriptions = cachedDb.businesses.filter((b) => b.subscription.status === 'active').length;
+  const activeSubscriptions = cachedDb.businesses.filter((b) => b.subscription?.status === 'active').length;
 
   return {
     totalBusinesses,
@@ -2644,15 +2973,45 @@ export async function createPosBill(input: CreatePosBillInput): Promise<PosBill>
 
     let unitPrice = item.unitPrice;
     let prodName = item.productName;
+    let variantName = item.variantName;
+    let itemSize = item.size;
+    let itemUnit = item.unit;
 
     if (item.productId) {
       const prod = productMap.get(item.productId);
       if (prod) {
         prodName = prod.name;
-        // Verify stock if stockQuantity is tracked
-        if (typeof prod.stockQuantity === 'number' && prod.stockQuantity < item.quantity) {
+        itemUnit = itemUnit || prod.unit;
+        itemSize = itemSize || prod.size;
+
+        if (item.variantId && prod.variants?.length) {
+          const v = prod.variants.find((vr) => vr.id === item.variantId);
+          if (v) {
+            variantName = v.name;
+            itemSize = v.size || v.name;
+            itemUnit = v.unit || itemUnit;
+            unitPrice = typeof item.unitPrice === 'number' && item.unitPrice >= 0 ? item.unitPrice : (v.price || unitPrice);
+            if (typeof v.stockQuantity === 'number' && v.stockQuantity < item.quantity) {
+              throw new Error(`Insufficient stock for "${prod.name} (${v.name})". Available: ${v.stockQuantity}, Requested: ${item.quantity}`);
+            }
+            if (typeof v.stockQuantity === 'number') {
+              v.stockQuantity = Math.max(0, v.stockQuantity - item.quantity);
+              pgQuery('UPDATE public.products SET variants = $1 WHERE id = $2', [
+                JSON.stringify(prod.variants),
+                prod.id,
+              ]).catch(() => {});
+            }
+          }
+        } else if (typeof prod.stockQuantity === 'number' && prod.stockQuantity < item.quantity) {
           throw new Error(`Insufficient stock for "${prod.name}". Available: ${prod.stockQuantity}, Requested: ${item.quantity}`);
         }
+      }
+    }
+
+    if (variantName || itemSize) {
+      const spec = variantName || itemSize;
+      if (spec && !prodName.includes(spec)) {
+        prodName = `${prodName} (${spec})`;
       }
     }
 
@@ -2665,6 +3024,9 @@ export async function createPosBill(input: CreatePosBillInput): Promise<PosBill>
       businessId: input.businessId,
       productId: item.productId || undefined,
       productName: prodName,
+      variantName: variantName || undefined,
+      size: itemSize || undefined,
+      unit: itemUnit || undefined,
       unitPrice,
       quantity: item.quantity,
       totalPrice: lineTotal,
@@ -2785,14 +3147,17 @@ export async function createPosBill(input: CreatePosBillInput): Promise<PosBill>
   for (const item of billItems) {
     await pgQuery(
       `INSERT INTO public.pos_bill_items (
-        id, bill_id, business_id, product_id, product_name, unit_price, quantity, total_price, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        id, bill_id, business_id, product_id, product_name, variant_name, size, unit, unit_price, quantity, total_price, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         item.id,
         item.billId,
         item.businessId,
         item.productId || null,
         item.productName,
+        item.variantName || null,
+        item.size || null,
+        item.unit || null,
         item.unitPrice,
         item.quantity,
         item.totalPrice,

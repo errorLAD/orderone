@@ -21,7 +21,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { Category, Product, BusinessPlanUsage } from '@/types';
 import { cn } from '@/lib/utils';
-import { getCategoryConfig } from '@/lib/categories';
+import { getCategoryConfig, getCategoryFoodImage } from '@/lib/categories';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
 import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
@@ -414,24 +414,46 @@ export default function MenuCategoriesPage() {
                   key={cat.id}
                   className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between gap-3"
                 >
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                          #{idx + 1}
-                        </span>
-                        <h3 className="font-bold text-slate-900 text-sm">{cat.name}</h3>
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-50 border border-slate-200/90 shrink-0 shadow-2xs flex items-center justify-center p-0.5">
+                      <img
+                        src={cat.imageUrl || getCategoryFoodImage(cat.name)}
+                        alt={cat.name}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          const fallback = getCategoryFoodImage(cat.name);
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          } else {
+                            target.src = '/images/categories/all.png';
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0">
+                            #{idx + 1}
+                          </span>
+                          <h3 className="font-bold text-slate-900 text-sm truncate">{cat.name}</h3>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <SalesChannelBadge channel={cat.salesChannel} size="xs" />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <SalesChannelBadge channel={cat.salesChannel} size="xs" />
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      <div className="flex items-center justify-between gap-2">
+                        {cat.description ? (
+                          <p className="text-xs text-slate-500 line-clamp-1">{cat.description}</p>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">No description</span>
+                        )}
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
                           {itemCount} {itemCount === 1 ? 'item' : 'items'}
                         </span>
                       </div>
                     </div>
-                    {cat.description && (
-                      <p className="text-xs text-slate-500 line-clamp-2">{cat.description}</p>
-                    )}
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">

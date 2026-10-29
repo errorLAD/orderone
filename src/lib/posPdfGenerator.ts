@@ -220,7 +220,7 @@ export async function downloadPosBillPdf(bill: PosBill, business?: Business | nu
   y += 4;
   doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
-  doc.text('Digital Counter Receipt ?" OrderOne.in', pageWidth / 2, y, { align: 'center' });
+  doc.text('Digital Counter Receipt • OrderOne.in', pageWidth / 2, y, { align: 'center' });
 
   // Save PDF
   const filename = `${bill.billNumber}_${new Date(bill.createdAt).toISOString().split('T')[0]}.pdf`;

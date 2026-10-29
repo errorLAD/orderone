@@ -73,7 +73,7 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
       step3Title: 'Launch Store & QR Code',
       step3Subtitle: 'Your contractor storefront is live with counter QR ordering and loading tokens.',
     },
-    supportedUnits: ['bag', 'piece', 'box', 'kg', 'metre', 'litre', 'tonne', 'bundle', 'sq_ft'],
+    supportedUnits: ['piece', 'inch', 'feet', 'metre', 'mm', 'box', 'packet', 'kg', 'gram', 'bag', 'bundle', 'sq_ft', 'litre', 'fitment size'],
     starterCategories: [
       'Cement & Aggregates',
       'Steel, Rebars & Mesh',
@@ -193,7 +193,7 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
       step3Title: 'Launch Menu & QR Code',
       step3Subtitle: 'Your digital dining menu is live with table QR codes and kitchen token display.',
     },
-    supportedUnits: ['portion', 'plate', 'half', 'full', 'piece', 'set'],
+    supportedUnits: ['portion', 'plate', 'half', 'full', 'piece', 'set', 'glass', 'cup', 'bottle', 'ml', 'litre', 'kg', 'gram'],
     starterCategories: ['Starters & Appetizers', 'Main Course', 'Breads & Rice', 'Desserts & Beverages'],
     starterItems: [
       { name: 'Paneer Butter Masala', categoryName: 'Main Course', price: 220, isVegetarian: true, unit: 'portion', description: 'Rich creamy cottage cheese curry with butter makhani gravy' },
@@ -373,7 +373,7 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
       step3Title: 'Launch Store & QR Code',
       step3Subtitle: 'Your Kirana storefront is live with counter QR standees and digital orders.',
     },
-    supportedUnits: ['kg', '500g', 'litre', 'packet', 'piece', 'box', 'pouch'],
+    supportedUnits: ['kg', 'gram', 'litre', 'ml', 'packet', 'piece', 'box', 'pouch', 'bag', 'bundle'],
     starterCategories: ['Grains, Rice & Atta', 'Pulses & Dals', 'Cooking Oils & Ghee', 'Dairy & Breakfast', 'Spices & Masalas'],
     starterItems: [
       { name: 'Royal Sona Masoori Rice (5kg)', categoryName: 'Grains, Rice & Atta', price: 340, unit: 'packet', brand: 'Royal Farm', sku: 'GRC-RCE-5KG', stockQuantity: 25, description: 'Aged premium polished Sona Masoori raw rice' },
@@ -921,3 +921,124 @@ export function getTableRoomLabel(
     badgePrefix: '📍 Table/Room',
   };
 }
+
+/**
+ * Universal list of standard measurement and portion units supported across OrderOne.
+ */
+export const STANDARD_UNITS = [
+  'piece',
+  'kg',
+  'gram',
+  'litre',
+  'ml',
+  'packet',
+  'box',
+  'bag',
+  'inch',
+  'feet',
+  'metre',
+  'mm',
+  'cm',
+  'sq_ft',
+  'fitment size',
+  'portion',
+  'plate',
+  'half',
+  'full',
+  'glass',
+  'cup',
+  'bottle',
+  'set',
+  'pair',
+  'bundle',
+  'pouch',
+  'can',
+];
+
+/**
+ * Quick popular size suggestions based on business category.
+ */
+export const POPULAR_SIZE_PRESETS: { [category: string]: string[] } = {
+  hardware: ['1/2 inch', '3/4 inch', '1 inch', '2 inch', '12-inch', '1 feet', '1 metre', 'Fitment 25mm', 'Fitment 50mm', 'Fitment 100mm'],
+  grocery: ['100g', '250g', '500g', '1 kg', '2 kg', '5 kg', '10 kg', '250 ml', '500 ml', '1 litre', '5 litre'],
+  restaurant: ['Regular', 'Large', 'Half', 'Full', 'Single', 'Double', 'Combo'],
+  cafe: ['Small', 'Regular', 'Large', '300 ml', '500 ml'],
+  bakery: ['500g', '1 kg', '2 kg', 'Slice', 'Box of 6', 'Box of 12'],
+  retail: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '12-inch', 'Free Size'],
+  default: ['1 kg', '5 kg', '12-inch', 'Regular', 'Large', 'Half', 'Full'],
+};
+
+/**
+ * Returns list of recommended units for a business category.
+ */
+export function getCategoryUnits(category?: string | null): string[] {
+  const config = getCategoryConfig(category);
+  const combined = Array.from(new Set([...config.supportedUnits, ...STANDARD_UNITS]));
+  return combined;
+}
+
+/**
+ * Returns clean high-res circular food dish photo URL for food & restaurant categories.
+ */
+export function getCategoryFoodImage(name: string): string {
+  const lower = (name || '').toLowerCase().trim();
+  if (lower.includes('roll') || lower.includes('wrap') || lower.includes('kathi')) {
+    return '/images/categories/rolls.png';
+  }
+  if (lower.includes('pizza')) {
+    return '/images/categories/pizzas.png';
+  }
+  if (lower.includes('tea') || lower.includes('chai')) {
+    return '/images/categories/tea.png';
+  }
+  if (lower.includes('burger')) {
+    return '/images/categories/burger.png';
+  }
+  if (lower.includes('chinese') || lower.includes('noodle') || lower.includes('ramen') || lower.includes('chowmein') || lower.includes('manchurian')) {
+    return '/images/categories/chinese.png';
+  }
+  if (lower.includes('cake') || lower.includes('pastry') || lower.includes('bakery')) {
+    return '/images/categories/cake.png';
+  }
+  if (lower.includes('dessert') || lower.includes('sweet') || lower.includes('waffle') || lower.includes('mithai') || lower.includes('halwa')) {
+    return '/images/categories/dessert.png';
+  }
+  if (lower.includes('north') || lower.includes('roti') || lower.includes('chapati') || lower.includes('naan') || lower.includes('curry') || lower.includes('paneer') || lower.includes('dal') || lower.includes('gravy')) {
+    return '/images/categories/north-indian.png';
+  }
+  if (lower.includes('south') || lower.includes('idli') || lower.includes('dosa') || lower.includes('vada') || lower.includes('sambar') || lower.includes('uttapam')) {
+    return '/images/categories/south-indian.png';
+  }
+  if (lower.includes('sandwich') || lower.includes('toast') || lower.includes('panini')) {
+    return '/images/categories/sandwich.png';
+  }
+  if (lower.includes('ice') || lower.includes('cream') || lower.includes('gelato') || lower.includes('sundae') || lower.includes('kulfi')) {
+    return '/images/categories/ice-cream.png';
+  }
+  if (lower.includes('biryani') || lower.includes('rice') || lower.includes('pulao') || lower.includes('fried rice')) {
+    return '/images/categories/biryani.png';
+  }
+  if (lower.includes('momo') || lower.includes('dimsum') || lower.includes('dumpling')) {
+    return '/images/categories/momos.png';
+  }
+  if (lower.includes('beverage') || lower.includes('drink') || lower.includes('juice') || lower.includes('shake') || lower.includes('smoothie') || lower.includes('cold drink') || lower.includes('soda')) {
+    return '/images/categories/beverages.png';
+  }
+  if (lower.includes('pasta') || lower.includes('macaroni') || lower.includes('spaghetti') || lower.includes('lasagna')) {
+    return '/images/categories/pasta.png';
+  }
+  if (lower.includes('chaat') || lower.includes('pani puri') || lower.includes('golgappa') || lower.includes('bhel') || lower.includes('sev puri')) {
+    return '/images/categories/chaat.png';
+  }
+  if (lower.includes('starter') || lower.includes('appetizer') || lower.includes('tikka') || lower.includes('kebab') || lower.includes('pakora') || lower.includes('crispy')) {
+    return '/images/categories/starters.png';
+  }
+  if (lower.includes('coffee') || lower.includes('cafe') || lower.includes('cappuccino') || lower.includes('espresso') || lower.includes('latte')) {
+    return '/images/categories/coffee.png';
+  }
+  if (lower.includes('thali') || lower.includes('meal') || lower.includes('combo') || lower.includes('main course') || lower.includes('platter')) {
+    return '/images/categories/thali.png';
+  }
+  return '/images/categories/all.png';
+}
+

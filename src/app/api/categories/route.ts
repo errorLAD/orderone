@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
     }
 
     const categories = await getCategories(businessId, sourceType || undefined, channel || undefined);
-    return NextResponse.json({ success: true, count: categories.length, categories });
+    const res = NextResponse.json({ success: true, count: categories.length, categories });
+    // Public category listing is safe to cache at CDN for 30 s
+    res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    return res;
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

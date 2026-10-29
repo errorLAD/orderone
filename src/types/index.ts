@@ -150,6 +150,7 @@ export interface BusinessSettings {
   onboardingCompleted?: boolean;
   socialLinks?: BusinessSocialLinks;
   storefrontDesign?: StorefrontDesignSettings;
+  coverImageUrl?: string;
   qrCustomization?: QrCustomizationSettings;
   gst?: GstInvoiceSettings;
   ownerName?: string;
@@ -179,6 +180,7 @@ export interface Business {
   phone: string;
   address: string;
   logoUrl?: string;
+  coverImageUrl?: string;
   isStoreOpen?: boolean;
   onlineOrderingEnabled?: boolean;
   storeEntitlement?: ModuleEntitlement;
@@ -230,6 +232,9 @@ export interface ProductVariant {
   id: string;
   name: string;
   price: number;
+  unit?: string;
+  size?: string;
+  stockQuantity?: number;
   sku?: string;
 }
 
@@ -261,6 +266,7 @@ export interface Product {
   barcode?: string;
   brand?: string;
   unit?: string; // piece, bag, box, kg, metre, litre, etc.
+  size?: string; // 1 kg, 5 kg, 12-inch, fitment size, etc.
   minOrderQty?: number;
   stockQuantity?: number; // Retail inventory
   lowStockThreshold?: number;
@@ -280,7 +286,9 @@ export interface OrderItem {
   productName: string;
   price: number;
   quantity: number;
-  selectedVariant?: { id: string; name: string; price: number };
+  unit?: string;
+  size?: string;
+  selectedVariant?: { id: string; name: string; price: number; unit?: string; size?: string };
   selectedAddOns?: { id: string; name: string; price: number }[];
   specialInstructions?: string;
   itemTotal: number;
@@ -517,6 +525,9 @@ export interface PosBillItem {
   businessId: string;
   productId?: string;
   productName: string;
+  variantName?: string;
+  size?: string;
+  unit?: string;
   unitPrice: number;
   quantity: number;
   totalPrice: number;
@@ -553,6 +564,10 @@ export interface CreatePosBillInput {
   items: {
     productId?: string;
     productName: string;
+    variantId?: string;
+    variantName?: string;
+    size?: string;
+    unit?: string;
     unitPrice: number;
     quantity: number;
   }[];

@@ -298,7 +298,15 @@ export default function StoreOrdersPage() {
                   {/* Summary of Items */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
                     <div className="truncate max-w-[280px] sm:max-w-[400px]">
-                      {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
+                      {order.items
+                        .map((i) => {
+                          const variantOrSize =
+                            i.selectedVariant?.name || [i.size, i.unit].filter(Boolean).join(' ');
+                          return `${i.productName}${
+                            variantOrSize ? ` (${variantOrSize})` : ''
+                          } (x${i.quantity})`;
+                        })
+                        .join(', ')}
                     </div>
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 shrink-0">
                       <Truck className="w-3.5 h-3.5 text-sky-600" />
@@ -379,11 +387,15 @@ export default function StoreOrdersPage() {
                         <span className="font-semibold text-slate-800">
                           {item.quantity}x {item.productName}
                         </span>
-                        {item.selectedVariant && (
-                          <div className="text-[10px] text-slate-500">
-                            Variant: {item.selectedVariant.name}
+                        {item.selectedVariant ? (
+                          <div className="text-[10px] text-sky-700 font-semibold">
+                            Size / Variant: {item.selectedVariant.name}
                           </div>
-                        )}
+                        ) : (item.size || item.unit) ? (
+                          <div className="text-[10px] text-slate-500 font-medium">
+                            Unit / Size: {[item.size, item.unit].filter(Boolean).join(' • ')}
+                          </div>
+                        ) : null}
                       </div>
                       <span className="font-medium text-slate-900">{formatINR(item.itemTotal)}</span>
                     </div>
@@ -568,11 +580,15 @@ export default function StoreOrdersPage() {
                       <span className="font-semibold text-slate-800">
                         {item.quantity}x {item.productName}
                       </span>
-                      {item.selectedVariant && (
-                        <div className="text-[10px] text-slate-500">
-                          Variant: {item.selectedVariant.name}
+                      {item.selectedVariant ? (
+                        <div className="text-[10px] text-sky-700 font-semibold">
+                          Size / Variant: {item.selectedVariant.name}
                         </div>
-                      )}
+                      ) : (item.size || item.unit) ? (
+                        <div className="text-[10px] text-slate-500 font-medium">
+                          Unit / Size: {[item.size, item.unit].filter(Boolean).join(' • ')}
+                        </div>
+                      ) : null}
                     </div>
                     <span className="font-medium text-slate-900">{formatINR(item.itemTotal)}</span>
                   </div>

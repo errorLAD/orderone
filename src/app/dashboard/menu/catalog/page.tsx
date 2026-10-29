@@ -29,11 +29,12 @@ import {
   ShoppingBag,
   FolderPlus,
   ArrowRight,
+  Tag,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { Product, Category, ProductVariant, ProductAddOn, BusinessPlanUsage } from '@/types';
 import { formatINR, cn, formatDate } from '@/lib/utils';
-import { getCategoryConfig } from '@/lib/categories';
+import { getCategoryConfig, getCategoryUnits, POPULAR_SIZE_PRESETS } from '@/lib/categories';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
 import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
@@ -82,6 +83,8 @@ export default function MenuCatalogPage() {
     name: '',
     categoryId: '',
     price: '',
+    unit: catConfig.supportedUnits[0] || 'portion',
+    size: '',
     description: '',
     imageUrl: '',
     isAvailable: true,
@@ -306,6 +309,8 @@ export default function MenuCatalogPage() {
       name: '',
       categoryId: categories[0]?.id || '',
       price: '',
+      unit: catConfig.supportedUnits[0] || 'portion',
+      size: '',
       description: '',
       imageUrl: '',
       isAvailable: true,
@@ -330,6 +335,8 @@ export default function MenuCatalogPage() {
       name: p.name,
       categoryId: p.categoryId,
       price: String(p.price),
+      unit: p.unit || catConfig.supportedUnits[0] || 'portion',
+      size: p.size || '',
       description: p.description || '',
       imageUrl: p.imageUrl || '',
       isAvailable: p.isAvailable,
@@ -352,6 +359,8 @@ export default function MenuCatalogPage() {
       name: formData.name.trim(),
       categoryId: formData.categoryId || (categories[0]?.id ?? ''),
       price: Number(formData.price),
+      unit: formData.unit || undefined,
+      size: formData.size?.trim() || undefined,
       description: formData.description.trim(),
       imageUrl: formData.imageUrl?.trim() || undefined,
       isAvailable: formData.isAvailable,
@@ -363,7 +372,15 @@ export default function MenuCatalogPage() {
         isJain: formData.isJain,
         isVegan: formData.isVegan,
       },
-      variants: variants.filter((v) => v.name.trim() !== ''),
+      variants: variants
+        .filter((v) => v.name.trim() !== '')
+        .map((v) => ({
+          id: v.id || `mv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          name: v.name.trim(),
+          price: Number(v.price) || 0,
+          unit: formData.unit || undefined,
+          size: v.name.trim(),
+        })),
       addOns: addOns.filter((a) => a.name.trim() !== ''),
       sortOrder: products.length + 1,
     };
@@ -770,6 +787,16 @@ export default function MenuCatalogPage() {
                     </div>
 
                     <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{p.name}</h3>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      {p.size && (
+                        <span className="font-bold text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          {p.size}
+                        </span>
+                      )}
+                      {p.unit && (
+                        <span className="text-[10px] text-slate-500">/{p.unit}</span>
+                      )}
+                    </div>
                     {p.description && (
                       <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">{p.description}</p>
                     )}
@@ -871,6 +898,14 @@ export default function MenuCatalogPage() {
                           <div className="font-bold text-slate-900">{p.name}</div>
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-[10px] text-slate-500">{cat}</span>
+                            {p.size && (
+                              <span className="font-bold text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                {p.size}
+                              </span>
+                            )}
+                            {p.unit && (
+                              <span className="text-[10px] text-slate-500">/{p.unit}</span>
+                            )}
                             <SalesChannelBadge channel={p.salesChannel} size="xs" />
                           </div>
                         </div>
@@ -1101,14 +1136,14 @@ export default function MenuCatalogPage() {
                 </div>
               </div>
 
-              {/* Category & Dietary Flags */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Category, Unit & Portion Size */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="block font-bold text-slate-800">Menu Category</label>
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden bg-white text-xs"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1119,29 +1154,90 @@ export default function MenuCatalogPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block font-bold text-slate-800">Primary Classification</label>
-                  <div className="flex items-center gap-3 pt-1">
-                    <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-emerald-800">
-                      <input
-                        type="radio"
-                        name="vegNonVeg"
-                        checked={formData.isVeg}
-                        onChange={() => setFormData({ ...formData, isVeg: true })}
-                        className="text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span>🟢 Veg</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-rose-800">
-                      <input
-                        type="radio"
-                        name="vegNonVeg"
-                        checked={!formData.isVeg}
-                        onChange={() => setFormData({ ...formData, isVeg: false })}
-                        className="text-rose-600 focus:ring-rose-500"
-                      />
-                      <span>🔴 Non-Veg</span>
-                    </label>
+                  <label className="block font-bold text-slate-800">Serving Unit</label>
+                  <select
+                    value={formData.unit}
+                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden bg-white text-xs"
+                  >
+                    {getCategoryUnits(catConfig.id).map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-slate-800">Portion / Size</label>
+                    <span className="text-[10px] text-slate-400 font-normal">Optional</span>
                   </div>
+                  <input
+                    type="text"
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    placeholder="e.g. Regular, Large, 500ml, 1 kg"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-hidden text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Portion Presets */}
+              {((POPULAR_SIZE_PRESETS[catConfig.id] || POPULAR_SIZE_PRESETS.restaurant) || []).length > 0 && (
+                <div className="p-2.5 bg-orange-50/60 rounded-xl border border-orange-200/70 space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-orange-950 flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-orange-600" /> Quick Portion Presets:
+                    </span>
+                    <span className="text-[10px] text-orange-700">Click to set size</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(POPULAR_SIZE_PRESETS[catConfig.id] || POPULAR_SIZE_PRESETS.restaurant).map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, size: sz }));
+                        }}
+                        className={cn(
+                          'px-2 py-0.5 rounded-md text-[11px] font-semibold border transition',
+                          formData.size === sz
+                            ? 'bg-orange-600 text-white border-orange-600 shadow-2xs'
+                            : 'bg-white hover:bg-orange-50 text-slate-700 border-orange-200 hover:border-orange-300'
+                        )}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dietary Flags */}
+              <div className="space-y-1">
+                <label className="block font-bold text-slate-800">Primary Classification</label>
+                <div className="flex items-center gap-3 pt-1">
+                  <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-emerald-800">
+                    <input
+                      type="radio"
+                      name="vegNonVeg"
+                      checked={formData.isVeg}
+                      onChange={() => setFormData({ ...formData, isVeg: true })}
+                      className="text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>🟢 Veg</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-rose-800">
+                    <input
+                      type="radio"
+                      name="vegNonVeg"
+                      checked={!formData.isVeg}
+                      onChange={() => setFormData({ ...formData, isVeg: false })}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>🔴 Non-Veg</span>
+                  </label>
                 </div>
               </div>
 

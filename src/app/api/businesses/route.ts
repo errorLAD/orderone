@@ -34,14 +34,18 @@ export async function GET(req: NextRequest) {
       const biz = await getBusinessById(id);
       if (!biz) return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
       const enriched = await enrichBusinessEntitlements(biz);
-      return NextResponse.json({ success: true, business: enriched });
+      const res = NextResponse.json({ success: true, business: enriched });
+      res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      return res;
     }
 
     if (slug) {
       const biz = await getBusinessBySlug(slug);
       if (!biz) return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
       const enriched = await enrichBusinessEntitlements(biz);
-      return NextResponse.json({ success: true, business: enriched });
+      const res = NextResponse.json({ success: true, business: enriched });
+      res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      return res;
     }
 
     // Unrestricted business list requires authentication and returns ONLY user-authorized businesses

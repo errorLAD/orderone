@@ -38,7 +38,7 @@ import { Product, Category, ProductVariant, BusinessPlanUsage } from '@/types';
 import { formatINR, cn, formatDate } from '@/lib/utils';
 import { StoreLockedPrompt } from '@/components/dashboard/StoreLockedPrompt';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
-import { getCategoryConfig } from '@/lib/categories';
+import { getCategoryConfig, getCategoryUnits, POPULAR_SIZE_PRESETS } from '@/lib/categories';
 import { SalesChannelSelector, SalesChannelBadge, SalesChannel } from '@/components/dashboard/SalesChannelSelector';
 
 export default function StoreCatalogPage() {
@@ -93,6 +93,7 @@ export default function StoreCatalogPage() {
     barcode: '',
     brand: '',
     unit: catConfig.supportedUnits[0] || 'piece',
+    size: '',
     minOrderQty: '1',
     stockQuantity: '20',
     lowStockThreshold: '5',
@@ -102,8 +103,16 @@ export default function StoreCatalogPage() {
     isAvailable: true,
   });
 
-  // Variants State
-  const [variants, setVariants] = useState<Array<{ id: string; name: string; price: number; sku?: string }>>([]);
+  // Variants (Multiple Sizes & Packs) State
+  const [variants, setVariants] = useState<Array<{
+    id: string;
+    name: string;
+    price: number;
+    unit?: string;
+    size?: string;
+    stockQuantity?: number;
+    sku?: string;
+  }>>([]);
 
   const fetchData = async () => {
     if (!currentBusiness) return;
@@ -342,14 +351,17 @@ export default function StoreCatalogPage() {
     }
   };
 
-  // Variant operations
-  const handleAddVariant = () => {
+  // Variant operations (Sizes & Quantities)
+  const handleAddVariant = (defaultName = '') => {
     setVariants((prev) => [
       ...prev,
       {
-        id: `v_${Date.now()}`,
-        name: '',
+        id: `v_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: defaultName || '',
         price: Number(formData.price) || 0,
+        unit: formData.unit || 'piece',
+        size: defaultName || '',
+        stockQuantity: Number(formData.stockQuantity) || 20,
         sku: '',
       },
     ]);
@@ -383,6 +395,7 @@ export default function StoreCatalogPage() {
       barcode: '',
       brand: '',
       unit: catConfig.supportedUnits[0] || 'piece',
+      size: '',
       minOrderQty: '1',
       stockQuantity: '25',
       lowStockThreshold: '5',
@@ -410,6 +423,7 @@ export default function StoreCatalogPage() {
       barcode: p.barcode || '',
       brand: p.brand || '',
       unit: p.unit || catConfig.supportedUnits[0] || 'piece',
+      size: p.size || '',
       minOrderQty: String(p.minOrderQty || 1),
       stockQuantity: String(p.stockQuantity ?? 0),
       lowStockThreshold: String(p.lowStockThreshold || 5),
@@ -436,6 +450,7 @@ export default function StoreCatalogPage() {
       barcode: formData.barcode?.trim() || undefined,
       brand: formData.brand?.trim() || undefined,
       unit: formData.unit || undefined,
+      size: formData.size?.trim() || undefined,
       minOrderQty: Number(formData.minOrderQty) || 1,
       stockQuantity: Number(formData.stockQuantity),
       lowStockThreshold: Number(formData.lowStockThreshold) || 5,
@@ -443,7 +458,17 @@ export default function StoreCatalogPage() {
       imageUrl: formData.imageUrl?.trim() || undefined,
       salesChannel: formData.salesChannel || 'both',
       isAvailable: formData.isAvailable,
-      variants: variants.filter((v) => v.name.trim() !== ''),
+      variants: variants
+        .filter((v) => v.name.trim() !== '')
+        .map((v) => ({
+          id: v.id || `v_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          name: v.name.trim(),
+          price: Number(v.price) || 0,
+          unit: v.unit || formData.unit || undefined,
+          size: v.size?.trim() || v.name.trim() || undefined,
+          stockQuantity: typeof v.stockQuantity === 'number' ? v.stockQuantity : Number(formData.stockQuantity) || 0,
+          sku: v.sku?.trim() || undefined,
+        })),
       sortOrder: products.length + 1,
     };
 
@@ -966,9 +991,14 @@ export default function StoreCatalogPage() {
                                 </span>
                               )}
                               <span className="text-[10px] text-slate-500">Unit: {p.unit || 'piece'}</span>
+                              {p.size && (
+                                <span className="font-bold text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                  {p.size}
+                                </span>
+                              )}
                               {p.variants && p.variants.length > 0 && (
-                                <span className="text-[10px] text-slate-500 font-medium">
-                                  • {p.variants.length} variant(s)
+                                <span className="text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200 font-bold">
+                                  • {p.variants.length} size{p.variants.length > 1 ? 's' : ''}
                                 </span>
                               )}
                             </div>
@@ -1173,6 +1203,19 @@ export default function StoreCatalogPage() {
                     </div>
 
                     <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{p.name}</h3>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                      {p.size && (
+                        <span className="font-bold text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          {p.size}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-500 font-medium">per {p.unit || 'piece'}</span>
+                      {p.variants && p.variants.length > 0 && (
+                        <span className="text-[10px] text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 font-bold">
+                          {p.variants.length} sizes
+                        </span>
+                      )}
+                    </div>
                     {p.description && (
                       <p className="text-[11px] text-slate-500 line-clamp-2 mt-1">{p.description}</p>
                     )}
@@ -1416,8 +1459,8 @@ export default function StoreCatalogPage() {
                 </div>
               </div>
 
-              {/* Category & Unit */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Category, Unit & Size */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <label className="block font-bold text-slate-800">Category</label>
@@ -1432,7 +1475,7 @@ export default function StoreCatalogPage() {
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white text-xs"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1447,21 +1490,61 @@ export default function StoreCatalogPage() {
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white text-xs"
                   >
-                    <option value="piece">piece (pc)</option>
-                    <option value="bag">bag (50kg bag, sack)</option>
-                    <option value="box">box / carton</option>
-                    <option value="kg">kg (kilogram)</option>
-                    <option value="metre">metre (m)</option>
-                    <option value="litre">litre (L)</option>
-                    <option value="sqft">sqft (square feet)</option>
-                    <option value="pack">pack</option>
-                    <option value="bundle">bundle</option>
-                    <option value="roll">roll</option>
+                    {getCategoryUnits(catConfig.id).map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-slate-800">Product Size / Fitment</label>
+                    <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    placeholder="e.g. 1 kg, 5 kg, 12-inch, 1/2 inch"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-hidden text-xs"
+                  />
+                </div>
               </div>
+
+              {/* Quick Size Presets Bar */}
+              {((POPULAR_SIZE_PRESETS[catConfig.id] || POPULAR_SIZE_PRESETS.default) || []).length > 0 && (
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-slate-700 flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-indigo-600" /> Quick Size / Fitment Presets:
+                    </span>
+                    <span className="text-[10px] text-slate-400">Click to fill size or add as variant</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(POPULAR_SIZE_PRESETS[catConfig.id] || POPULAR_SIZE_PRESETS.default).map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, size: sz }));
+                        }}
+                        className={cn(
+                          'px-2 py-0.5 rounded-md text-[11px] font-semibold border transition',
+                          formData.size === sz
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-white hover:bg-indigo-50 text-slate-700 border-slate-200 hover:border-indigo-300'
+                        )}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* SKU & Barcode */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1594,54 +1677,85 @@ export default function StoreCatalogPage() {
               <div className="pt-2 border-t border-slate-100 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="block font-bold text-slate-800">Product Variants (Optional)</label>
-                    <p className="text-[11px] text-slate-500">e.g. Dimensions, Weight, Color, Thickness</p>
+                    <label className="block font-bold text-slate-800">
+                      Product Sizes & Variants ({variants.length})
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Support separate prices & stock for sizes like 1 kg, 5 kg, 12-inch, etc.
+                    </p>
                   </div>
                   <button
                     type="button"
-                    onClick={handleAddVariant}
-                    className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100"
+                    onClick={() => handleAddVariant()}
+                    className="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition shadow-2xs"
                   >
-                    + Add Variant
+                    + Add Size / Variant
                   </button>
                 </div>
 
-                {variants.map((v, idx) => (
-                  <div key={v.id || idx} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                    <input
-                      type="text"
-                      placeholder="Variant Name (e.g. 50kg / 25kg / 10L)"
-                      value={v.name}
-                      onChange={(e) => handleUpdateVariant(idx, 'name', e.target.value)}
-                      className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs min-w-0"
-                    />
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Price ₹"
-                        value={v.price}
-                        onChange={(e) => handleUpdateVariant(idx, 'price', Number(e.target.value))}
-                        className="w-1/2 sm:w-24 px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs font-bold min-w-0"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Variant SKU"
-                        value={v.sku || ''}
-                        onChange={(e) => handleUpdateVariant(idx, 'sku', e.target.value)}
-                        className="w-1/2 sm:w-28 px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs font-mono min-w-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVariant(idx)}
-                        className="p-1.5 text-rose-500 hover:text-rose-700 rounded hover:bg-rose-50 shrink-0"
-                        title="Remove Variant"
+                {variants.length > 0 && (
+                  <div className="space-y-2">
+                    {variants.map((v, idx) => (
+                      <div
+                        key={v.id || idx}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                              Size / Variant Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 1 kg, 5 kg, 12-inch, 1/2 inch"
+                              value={v.name}
+                              onChange={(e) => handleUpdateVariant(idx, 'name', e.target.value)}
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                              Price (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price ₹"
+                              value={v.price}
+                              onChange={(e) => handleUpdateVariant(idx, 'price', Number(e.target.value))}
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1">
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                                Stock Qty
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="Stock"
+                                value={v.stockQuantity ?? formData.stockQuantity}
+                                onChange={(e) => handleUpdateVariant(idx, 'stockQuantity', Number(e.target.value))}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(idx)}
+                              className="mt-3.5 p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 transition"
+                              title="Remove Variant"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Availability Toggle */}

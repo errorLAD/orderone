@@ -95,11 +95,12 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
 
   const fetchStoreData = async () => {
     try {
-      const bizRes = await fetch(`/api/businesses?slug=${params.slug}`);
-      const bizData = await bizRes.json();
+      // Single unified API call — replaces 3 sequential fetches
+      const sfRes = await fetch(`/api/storefront/${params.slug}?sourceType=store&channel=storefront`);
+      const sfData = await sfRes.json();
 
-      if (bizData.success && bizData.business) {
-        const biz: Business = bizData.business;
+      if (sfData.success && sfData.business) {
+        const biz: Business = sfData.business;
         setBusiness(biz);
 
         if (typeof document !== 'undefined') {
@@ -117,12 +118,8 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
           return;
         }
 
-        const [catRes, prodRes] = await Promise.all([
-          fetch(`/api/categories?businessId=${biz.id}&sourceType=store&channel=storefront`),
-          fetch(`/api/products?businessId=${biz.id}&sourceType=store&channel=storefront`),
-        ]);
-        const catData = await catRes.json();
-        const prodData = await prodRes.json();
+        const catData = { success: true, categories: sfData.categories || [] };
+        const prodData = { success: true, products: sfData.products || [] };
 
         // Fallback: If retail store has 0 products/categories but dining menu is active, route to menu
         if (
@@ -150,7 +147,8 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
 
   useEffect(() => {
     fetchStoreData();
-    const interval = setInterval(fetchStoreData, 4000);
+    // Poll every 30 s — frequent enough to reflect product changes, light enough on Supabase
+    const interval = setInterval(fetchStoreData, 30000);
     return () => clearInterval(interval);
   }, [params.slug]);
 
@@ -439,7 +437,7 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
   const designSettings = business?.settings?.storefrontDesign;
   const activeTemplate = designSettings?.templateId || 'classic';
   const activeColors = designSettings?.colors || DEFAULT_STOREFRONT_COLORS;
-  const activeCover = designSettings?.coverImageUrl;
+  const activeCover = business?.coverImageUrl || business?.settings?.coverImageUrl || designSettings?.coverImageUrl;
   const buttonTextColor = getContrastTextColor(activeColors.button);
 
   return (
@@ -533,9 +531,16 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
                         )}
                         <div>
                           <p className="font-bold text-slate-900">{product.name}</p>
-                          <p className="text-[10px] text-slate-500">
-                            {formatINR(product.salePrice || product.price)} each
-                          </p>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                            {product.size && (
+                              <span className="font-semibold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                                {product.size}
+                              </span>
+                            )}
+                            <span>
+                              {formatINR(product.salePrice || product.price)} / {product.unit || 'unit'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 

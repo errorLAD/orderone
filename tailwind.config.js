@@ -17,8 +17,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: [
-          'Plus Jakarta Sans',
-          'Inter',
+          'var(--font-plus-jakarta)',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',

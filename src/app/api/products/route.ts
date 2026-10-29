@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     if (limit && limit > 0) {
       const startIndex = (page - 1) * limit;
       products = products.slice(startIndex, startIndex + limit);
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         count: products.length,
         total,
@@ -82,14 +82,24 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
         products,
       });
+      // Only cache storefront (public) channel requests; dashboard/pos are private
+      if (channel === 'storefront') {
+        res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      }
+      return res;
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       count: products.length,
       total,
       products,
     });
+    // Only cache storefront (public) channel requests
+    if (channel === 'storefront') {
+      res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    }
+    return res;
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

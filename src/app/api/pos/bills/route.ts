@@ -144,6 +144,10 @@ export async function POST(req: NextRequest) {
       items: items.map((i: any) => ({
         productId: i.productId || undefined,
         productName: String(i.productName),
+        variantId: i.variantId || undefined,
+        variantName: i.variantName || undefined,
+        size: i.size || undefined,
+        unit: i.unit || undefined,
         unitPrice: Number(i.unitPrice),
         quantity: Number(i.quantity),
       })),

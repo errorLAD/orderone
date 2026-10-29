@@ -51,6 +51,15 @@ export default function BusinessProfilePage() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cover Photo State
+  const [currentCoverUrl, setCurrentCoverUrl] = useState<string>('');
+  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [isRemovingCover, setIsRemovingCover] = useState<boolean>(false);
+  const [isUploadingCover, setIsUploadingCover] = useState<boolean>(false);
+  const [isDraggingCover, setIsDraggingCover] = useState<boolean>(false);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+
   // Category Confirmation Modal
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
   const [pendingCategory, setPendingCategory] = useState<BusinessType | null>(null);
@@ -75,6 +84,17 @@ export default function BusinessProfilePage() {
       setSelectedLogoFile(null);
       setLogoPreviewUrl(null);
       setIsRemovingLogo(false);
+
+      const existingCover =
+        currentBusiness.coverImageUrl ||
+        currentBusiness.settings?.coverImageUrl ||
+        currentBusiness.settings?.storefrontDesign?.coverImageUrl ||
+        '';
+      setCurrentCoverUrl(existingCover);
+      setSelectedCoverFile(null);
+      setCoverPreviewUrl(null);
+      setIsRemovingCover(false);
+
       setValidationErrors({});
     }
   };
@@ -89,8 +109,11 @@ export default function BusinessProfilePage() {
       if (logoPreviewUrl && logoPreviewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(logoPreviewUrl);
       }
+      if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(coverPreviewUrl);
+      }
     };
-  }, [logoPreviewUrl]);
+  }, [logoPreviewUrl, coverPreviewUrl]);
 
   // Handle Logo File Selection
   const handleLogoFileSelect = (file: File) => {
@@ -126,6 +149,37 @@ export default function BusinessProfilePage() {
     setFeedback(null);
   };
 
+  // Handle Cover Photo File Selection
+  const handleCoverFileSelect = (file: File) => {
+    const validFormats = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+    if (!validFormats.includes(file.type.toLowerCase())) {
+      setFeedback({
+        type: 'error',
+        message: 'Unsupported image format. Please upload a PNG, JPG, or WebP cover banner.',
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFeedback({
+        type: 'error',
+        message: 'Cover banner file size exceeds 5MB limit. Please upload an image under 5MB.',
+      });
+      return;
+    }
+
+    if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreviewUrl);
+    }
+
+    const preview = URL.createObjectURL(file);
+    setSelectedCoverFile(file);
+    setCoverPreviewUrl(preview);
+    setIsRemovingCover(false);
+    setIsEditing(true);
+    setFeedback(null);
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -151,6 +205,34 @@ export default function BusinessProfilePage() {
     setSelectedLogoFile(null);
     setLogoPreviewUrl(null);
     setIsRemovingLogo(true);
+    setIsEditing(true);
+  };
+
+  const handleCoverDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingCover(true);
+  };
+
+  const handleCoverDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingCover(false);
+  };
+
+  const handleCoverDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingCover(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleCoverFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleRemoveCover = () => {
+    if (coverPreviewUrl && coverPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(coverPreviewUrl);
+    }
+    setSelectedCoverFile(null);
+    setCoverPreviewUrl(null);
+    setIsRemovingCover(true);
     setIsEditing(true);
   };
 
@@ -225,6 +307,7 @@ export default function BusinessProfilePage() {
 
     try {
       let finalLogoUrl = currentLogoUrl;
+      let finalCoverUrl = currentCoverUrl;
 
       // 1. Upload new logo to Supabase Storage if a new file was chosen
       if (selectedLogoFile) {
@@ -249,6 +332,29 @@ export default function BusinessProfilePage() {
         finalLogoUrl = '';
       }
 
+      // 1b. Upload new cover photo if a new file was chosen
+      if (selectedCoverFile) {
+        setIsUploadingCover(true);
+        const coverFormData = new FormData();
+        coverFormData.append('file', selectedCoverFile);
+        coverFormData.append('folder', 'covers');
+
+        const coverUploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: coverFormData,
+        });
+
+        const coverUploadData = await coverUploadRes.json();
+        if (!coverUploadRes.ok || !coverUploadData.success) {
+          throw new Error(coverUploadData.error || 'Failed to upload cover banner to storage');
+        }
+
+        finalCoverUrl = coverUploadData.url;
+        setIsUploadingCover(false);
+      } else if (isRemovingCover) {
+        finalCoverUrl = '';
+      }
+
       // 2. Prepare payload for updating business
       const catConfig = getCategoryConfig(category);
       const isFood = catConfig.primaryModule === 'menu';
@@ -269,10 +375,16 @@ export default function BusinessProfilePage() {
         description: description.trim(),
         type: category,
         logoUrl: finalLogoUrl || null,
+        coverImageUrl: finalCoverUrl || null,
         settings: {
           ...currentBusiness.settings,
           modules: category !== currentBusiness.type ? modules : currentBusiness.settings.modules,
           ownerName: ownerName.trim(),
+          coverImageUrl: finalCoverUrl || null,
+          storefrontDesign: {
+            ...(currentBusiness.settings?.storefrontDesign || {}),
+            coverImageUrl: finalCoverUrl || undefined,
+          },
         },
       };
 
@@ -294,6 +406,12 @@ export default function BusinessProfilePage() {
       setSelectedLogoFile(null);
       setLogoPreviewUrl(null);
       setIsRemovingLogo(false);
+
+      setCurrentCoverUrl(finalCoverUrl);
+      setSelectedCoverFile(null);
+      setCoverPreviewUrl(null);
+      setIsRemovingCover(false);
+
       setIsEditing(false);
 
       // Refresh global context
@@ -301,7 +419,7 @@ export default function BusinessProfilePage() {
 
       setFeedback({
         type: 'success',
-        message: 'Business profile and logo updated successfully across your dashboard and storefront!',
+        message: 'Business profile, logo, and cover photo updated successfully across your dashboard and storefront!',
       });
       setTimeout(() => setFeedback(null), 5000);
     } catch (err: any) {
@@ -313,6 +431,7 @@ export default function BusinessProfilePage() {
     } finally {
       setSaving(false);
       setIsUploadingLogo(false);
+      setIsUploadingCover(false);
     }
   };
 
@@ -328,6 +447,10 @@ export default function BusinessProfilePage() {
   const activeLogoToDisplay = isRemovingLogo
     ? null
     : logoPreviewUrl || currentLogoUrl || null;
+
+  const activeCoverToDisplay = isRemovingCover
+    ? null
+    : coverPreviewUrl || currentCoverUrl || null;
 
   const currentCatConfig = getCategoryConfig(category);
   const pendingCatConfig = pendingCategory ? getCategoryConfig(pendingCategory) : null;
@@ -509,6 +632,144 @@ export default function BusinessProfilePage() {
                   >
                     <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                     <span>Remove Logo</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 1b: Storefront Cover Photo & Hero Banner */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 sm:p-6 space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-sm font-black text-slate-900">Storefront Cover Photo & Hero Banner</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Upload your brand hero banner. Displayed prominently across the top of your public storefront and digital menu.
+              </p>
+            </div>
+            {activeCoverToDisplay && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Custom Cover Active
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {/* Cover Photo Preview Banner */}
+            <div className="relative group rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-900 shadow-inner">
+              {activeCoverToDisplay ? (
+                <div className="relative w-full h-36 sm:h-48 md:h-56">
+                  <img
+                    src={activeCoverToDisplay}
+                    alt={businessName || 'Storefront Cover Photo'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
+
+                  {/* Overlay branding preview */}
+                  <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white pointer-events-none">
+                    <div className="flex items-center gap-2.5">
+                      {activeLogoToDisplay && (
+                        <img
+                          src={activeLogoToDisplay}
+                          alt="Logo"
+                          className="w-10 h-10 rounded-xl object-cover border-2 border-white shadow-md bg-white"
+                        />
+                      )}
+                      <div>
+                        <span className="text-xs sm:text-sm font-black drop-shadow-md block">
+                          {businessName || 'Your Storefront Name'}
+                        </span>
+                        <span className="text-[10px] text-white/80 block drop-shadow-xs">
+                          Hero Banner Preview
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-36 sm:h-44 bg-gradient-to-r from-slate-800 via-slate-900 to-indigo-950 flex flex-col items-center justify-center p-4 text-center text-white">
+                  <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md mb-2 border border-white/10">
+                    <ImageIcon className="w-6 h-6 text-white/80" />
+                  </div>
+                  <span className="text-xs font-bold text-white/90">
+                    No custom cover photo uploaded
+                  </span>
+                  <p className="text-[11px] text-white/60 max-w-sm mt-0.5">
+                    Your storefront currently displays the default clean background. Upload a photo below to feature your kitchen, shopfront, or products.
+                  </p>
+                </div>
+              )}
+
+              {selectedCoverFile && (
+                <span className="absolute top-3 right-3 px-2.5 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full shadow-md uppercase tracking-wider">
+                  Pending Save
+                </span>
+              )}
+            </div>
+
+            {/* Cover Upload Dropzone & Actions */}
+            <div className="space-y-3">
+              <div
+                onDragOver={handleCoverDragOver}
+                onDragLeave={handleCoverDragLeave}
+                onDrop={handleCoverDrop}
+                onClick={() => coverFileInputRef.current?.click()}
+                className={cn(
+                  'border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all',
+                  isDraggingCover
+                    ? 'border-indigo-500 bg-indigo-50/50 scale-[0.99]'
+                    : 'border-slate-200 hover:border-indigo-400 hover:bg-slate-50/50'
+                )}
+              >
+                <input
+                  ref={coverFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleCoverFileSelect(e.target.files[0]);
+                    }
+                  }}
+                  className="hidden"
+                />
+
+                <div className="flex flex-col items-center justify-center">
+                  <div className="p-2.5 rounded-full bg-indigo-50 text-indigo-600 mb-2">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-800">
+                    <span className="text-indigo-600 underline">Click to upload</span> or drag and drop cover photo here
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Recommended: 1200 x 400px (3:1 aspect ratio) • PNG, JPG, WEBP, GIF (Max: 5MB)
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons for Cover */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => coverFileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{activeCoverToDisplay ? 'Replace Cover Photo' : 'Choose Cover Photo'}</span>
+                </button>
+
+                {activeCoverToDisplay && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCover}
+                    className="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50 font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                    <span>Remove Cover</span>
                   </button>
                 )}
               </div>

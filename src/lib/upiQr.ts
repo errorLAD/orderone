@@ -1,4 +1,5 @@
-import QRCode from 'qrcode';
+// NOTE: qrcode is dynamically imported only in functions that need it,
+// so storefront pages that only call buildUpiPaymentUri do NOT bundle QRCode.
 
 export interface UpiPaymentUriOptions {
   upiId: string;
@@ -34,11 +35,13 @@ export function buildUpiPaymentUri(options: UpiPaymentUriOptions): string {
 
 /**
  * Generates high-resolution PNG data URL for a UPI payment URI.
+ * qrcode is dynamically imported to avoid bundling it in storefront pages.
  */
 export async function generateUpiPaymentQrDataUrl(
   options: UpiPaymentUriOptions,
   width: number = 360
 ): Promise<{ uri: string; qrDataUrl: string }> {
+  const QRCode = (await import('qrcode')).default;
   const uri = buildUpiPaymentUri(options);
   const qrDataUrl = await QRCode.toDataURL(uri, {
     width,
@@ -55,12 +58,14 @@ export async function generateUpiPaymentQrDataUrl(
 
 /**
  * Generates high-resolution PNG data URL for a public Storefront or Menu URL.
+ * qrcode is dynamically imported to avoid bundling it in storefront pages.
  */
 export async function generateStorefrontQrDataUrl(
   storeUrl: string,
   width: number = 360,
   darkColor: string = '#2563EB'
 ): Promise<string> {
+  const QRCode = (await import('qrcode')).default;
   return QRCode.toDataURL(storeUrl, {
     width,
     margin: 2,

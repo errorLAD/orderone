@@ -301,7 +301,15 @@ export default function MenuOrdersPage() {
                   {/* Summary of Items */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
                     <div className="truncate max-w-[280px] sm:max-w-[400px]">
-                      {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
+                      {order.items
+                        .map((i) => {
+                          const portionOrSize =
+                            i.selectedVariant?.name || [i.size, i.unit].filter(Boolean).join(' ');
+                          return `${i.productName}${
+                            portionOrSize ? ` (${portionOrSize})` : ''
+                          } (x${i.quantity})`;
+                        })
+                        .join(', ')}
                     </div>
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 shrink-0">
                       <span className="capitalize">{order.fulfilmentMethod.replace('_', ' ')}</span>
@@ -382,11 +390,15 @@ export default function MenuOrdersPage() {
                         </span>
                         <span>{formatINR(item.itemTotal)}</span>
                       </div>
-                      {item.selectedVariant && (
-                        <div className="text-[11px] text-slate-600 mt-0.5">
-                          Portion: {item.selectedVariant.name}
+                      {item.selectedVariant ? (
+                        <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                          Portion / Size: {item.selectedVariant.name}
                         </div>
-                      )}
+                      ) : (item.size || item.unit) ? (
+                        <div className="text-[11px] text-slate-600 mt-0.5">
+                          Portion / Unit: {[item.size, item.unit].filter(Boolean).join(' • ')}
+                        </div>
+                      ) : null}
                       {item.selectedAddOns && item.selectedAddOns.length > 0 && (
                         <div className="text-[11px] text-orange-700 mt-0.5 font-medium">
                           Add-ons: {item.selectedAddOns.map((a) => a.name).join(', ')}
@@ -582,11 +594,15 @@ export default function MenuOrdersPage() {
                       </span>
                       <span>{formatINR(item.itemTotal)}</span>
                     </div>
-                    {item.selectedVariant && (
-                      <div className="text-[11px] text-slate-600 mt-0.5">
-                        Portion: {item.selectedVariant.name}
+                    {item.selectedVariant ? (
+                      <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                        Portion / Size: {item.selectedVariant.name}
                       </div>
-                    )}
+                    ) : (item.size || item.unit) ? (
+                      <div className="text-[11px] text-slate-600 mt-0.5">
+                        Portion / Unit: {[item.size, item.unit].filter(Boolean).join(' • ')}
+                      </div>
+                    ) : null}
                     {item.selectedAddOns && item.selectedAddOns.length > 0 && (
                       <div className="text-[11px] text-orange-700 mt-0.5 font-medium">
                         Add-ons: {item.selectedAddOns.map((a) => a.name).join(', ')}

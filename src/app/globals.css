@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,7 +32,7 @@
   body {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -133,6 +131,27 @@
 .animate-marquee-infinite:hover,
 .animate-marquee-infinite:active {
   animation-play-state: paused;
+}
+
+/* ─── Performance helpers ───────────────────────────────────────────────────── */
+
+/* GPU-accelerate heavy backdrop-blur elements (glassmorphism buttons) */
+.backdrop-blur-md,
+.backdrop-blur-sm,
+.backdrop-blur-lg {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Contain layout for product grid cards — prevents layout thrash on add-to-cart */
+.contain-layout {
+  contain: layout style;
+}
+
+/* Smooth momentum scrolling for horizontal category tabs on iOS */
+.scroll-smooth-ios {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 @media print {
