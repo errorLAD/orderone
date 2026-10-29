@@ -15,6 +15,16 @@ interface OrderOneLogoProps {
   darkBg?: boolean;
 }
 
+// Fixed pixel heights to prevent ANY layout shift or unstyled 1024px blowouts
+const PIXEL_HEIGHTS: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', number> = {
+  xs: 22,
+  sm: 28,
+  md: 34,
+  lg: 42,
+  xl: 52,
+};
+
+// Aspect ratio is 1024 / 387 = ~2.646
 export function OrderOneLogo({
   className,
   size = 'md',
@@ -24,34 +34,38 @@ export function OrderOneLogo({
   onClick,
   darkBg = false,
 }: OrderOneLogoProps) {
-  // Height mappings for exact aspect ratio (1024x387 -> 2.64:1)
-  const heightMap = {
-    xs: 'h-5',  // 20px
-    sm: 'h-7',  // 28px
-    md: 'h-8 sm:h-9',  // 32-36px
-    lg: 'h-10 sm:h-11', // 40-44px
-    xl: 'h-12 sm:h-14', // 48-56px
-  };
+  const pixelHeight = PIXEL_HEIGHTS[size] || 34;
+  const calculatedWidth = Math.round(pixelHeight * 2.646);
 
   const content = (
-    <div className={cn('inline-flex flex-col items-start justify-center select-none group', className)}>
-      <div className="flex items-center gap-1.5">
+    <div
+      className={cn('inline-flex flex-col items-start justify-center select-none group', className)}
+      style={{ maxWidth: '100%' }}
+    >
+      <div className="flex items-center gap-1.5" style={{ height: `${pixelHeight}px` }}>
         <img
           src="/logo.png"
-          alt="OrderOne.in Logo"
+          alt="OrderOne.in"
+          width={calculatedWidth}
+          height={pixelHeight}
+          style={{
+            height: `${pixelHeight}px`,
+            maxHeight: `${pixelHeight}px`,
+            width: 'auto',
+            objectFit: 'contain',
+            display: 'block',
+          }}
           className={cn(
-            heightMap[size],
-            'w-auto object-contain shrink-0 transition-transform group-hover:scale-[1.02]',
-            darkBg && 'brightness-110 drop-shadow-sm'
+            'shrink-0 transition-transform group-hover:scale-[1.02]',
+            darkBg && 'brightness-110 drop-shadow-xs'
           )}
         />
-        {/* Subtle top-level domain tag */}
         <span
           className={cn(
-            'text-[10px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded-md self-center font-mono',
+            'text-[9px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded font-mono shrink-0',
             darkBg
-              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/80'
-              : 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'
+              ? 'bg-emerald-950/90 text-emerald-400 border border-emerald-800/80'
+              : 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
           )}
         >
           .in
