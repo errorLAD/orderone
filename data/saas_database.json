@@ -566,6 +566,58 @@
   ],
   "orders": [
     {
+      "id": "ord_lqq0r97_mvtx72jt",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00102",
+      "trackingId": "2a418410d50c4e71240d6ddb",
+      "customer": {
+        "name": "Test Customer",
+        "phone": "9876543210"
+      },
+      "items": [
+        {
+          "productId": "prod_pty92a5_mvttb39z",
+          "productName": "Burger Big",
+          "price": 1,
+          "quantity": 1,
+          "unit": "portion",
+          "itemTotal": 1
+        }
+      ],
+      "subtotal": 1,
+      "tax": 0,
+      "deliveryFee": 0,
+      "discount": 0,
+      "total": 1,
+      "paymentStatus": "pending",
+      "paymentMethod": "cash",
+      "orderStatus": "new",
+      "fulfilmentMethod": "dine_in",
+      "queueToken": "M-00102",
+      "taxBreakdown": {
+        "isGstApplicable": false,
+        "gstRate": 0,
+        "isTaxInclusive": false,
+        "taxableAmount": 1,
+        "gstAmount": 0,
+        "cgst": 0,
+        "sgst": 0,
+        "igst": 0,
+        "invoiceNumber": "INV-00102"
+      },
+      "invoiceNumber": "INV-00102",
+      "statusHistory": [
+        {
+          "status": "new",
+          "timestamp": "2026-10-29T19:12:18.857Z",
+          "note": "Order placed via Digital Menu"
+        }
+      ],
+      "createdAt": "2026-10-29T19:12:18.857Z",
+      "updatedAt": "2026-10-29T19:12:18.857Z"
+    },
+    {
       "id": "ord_ab3hldb_mvtk5pdo",
       "businessId": "biz_sdu7mxo_mvs458a5",
       "sourceType": "menu",
@@ -1289,9 +1341,30 @@
       "createdAt": "2026-10-29T13:07:20.473Z",
       "calledAt": null,
       "servedAt": null
+    },
+    {
+      "id": "qtok_nag1oti_mvtx72jt",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "tokenNumber": "M-00102",
+      "sequenceNumber": 12,
+      "customerName": "Test Customer",
+      "status": "waiting",
+      "createdAt": "2026-10-29T19:12:18.857Z"
     }
   ],
   "notifications": [
+    {
+      "id": "notif_wk3l9dr_mvtx72jt",
+      "businessId": "biz_sdu7mxo_mvs458a5",
+      "sourceType": "menu",
+      "title": "New Kitchen Menu Order #M-00102",
+      "message": "Test Customer placed an order of ₹1.00 (dine_in)",
+      "orderId": "ord_lqq0r97_mvtx72jt",
+      "tokenNumber": "M-00102",
+      "isRead": false,
+      "createdAt": "2026-10-29T19:12:18.857Z"
+    },
     {
       "id": "notif_87dkl8o_mvtk5pdo",
       "businessId": "biz_sdu7mxo_mvs458a5",
@@ -1588,6 +1661,7 @@
     "biz_2cxtkds_mvqqb8vj_store": 100,
     "biz_2cxtkds_mvqqb8vj_menu": 100,
     "biz_yxqjlv9_mvqqf92r_store": 103,
-    "biz_yxqjlv9_mvqqf92r_menu": 100
+    "biz_yxqjlv9_mvqqf92r_menu": 100,
+    "biz_sdu7mxo_mvs458a5_menu": 101
   }
 }

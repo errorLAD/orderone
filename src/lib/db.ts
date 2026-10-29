@@ -1098,12 +1098,16 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
     let product: Product | null = await getProductById(itemInput.productId);
     if (!product) {
       product = cachedDb.products.find(
-        (p) => p.id === itemInput.productId && p.businessId === input.businessId && p.sourceType === input.sourceType
+        (p) => p.id === itemInput.productId && p.businessId === input.businessId
       ) || null;
     }
 
-    if (!product || product.businessId !== input.businessId || product.sourceType !== input.sourceType) {
-      throw new Error(`Product not found or unavailable for ${input.sourceType}`);
+    if (!product || product.businessId !== input.businessId) {
+      throw new Error(`Product not found or unavailable for this store`);
+    }
+
+    if (product.salesChannel === 'pos') {
+      throw new Error(`Item "${product.name}" is only available for in-store POS counter billing`);
     }
 
     if (!product.isAvailable) {
