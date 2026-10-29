@@ -273,7 +273,7 @@ export function QrCustomizationStudio({
               )}
             >
               <Type className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Frames & Logo</span>
+              <span>Header, Frames & Logo</span>
             </button>
           </div>
 
@@ -605,6 +605,78 @@ export function QrCustomizationStudio({
           {/* TAB 4: Frames & Logo */}
           {activeTab === 'frames' && (
             <div className="space-y-4">
+              {/* Upper Header Section */}
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-slate-800 block">
+                      Upper Header: Store / Restaurant Name
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Display your store name and category tagline prominently above the QR code.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={customization.showBusinessName !== false}
+                    onChange={(e) =>
+                      setCustomization({
+                        ...customization,
+                        showBusinessName: e.target.checked,
+                        templateId: 'custom',
+                      })
+                    }
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                  />
+                </div>
+
+                {customization.showBusinessName !== false && (
+                  <div className="space-y-2 pt-2 border-t border-slate-200/60">
+                    <label className="block text-[11px] font-semibold text-slate-700">
+                      Subtitle / Tagline (Under Store Name)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={40}
+                      value={customization.headerSubtitle || ''}
+                      onChange={(e) =>
+                        setCustomization({
+                          ...customization,
+                          headerSubtitle: e.target.value,
+                          templateId: 'custom',
+                        })
+                      }
+                      placeholder="e.g. DIGITAL STOREFRONT & MENU"
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 uppercase bg-white focus:ring-2 focus:ring-slate-900"
+                    />
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-slate-500">Suggestions:</span>
+                      {[
+                        'DIGITAL STOREFRONT & MENU',
+                        'SCAN • ORDER • PAY',
+                        'CONTACTLESS DINING',
+                        'OFFICIAL STORE QR',
+                      ].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() =>
+                            setCustomization({
+                              ...customization,
+                              headerSubtitle: sug,
+                              templateId: 'custom',
+                            })
+                          }
+                          className="text-[10px] font-semibold text-indigo-600 hover:underline bg-white px-2 py-0.5 rounded border border-slate-200"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Frame Style */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-2">
@@ -728,6 +800,25 @@ export function QrCustomizationStudio({
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Official Footer Branding */}
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="font-bold text-slate-800 block">
+                    Standee Footer: Powered by OrderOne.in
+                  </span>
+                  <p className="text-[11px] text-slate-500">
+                    Official verification badge with brand logo and .in tag is rendered at the bottom of the standee.
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-lg border border-slate-200 shrink-0">
+                  <span className="text-[10px] font-medium text-slate-500">Powered by</span>
+                  <img src="/logo.png" alt="OrderOne" className="h-3 w-auto object-contain" />
+                  <span className="text-[8px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1 py-0.2 rounded">
+                    .in
+                  </span>
+                </div>
               </div>
             </div>
           )}

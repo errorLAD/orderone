@@ -10,7 +10,7 @@ interface CustomQrCanvasProps {
   customization: QrCustomizationSettings;
   businessName: string;
   businessLogo?: string;
-  size?: number; // base render size (e.g. 520 for preview)
+  size?: number; // base render size (e.g. 360 for preview, 520 for standard)
   className?: string;
   onGenerated?: (dataUrl: string, canvas: HTMLCanvasElement) => void;
 }
@@ -20,16 +20,17 @@ export function CustomQrCanvas({
   customization,
   businessName,
   businessLogo,
-  size = 520,
+  size = 360,
   className,
   onGenerated,
 }: CustomQrCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [logoImg, setLogoImg] = useState<HTMLImageElement | null>(null);
+  const [orderOneLogoImg, setOrderOneLogoImg] = useState<HTMLImageElement | null>(null);
 
   const activeLogoUrl = customization.customLogoUrl || businessLogo;
 
-  // Pre-load logo image if enabled
+  // Pre-load merchant center logo image if enabled
   useEffect(() => {
     if (!customization.showLogo || !activeLogoUrl) {
       setLogoImg(null);
@@ -46,6 +47,18 @@ export function CustomQrCanvas({
     };
   }, [customization.showLogo, activeLogoUrl]);
 
+  // Pre-load OrderOne footer brand logo
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/logo.png';
+    img.onload = () => setOrderOneLogoImg(img);
+    img.onerror = () => {
+      console.warn('Failed to load OrderOne brand logo');
+      setOrderOneLogoImg(null);
+    };
+  }, []);
+
   // Main Canvas Rendering Engine
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -58,43 +71,58 @@ export function CustomQrCanvas({
       });
       const moduleCount = qr.modules.size;
 
-      // 2. Determine frame layout and overall canvas dimensions
-      const frameStyle = customization.frameStyle || 'none';
+      // 2. Determine frame layout and geometry
+      const frameStyle: QrFrameStyle = customization.frameStyle || 'bottom_banner';
       const isCard = frameStyle === 'card';
       const isBottomBanner = frameStyle === 'bottom_banner';
       const isTopBanner = frameStyle === 'top_banner';
       const isBadge = frameStyle === 'badge';
       const isSimpleBorder = frameStyle === 'simple_border';
 
-      // Internal QR code pixel size
-      const qrSize = size;
-      const margin = 28;
+      const showHeader = customization.showBusinessName !== false;
+      const displayBizName = (businessName || 'OrderOne Store').trim();
+      const displaySubtitle = (customization.headerSubtitle || 'DIGITAL STOREFRONT & MENU').trim();
 
-      let canvasW = qrSize + margin * 2;
-      let canvasH = qrSize + margin * 2;
-      let qrOffsetX = margin;
-      let qrOffsetY = margin;
+      // Canvas dimensions & proportional scaling
+      const canvasW = size;
+      const qrSize = Math.round(canvasW * 0.74);
+      const qrOffsetX = Math.round((canvasW - qrSize) / 2);
 
-      if (isCard) {
-        canvasW = qrSize + margin * 2 + 40;
-        canvasH = qrSize + margin * 2 + 160;
-        qrOffsetX = (canvasW - qrSize) / 2;
-        qrOffsetY = 100;
-      } else if (isBottomBanner) {
-        canvasH = qrSize + margin * 2 + 84;
-        qrOffsetY = margin + 10;
+      const headerH = showHeader ? 74 : 14;
+      let qrOffsetY = headerH + 8;
+
+      let bannerH = 0;
+      let bannerY = 0;
+      let bannerW = qrSize;
+      let bannerX = qrOffsetX;
+
+      if (isBottomBanner) {
+        bannerH = 42;
+        bannerY = qrOffsetY + qrSize + 12;
       } else if (isTopBanner) {
-        canvasH = qrSize + margin * 2 + 84;
-        qrOffsetY = margin + 74;
+        bannerH = 42;
+        bannerY = headerH + 6;
+        qrOffsetY = bannerY + bannerH + 12;
       } else if (isBadge) {
-        canvasH = qrSize + margin * 2 + 70;
-        qrOffsetY = margin + 10;
-      } else if (isSimpleBorder) {
-        canvasW = qrSize + margin * 2 + 20;
-        canvasH = qrSize + margin * 2 + 20;
-        qrOffsetX = (canvasW - qrSize) / 2;
-        qrOffsetY = (canvasH - qrSize) / 2;
+        bannerH = 34;
+        bannerW = Math.round(qrSize * 0.76);
+        bannerX = Math.round((canvasW - bannerW) / 2);
+        bannerY = qrOffsetY + qrSize + 12;
+      } else if (isCard) {
+        bannerH = 40;
+        bannerW = Math.round(qrSize * 0.82);
+        bannerX = Math.round((canvasW - bannerW) / 2);
+        bannerY = qrOffsetY + qrSize + 14;
       }
+
+      const footerH = 22;
+      const footerGap = bannerH > 0 ? 14 : 16;
+      const footerCenterY =
+        bannerH > 0
+          ? bannerY + bannerH + footerGap + footerH / 2
+          : qrOffsetY + qrSize + footerGap + footerH / 2;
+
+      const canvasH = Math.round(footerCenterY + footerH / 2 + 16);
 
       // Upscale for ultra-crisp high-DPI rendering
       const scale = 2;
@@ -142,36 +170,91 @@ export function CustomQrCanvas({
         }
       };
 
-      // 3. Background Fill
+      // 3. Colors & Luminance calculation
       const bg = isValidHexColor(customization.backgroundColor) ? customization.backgroundColor : '#FFFFFF';
       const fg = isValidHexColor(customization.foregroundColor) ? customization.foregroundColor : '#4F46E5';
       const eyeColor = isValidHexColor(customization.eyeColor) ? customization.eyeColor : fg;
       const frameColor = isValidHexColor(customization.frameColor) ? customization.frameColor : fg;
 
-      // Base Canvas Background
+      // Perceived background brightness
+      const isDarkBg = (() => {
+        const c = bg.replace('#', '');
+        const r = parseInt(c.substring(0, 2), 16) || 0;
+        const g = parseInt(c.substring(2, 4), 16) || 0;
+        const b = parseInt(c.substring(4, 6), 16) || 0;
+        return (r * 0.299 + g * 0.587 + b * 0.114) < 130;
+      })();
+
+      // Base Canvas Background Fill
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // If card style, draw outer card container with subtle shadow & border
-      if (isCard) {
-        ctx.fillStyle = bg;
-        drawRoundRect(10, 10, canvasW - 20, canvasH - 20, 24, bg, '#E2E8F0', 2);
+      // Standee Outer Rounded Border Frame
+      const outerBorderColor = isDarkBg ? 'rgba(255, 255, 255, 0.14)' : 'rgba(15, 23, 42, 0.08)';
+      drawRoundRect(6, 6, canvasW - 12, canvasH - 12, 22, undefined, outerBorderColor, 1.5);
 
-        // Header: Business Name & Subtext
-        ctx.textAlign = 'center';
-        ctx.fillStyle = fg;
-        ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
-        const displayBizName = businessName ? businessName.slice(0, 32) : 'Storefront';
-        ctx.fillText(displayBizName, canvasW / 2, 50);
-
-        ctx.fillStyle = '#64748B';
-        ctx.font = '500 12px system-ui, -apple-system, sans-serif';
-        ctx.fillText('Order Directly • Zero Registration Required', canvasW / 2, 74);
-      } else if (isSimpleBorder) {
-        drawRoundRect(10, 10, canvasW - 20, canvasH - 20, 20, undefined, frameColor, 3);
+      if (isSimpleBorder) {
+        drawRoundRect(10, 10, canvasW - 20, canvasH - 20, 20, undefined, frameColor, 2.5);
+      } else if (isCard) {
+        drawRoundRect(
+          8,
+          8,
+          canvasW - 16,
+          canvasH - 16,
+          22,
+          undefined,
+          isDarkBg ? 'rgba(255, 255, 255, 0.22)' : '#CBD5E1',
+          2
+        );
       }
 
-      // 4. Calculate QR module positions
+      // 4. Upper Header (Store / Hotel / Restaurant Name & Subtitle)
+      if (showHeader) {
+        // Business Name with smart length-based font scaling
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isDarkBg ? '#FFFFFF' : '#0F172A';
+
+        let titleFontSize = 20;
+        if (displayBizName.length > 28) {
+          titleFontSize = 14;
+        } else if (displayBizName.length > 20) {
+          titleFontSize = 16;
+        } else if (displayBizName.length > 14) {
+          titleFontSize = 18;
+        }
+
+        ctx.font = `800 ${titleFontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillText(displayBizName.toUpperCase(), canvasW / 2, 28);
+
+        // Subtitle / Tagline
+        ctx.fillStyle = isDarkBg ? '#94A3B8' : '#64748B';
+        ctx.font = '700 9.5px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(displaySubtitle.toUpperCase(), canvasW / 2, 48);
+
+        // Decorative Hairline Accent Divider with Center Diamond
+        const divY = 62;
+        const divHalfW = 60;
+        ctx.strokeStyle = isDarkBg ? 'rgba(255, 255, 255, 0.18)' : 'rgba(15, 23, 42, 0.12)';
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(canvasW / 2 - divHalfW, divY);
+        ctx.lineTo(canvasW / 2 - 12, divY);
+        ctx.stroke();
+
+        ctx.fillStyle = eyeColor;
+        ctx.beginPath();
+        ctx.arc(canvasW / 2, divY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(canvasW / 2 + 12, divY);
+        ctx.lineTo(canvasW / 2 + divHalfW, divY);
+        ctx.stroke();
+      }
+
+      // 5. Calculate QR module positions
       const cellSize = qrSize / moduleCount;
 
       // Check if coordinate is inside one of the 3 Corner Finder Patterns (7x7 modules)
@@ -190,7 +273,7 @@ export function CustomQrCanvas({
         return r >= centerStart && r <= centerEnd && c >= centerStart && c <= centerEnd;
       };
 
-      // 5. Draw QR Data Modules
+      // 6. Draw QR Data Modules
       ctx.fillStyle = fg;
       const dotStyle: QrDotStyle = customization.dotStyle || 'rounded';
 
@@ -235,7 +318,6 @@ export function CustomQrCanvas({
             ctx.closePath();
             ctx.fill();
           } else if (dotStyle === 'classy') {
-            // Connected flowing block
             const pad = cellSize * 0.06;
             drawRoundRect(
               cellX + pad,
@@ -249,7 +331,7 @@ export function CustomQrCanvas({
         }
       }
 
-      // 6. Draw Custom Corner Eyes (3 Finder Patterns: Top-Left, Top-Right, Bottom-Left)
+      // 7. Draw Custom Corner Eyes (3 Finder Patterns: Top-Left, Top-Right, Bottom-Left)
       const eyeStyle: QrEyeStyle = customization.eyeStyle || 'rounded';
 
       const drawEye = (originX: number, originY: number, style: QrEyeStyle) => {
@@ -257,7 +339,6 @@ export function CustomQrCanvas({
         const innerSize = 3 * cellSize;
         const innerOffset = 2 * cellSize;
 
-        // Outer 7x7 Ring
         ctx.lineWidth = cellSize;
         ctx.strokeStyle = eyeColor;
 
@@ -290,7 +371,6 @@ export function CustomQrCanvas({
             eyeColor
           );
         } else if (style === 'circle') {
-          // Circular Outer Ring
           ctx.beginPath();
           ctx.arc(
             originX + outerSize / 2,
@@ -301,7 +381,6 @@ export function CustomQrCanvas({
           );
           ctx.stroke();
 
-          // Circular Center Dot
           ctx.beginPath();
           ctx.arc(
             originX + outerSize / 2,
@@ -313,7 +392,6 @@ export function CustomQrCanvas({
           ctx.fillStyle = eyeColor;
           ctx.fill();
         } else if (style === 'leaf') {
-          // Leaf style: curved opposite corners
           ctx.beginPath();
           const ox = originX + cellSize / 2;
           const oy = originY + cellSize / 2;
@@ -331,7 +409,6 @@ export function CustomQrCanvas({
           ctx.closePath();
           ctx.stroke();
 
-          // Center leaf
           drawRoundRect(
             originX + innerOffset,
             originY + innerOffset,
@@ -350,13 +427,12 @@ export function CustomQrCanvas({
       // Bottom-Left Eye
       drawEye(qrOffsetX, qrOffsetY + (moduleCount - 7) * cellSize, eyeStyle);
 
-      // 7. Draw Center Business Logo (if enabled)
+      // 8. Draw Center Business Logo (if enabled)
       if (customization.showLogo) {
         const logoZoneSize = (centerEnd - centerStart + 0.4) * cellSize;
         const logoX = qrOffsetX + centerStart * cellSize - cellSize * 0.2;
         const logoY = qrOffsetY + centerStart * cellSize - cellSize * 0.2;
 
-        // Protective background badge (clean white + frame color ring)
         ctx.save();
         drawRoundRect(
           logoX,
@@ -370,7 +446,6 @@ export function CustomQrCanvas({
         );
 
         if (logoImg) {
-          // Clip inside badge
           ctx.beginPath();
           const padding = logoZoneSize * 0.12;
           const imgW = logoZoneSize - padding * 2;
@@ -386,8 +461,7 @@ export function CustomQrCanvas({
           ctx.clip();
           ctx.drawImage(logoImg, logoX + padding, logoY + padding, imgW, imgH);
         } else {
-          // Monogram initial fallback
-          const initial = businessName ? businessName.charAt(0).toUpperCase() : 'O';
+          const initial = displayBizName ? displayBizName.charAt(0).toUpperCase() : 'O';
           ctx.fillStyle = fg;
           ctx.font = `bold ${Math.round(logoZoneSize * 0.48)}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
@@ -397,63 +471,95 @@ export function CustomQrCanvas({
         ctx.restore();
       }
 
-      // 8. Draw Frame Call-to-Action Elements
-      const frameText = customization.frameText || 'SCAN TO ORDER';
+      // 9. Draw Frame Call-to-Action Elements
+      const frameText = (customization.frameText || 'SCAN TO ORDER').toUpperCase();
 
       if (isBottomBanner) {
-        const bannerW = qrSize;
-        const bannerH = 46;
-        const bannerX = qrOffsetX;
-        const bannerY = qrOffsetY + qrSize + 16;
-
-        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 14, frameColor);
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
-        ctx.fillText(`⚡ ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
-      } else if (isTopBanner) {
-        const bannerW = qrSize;
-        const bannerH = 46;
-        const bannerX = qrOffsetX;
-        const bannerY = 16;
-
-        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 14, frameColor);
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
-        ctx.fillText(`▼ ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
-      } else if (isBadge) {
-        const badgeW = qrSize * 0.72;
-        const badgeH = 38;
-        const badgeX = (canvasW - badgeW) / 2;
-        const badgeY = qrOffsetY + qrSize + 16;
-
-        drawRoundRect(badgeX, badgeY, badgeW, badgeH, 19, frameColor);
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-        ctx.fillText(`📷 ${frameText}`, badgeX + badgeW / 2, badgeY + badgeH / 2);
-      } else if (isCard) {
-        // Bottom badge of the card
-        const cardPillW = qrSize * 0.75;
-        const cardPillH = 40;
-        const cardPillX = (canvasW - cardPillW) / 2;
-        const cardPillY = qrOffsetY + qrSize + 20;
-
-        drawRoundRect(cardPillX, cardPillY, cardPillW, cardPillH, 20, frameColor);
-
+        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 12, frameColor);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#FFFFFF';
         ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-        ctx.fillText(`⚡ ${frameText}`, cardPillX + cardPillW / 2, cardPillY + cardPillH / 2);
+        ctx.fillText(`⚡ ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
+      } else if (isTopBanner) {
+        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 12, frameColor);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+        ctx.fillText(`▼ ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
+      } else if (isBadge) {
+        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 17, frameColor);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 12.5px system-ui, -apple-system, sans-serif';
+        ctx.fillText(`📷 ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
+      } else if (isCard) {
+        drawRoundRect(bannerX, bannerY, bannerW, bannerH, 18, frameColor);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13.5px system-ui, -apple-system, sans-serif';
+        ctx.fillText(`⚡ ${frameText}`, bannerX + bannerW / 2, bannerY + bannerH / 2);
       }
+
+      // 10. Footer: Official "Powered by OrderOne.in" branding
+      const footerText = 'Powered by';
+      ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+      const textMetrics = ctx.measureText(footerText);
+      const textW = textMetrics.width;
+
+      const logoH = 14;
+      const logoW = Math.round(logoH * 2.646); // ~37px (aspect ratio of 1024x387)
+      const inBadgeW = 20;
+      const inBadgeH = 13;
+      const spacing = 5;
+
+      const totalFooterW = textW + spacing + logoW + spacing + inBadgeW;
+      const footerStartX = Math.round((canvasW - totalFooterW) / 2);
+
+      // A. "Powered by" text
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = isDarkBg ? '#94A3B8' : '#64748B';
+      ctx.fillText(footerText, footerStartX, footerCenterY);
+
+      // B. OrderOne Brand Logo
+      const logoX = footerStartX + textW + spacing;
+      const logoY = Math.round(footerCenterY - logoH / 2);
+
+      if (isDarkBg) {
+        // Protective clean white pill on dark backgrounds for sharp contrast
+        drawRoundRect(logoX - 3, logoY - 2, logoW + 6, logoH + 4, 3, '#FFFFFF');
+      }
+
+      if (orderOneLogoImg) {
+        ctx.drawImage(orderOneLogoImg, logoX, logoY, logoW, logoH);
+      } else {
+        ctx.font = 'bold 11px system-ui, sans-serif';
+        ctx.fillStyle = isDarkBg ? '#FFFFFF' : '#0F172A';
+        ctx.fillText('OrderOne', logoX, footerCenterY);
+      }
+
+      // C. ".in" Tag Pill
+      const inX = logoX + logoW + spacing;
+      const inY = Math.round(footerCenterY - inBadgeH / 2);
+      drawRoundRect(
+        inX,
+        inY,
+        inBadgeW,
+        inBadgeH,
+        3,
+        isDarkBg ? '#064E3B' : '#ECFDF5',
+        isDarkBg ? '#047857' : '#A7F3D0',
+        1
+      );
+      ctx.font = '800 8.5px monospace';
+      ctx.fillStyle = isDarkBg ? '#34D399' : '#065F46';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('.in', inX + inBadgeW / 2, footerCenterY);
 
       // Notify parent component with data URL & canvas reference
       const dataUrl = canvas.toDataURL('image/png');
@@ -468,6 +574,7 @@ export function CustomQrCanvas({
     customization,
     businessName,
     logoImg,
+    orderOneLogoImg,
     size,
     onGenerated,
   ]);
@@ -516,48 +623,52 @@ export async function downloadQrPdf({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(24);
   doc.setTextColor(15, 23, 42); // slate-900
-  doc.text(businessName || 'OrderOne Storefront', pageWidth / 2, 32, { align: 'center' });
+  doc.text((businessName || 'OrderOne Storefront').toUpperCase(), pageWidth / 2, 32, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(100, 116, 139); // slate-500
   doc.text('Official Contactless Digital Menu & Storefront', pageWidth / 2, 40, { align: 'center' });
 
-  // 3. Render High-Resolution QR Code in Center
+  // 3. Render High-Resolution Standee QR Card in Center (preserving natural aspect ratio)
   const qrDataUrl = canvas.toDataURL('image/png');
-  const qrImageSize = 130; // 130mm x 130mm
-  const qrX = (pageWidth - qrImageSize) / 2;
-  const qrY = 56;
+  const canvasAspect = canvas.width / canvas.height;
+  const imgW = 125;
+  const imgH = imgW / canvasAspect;
+  const imgX = (pageWidth - imgW) / 2;
+  const imgY = 50;
 
-  doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrImageSize, qrImageSize);
+  doc.addImage(qrDataUrl, 'PNG', imgX, imgY, imgW, imgH);
 
-  // 4. Instructions
+  // 4. Instructions below card
+  const instrStartY = imgY + imgH + 12;
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(79, 70, 229); // indigo-600
-  doc.text(frameText.toUpperCase(), pageWidth / 2, qrY + qrImageSize + 14, { align: 'center' });
+  doc.text(frameText.toUpperCase(), pageWidth / 2, instrStartY, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setTextColor(71, 85, 105); // slate-600
   doc.text(
     '1. Open your smartphone camera or any QR scanner app.',
     pageWidth / 2,
-    qrY + qrImageSize + 24,
+    instrStartY + 8,
     { align: 'center' }
   );
   doc.text(
     '2. Point at the QR code above to instantly view the menu & order.',
     pageWidth / 2,
-    qrY + qrImageSize + 30,
+    instrStartY + 14,
     { align: 'center' }
   );
 
   // Direct URL
   doc.setFont('courier', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
-  doc.text(targetUrl, pageWidth / 2, qrY + qrImageSize + 40, { align: 'center' });
+  doc.text(targetUrl, pageWidth / 2, instrStartY + 23, { align: 'center' });
 
   // 5. Footer Branding
   doc.setDrawColor(241, 245, 249);
@@ -570,6 +681,6 @@ export async function downloadQrPdf({
     align: 'center',
   });
 
-  const slug = businessName.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'storefront';
+  const slug = (businessName || 'storefront').toLowerCase().replace(/[^a-z0-9]/g, '-') || 'storefront';
   doc.save(`${slug}-qr-print.pdf`);
 }

@@ -20,6 +20,7 @@ export const DEFAULT_QR_CUSTOMIZATION: QrCustomizationSettings = {
   frameColor: '#4F46E5',
   showLogo: true,
   showBusinessName: true,
+  headerSubtitle: 'DIGITAL STOREFRONT & MENU',
 };
 
 export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
@@ -40,6 +41,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#4F46E5',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'DIGITAL STOREFRONT & MENU',
     },
   },
   {
@@ -59,6 +61,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#D97706',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'FINE DINING & DIGITAL MENU',
     },
   },
   {
@@ -78,6 +81,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#DC2626',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'CAFÉ & FOOD MENU',
     },
   },
   {
@@ -97,6 +101,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#059669',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'FRESH DIGITAL STORE',
     },
   },
   {
@@ -116,6 +121,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#0284C7',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'OFFICIAL DIGITAL STOREFRONT',
     },
   },
   {
@@ -135,6 +141,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#111827',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'CONTACTLESS STOREFRONT',
     },
   },
   {
@@ -154,6 +161,7 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       frameColor: '#EA580C',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'BAKERY & CONFECTIONERY',
     },
   },
   {
@@ -168,11 +176,12 @@ export const QR_PRESET_TEMPLATES: QrPresetTemplate[] = [
       eyeColor: '#5B21B6',
       dotStyle: 'rounded',
       eyeStyle: 'circle',
-      frameStyle: 'badge',
-      frameText: 'ROOM DINING MENU',
+      frameStyle: 'bottom_banner',
+      frameText: 'IN-ROOM DINING',
       frameColor: '#7C3AED',
       showLogo: true,
       showBusinessName: true,
+      headerSubtitle: 'HOTEL & IN-ROOM DINING',
     },
   },
 ];

@@ -80,6 +80,7 @@ export interface QrCustomizationSettings {
   showLogo: boolean;
   customLogoUrl?: string;
   showBusinessName: boolean;
+  headerSubtitle?: string;
   updatedAt?: string;
 }
 

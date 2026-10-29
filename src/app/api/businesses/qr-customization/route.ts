@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
           showLogo: row.show_logo !== false,
           customLogoUrl: row.custom_logo_url || undefined,
           showBusinessName: row.show_business_name !== false,
+          headerSubtitle: row.header_subtitle || business.settings?.qrCustomization?.headerSubtitle || 'DIGITAL STOREFRONT & MENU',
           updatedAt: row.updated_at,
         };
       } else if (business.settings?.qrCustomization) {
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
       showLogo,
       customLogoUrl,
       showBusinessName,
+      headerSubtitle,
     } = body;
 
     if (!businessId) {
@@ -181,6 +183,10 @@ export async function POST(req: NextRequest) {
 
     const cleanShowLogo = showLogo !== false;
     const cleanShowBusinessName = showBusinessName !== false;
+    const cleanHeaderSubtitle =
+      typeof headerSubtitle === 'string' && headerSubtitle.trim().length > 0
+        ? headerSubtitle.trim().slice(0, 60)
+        : 'DIGITAL STOREFRONT & MENU';
     const cleanCustomLogoUrl =
       typeof customLogoUrl === 'string' && customLogoUrl.trim().length > 0
         ? customLogoUrl.trim()
@@ -201,6 +207,7 @@ export async function POST(req: NextRequest) {
       showLogo: cleanShowLogo,
       customLogoUrl: cleanCustomLogoUrl,
       showBusinessName: cleanShowBusinessName,
+      headerSubtitle: cleanHeaderSubtitle,
       updatedAt: now,
     };
 
@@ -210,11 +217,11 @@ export async function POST(req: NextRequest) {
         `INSERT INTO public.business_qr_customizations (
           business_id, template_id, foreground_color, background_color, eye_color,
           dot_style, eye_style, frame_style, frame_text, frame_color,
-          show_logo, custom_logo_url, show_business_name, updated_at
+          show_logo, custom_logo_url, show_business_name, header_subtitle, updated_at
         ) VALUES (
           $1, $2, $3, $4, $5,
           $6, $7, $8, $9, $10,
-          $11, $12, $13, NOW()
+          $11, $12, $13, $14, NOW()
         )
         ON CONFLICT (business_id) DO UPDATE SET
           template_id = EXCLUDED.template_id,
@@ -229,6 +236,7 @@ export async function POST(req: NextRequest) {
           show_logo = EXCLUDED.show_logo,
           custom_logo_url = EXCLUDED.custom_logo_url,
           show_business_name = EXCLUDED.show_business_name,
+          header_subtitle = EXCLUDED.header_subtitle,
           updated_at = NOW();`,
         [
           business.id,
@@ -244,6 +252,7 @@ export async function POST(req: NextRequest) {
           updatedCustomization.showLogo,
           updatedCustomization.customLogoUrl || null,
           updatedCustomization.showBusinessName,
+          updatedCustomization.headerSubtitle,
         ]
       );
     } catch (pgErr) {
