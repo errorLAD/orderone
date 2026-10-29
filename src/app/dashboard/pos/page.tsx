@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Calculator,
+  Edit2,
   Search,
   Plus,
   Minus,
@@ -755,15 +756,17 @@ export default function PosBillingPage() {
                       key={product.id}
                       onClick={() => {
                         if (isOutOfStock) return;
-                        handleOpenProductEntry(product);
+                        const defaultVariant =
+                          product.variants && product.variants.length > 0 ? product.variants[0] : undefined;
+                        handleAddToCart(product, defaultVariant);
                       }}
                       className={cn(
                         'p-2.5 rounded-2xl border text-left transition flex flex-col justify-between relative select-none group',
                         isOutOfStock
                           ? 'opacity-65 bg-slate-50 border-slate-200 cursor-not-allowed'
                           : productInCartCount > 0
-                          ? 'border-indigo-500 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20 cursor-pointer'
-                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs cursor-pointer'
+                          ? 'border-indigo-500 bg-indigo-50/40 shadow-xs ring-2 ring-indigo-500/20 cursor-pointer active:scale-[0.98]'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs cursor-pointer active:scale-[0.98]'
                       )}
                     >
                       {/* Product Item Photo */}
@@ -852,17 +855,17 @@ export default function PosBillingPage() {
                                   disabled={vOutOfStock}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (!vOutOfStock) handleOpenProductEntry(product, v);
+                                    if (!vOutOfStock) handleAddToCart(product, v);
                                   }}
                                   className={cn(
-                                    'px-1.5 py-0.5 rounded text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer',
+                                    'px-1.5 py-0.5 rounded text-[10px] font-bold border transition flex items-center gap-1 cursor-pointer active:scale-95',
                                     vOutOfStock
                                       ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through'
                                       : vInCart
                                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
                                       : 'bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border-indigo-200/70'
                                   )}
-                                  title={vOutOfStock ? 'Out of stock' : `Configure ${v.name} (${formatINR(v.price)})`}
+                                  title={vOutOfStock ? 'Out of stock' : `Add ${v.name} (${formatINR(v.price)})`}
                                 >
                                   <span>{v.name}</span>
                                   <span className="opacity-80 font-normal">({formatINR(v.price)})</span>
@@ -886,9 +889,20 @@ export default function PosBillingPage() {
                           </div>
 
                           <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenProductEntry(product);
+                              }}
+                              className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer opacity-70 hover:opacity-100"
+                              title="Custom price / quantity keypad"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
                             <span
                               className={cn(
-                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-0.5 cursor-pointer',
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold transition flex items-center gap-0.5 cursor-pointer active:scale-95 select-none',
                                 isOutOfStock
                                   ? 'text-slate-400'
                                   : productInCartCount > 0
