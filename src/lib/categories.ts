@@ -196,7 +196,6 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
     supportedUnits: ['portion', 'plate', 'half', 'full', 'piece', 'set', 'glass', 'cup', 'bottle', 'ml', 'litre', 'kg', 'gram'],
     starterCategories: ['Starters & Appetizers', 'Main Course', 'Breads & Rice', 'Desserts & Beverages'],
     starterItems: [
-      { name: 'Paneer Butter Masala', categoryName: 'Main Course', price: 220, isVegetarian: true, unit: 'portion', description: 'Rich creamy cottage cheese curry with butter makhani gravy' },
       { name: 'Butter Tandoori Roti', categoryName: 'Breads & Rice', price: 25, isVegetarian: true, unit: 'piece', description: 'Crisp whole wheat tandoori flatbread with dollop of butter' },
       { name: 'Crispy Veg Spring Rolls (6 Pcs)', categoryName: 'Starters & Appetizers', price: 160, isVegetarian: true, unit: 'plate', description: 'Crisp rolls with sweet chilli dip and shredded cabbage' },
       { name: 'Gulab Jamun (2 Pcs)', categoryName: 'Desserts & Beverages', price: 70, isVegetarian: true, unit: 'portion', description: 'Warm khoya dumplings in cardamom saffron syrup' },
@@ -233,7 +232,6 @@ export const BUSINESS_CATEGORIES: BusinessCategoryConfig[] = [
     starterCategories: ['Breakfast & Morning Specials', 'Soups & Starters', 'Main Course & Thalis', 'Breads & Rice', 'Beverages & Minibar', 'Desserts & Late Night'],
     starterItems: [
       { name: 'Executive Club Sandwich with Fries', categoryName: 'Breakfast & Morning Specials', price: 210, isVegetarian: true, unit: 'plate', description: 'Triple-decker toasted sandwich with coleslaw, cheese, and golden fries' },
-      { name: 'Paneer Butter Masala with 2 Naan', categoryName: 'Main Course & Thalis', price: 280, isVegetarian: true, unit: 'set', description: 'Rich creamy paneer butter masala served with two crisp butter tandoori naans' },
       { name: 'Fresh Mint Lime Soda', categoryName: 'Beverages & Minibar', price: 90, isVegetarian: true, unit: 'glass', description: 'Chilled sparkling soda infused with fresh garden mint and lime juice' },
       { name: 'Hot Gulab Jamun with Ice Cream', categoryName: 'Desserts & Late Night', price: 120, isVegetarian: true, unit: 'portion', description: 'Two warm mawa gulab jamuns served alongside creamy vanilla bean ice cream' },
     ],

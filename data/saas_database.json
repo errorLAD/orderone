@@ -478,29 +478,6 @@
       "updatedAt": "2026-10-27T13:39:47.546Z"
     },
     {
-      "id": "prod_bqcd9oq_mvs45f0l",
-      "businessId": "biz_sdu7mxo_mvs458a5",
-      "categoryId": null,
-      "sourceType": "menu",
-      "name": "Paneer Butter Masala",
-      "description": "Rich creamy cottage cheese curry with butter makhani gravy",
-      "price": 220,
-      "unit": "portion",
-      "minOrderQty": 1,
-      "stockQuantity": 44,
-      "lowStockThreshold": 5,
-      "isAvailable": true,
-      "salesChannel": "both",
-      "sortOrder": 0,
-      "dietaryFlags": {
-        "isVegetarian": true
-      },
-      "variants": [],
-      "addOns": [],
-      "createdAt": "2026-10-28T12:51:26.661Z",
-      "updatedAt": "2026-10-28T12:51:26.661Z"
-    },
-    {
       "id": "prod_khfq94r_mvtt628q",
       "businessId": "biz_sdu7mxo_mvs458a5",
       "categoryId": "cat_92gae5e_mvtjaqw6",
@@ -509,7 +486,7 @@
       "price": 340,
       "unit": "half",
       "minOrderQty": 1,
-      "stockQuantity": 24,
+      "stockQuantity": 23,
       "lowStockThreshold": 5,
       "isAvailable": true,
       "salesChannel": "both",
