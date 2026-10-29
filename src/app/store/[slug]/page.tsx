@@ -463,7 +463,7 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
 
       {/* Floating Bottom Bar when Cart has items */}
       {cartCount > 0 && !isCartOpen && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
+        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto bottom-safe">
           <button
             onClick={() => setIsCartOpen(true)}
             style={{
