@@ -19,7 +19,8 @@ const dateInput = (date: Date) => {
 };
 
 export default function CalculatorPage() {
-  const { currentBusiness, currentRole } = useApp();
+  const { currentBusiness, currentRole, currentUser } = useApp();
+  const isBusinessOwner = (currentUser?.role || currentRole) === 'owner';
   const [tab, setTab] = useState<'billing' | 'history' | 'sales'>('billing');
   const [items, setItems] = useState<DraftItem[]>([emptyItem()]);
   const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
@@ -122,7 +123,7 @@ export default function CalculatorPage() {
     finally { setSaving(false); }
   };
 
-  if (currentRole !== 'owner') {
+  if (!isBusinessOwner) {
     return <main className="mx-auto max-w-3xl p-5 sm:p-8"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">The Calculator is available to the business owner.</div></main>;
   }
 

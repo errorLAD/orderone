@@ -58,7 +58,8 @@ interface NavSection {
 
 export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { currentBusiness, currentRole } = useApp();
+  const { currentBusiness, currentRole, currentUser } = useApp();
+  const isBusinessOwner = (currentUser?.role || currentRole) === 'owner';
 
   const isStoreEnabled = currentBusiness?.settings?.modules?.store ?? true;
   const isMenuEnabled = currentBusiness?.settings?.modules?.menu ?? true;
@@ -183,7 +184,7 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
               icon: ReceiptText,
             }]
           : []),
-        ...(currentRole === 'owner'
+        ...(isBusinessOwner
           ? [{
               name: 'Calculator',
               href: '/dashboard/calculator',
