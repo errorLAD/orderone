@@ -827,6 +827,35 @@ export function QrCustomizationStudio({
                             placeholder={businessLogo || 'https://orderone.in/logo.png'}
                             className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono text-slate-800 bg-white"
                           />
+                          <div className="pt-2">
+                            <div className="flex items-center justify-between gap-3 mb-1">
+                              <label htmlFor="header-logo-scale" className="text-[11px] font-semibold text-slate-700">
+                                Logo size
+                              </label>
+                              <span className="text-[11px] font-bold text-indigo-700">
+                                {customization.headerLogoScale ?? 100}%
+                              </span>
+                            </div>
+                            <input
+                              id="header-logo-scale"
+                              type="range"
+                              min="50"
+                              max="250"
+                              step="10"
+                              value={customization.headerLogoScale ?? 100}
+                              onChange={(e) => setCustomization({
+                                ...customization,
+                                headerLogoScale: Number(e.target.value),
+                                templateId: 'custom',
+                              })}
+                              className="w-full accent-indigo-600"
+                              aria-label="Adjust header brand logo size"
+                            />
+                            <div className="flex justify-between text-[10px] text-slate-400">
+                              <span>Smaller</span>
+                              <span>Larger</span>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

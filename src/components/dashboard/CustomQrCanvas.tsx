@@ -108,6 +108,11 @@ export function CustomQrCanvas({
       const displayBizName = (customization.headerTitle || businessName || '').trim();
       const displaySubtitle = (customization.headerSubtitle || '').trim();
       const hasHeaderLogo = customization.showHeaderLogo === true && !!headerLogoImg;
+      const requestedHeaderLogoScale = Number(customization.headerLogoScale ?? 100);
+      const headerLogoScale = Number.isFinite(requestedHeaderLogoScale)
+        ? Math.min(2.5, Math.max(0.5, requestedHeaderLogoScale / 100))
+        : 1;
+      const headerLogoHeight = Math.min(Math.round(size * 0.22), Math.round(26 * headerLogoScale));
 
       // Table / Room badge label (from customization or props)
       const badgeLabel = (
@@ -121,9 +126,9 @@ export function CustomQrCanvas({
       let headerH = 14;
       if (showHeader && (hasHeaderLogo || (showTitle && displayBizName) || displaySubtitle)) {
         if (hasHeaderLogo && showTitle && displayBizName) {
-          headerH = 96;
+          headerH = Math.max(96, headerLogoHeight + 70);
         } else if (hasHeaderLogo) {
-          headerH = 68;
+          headerH = Math.max(68, headerLogoHeight + 42);
         } else if (showTitle && displayBizName) {
           headerH = 74;
         } else {
@@ -260,9 +265,9 @@ export function CustomQrCanvas({
 
         // A. Optional Header Logo
         if (hasHeaderLogo && headerLogoImg) {
-          const hLogoH = 26;
+          const hLogoH = headerLogoHeight;
           const hAspect = headerLogoImg.width / headerLogoImg.height;
-          const hLogoW = Math.min(Math.round(hLogoH * hAspect), 120);
+          const hLogoW = Math.min(Math.round(hLogoH * hAspect), Math.round(canvasW * 0.74));
           const hLogoX = Math.round((canvasW - hLogoW) / 2);
 
           ctx.save();

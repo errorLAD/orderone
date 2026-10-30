@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
           headerSubtitle: row.header_subtitle || business.settings?.qrCustomization?.headerSubtitle || 'DIGITAL STOREFRONT & MENU',
           showHeaderLogo: row.show_header_logo === true,
           headerLogoUrl: row.header_logo_url || business.settings?.qrCustomization?.headerLogoUrl || undefined,
+          headerLogoScale: business.settings?.qrCustomization?.headerLogoScale ?? 100,
           updatedAt: row.updated_at,
         };
       } else if (business.settings?.qrCustomization) {
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
       headerSubtitle,
       showHeaderLogo,
       headerLogoUrl,
+      headerLogoScale,
     } = body;
 
     if (!businessId) {
@@ -213,6 +215,10 @@ export async function POST(req: NextRequest) {
         ? headerSubtitle.trim().slice(0, 60)
         : 'DIGITAL STOREFRONT & MENU';
     const cleanShowHeaderLogo = showHeaderLogo === true;
+    const parsedHeaderLogoScale = Number(headerLogoScale);
+    const cleanHeaderLogoScale = Number.isFinite(parsedHeaderLogoScale)
+      ? Math.min(250, Math.max(50, Math.round(parsedHeaderLogoScale)))
+      : 100;
     const cleanHeaderLogoUrl =
       typeof headerLogoUrl === 'string' && headerLogoUrl.trim().length > 0
         ? headerLogoUrl.trim()
@@ -244,6 +250,7 @@ export async function POST(req: NextRequest) {
       headerSubtitle: cleanHeaderSubtitle,
       showHeaderLogo: cleanShowHeaderLogo,
       headerLogoUrl: cleanHeaderLogoUrl,
+      headerLogoScale: cleanHeaderLogoScale,
       updatedAt: now,
     };
 
