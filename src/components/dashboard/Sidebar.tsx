@@ -175,6 +175,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           href: '/dashboard/pos',
           icon: Calculator,
         },
+        ...(isMenuEnabled
+          ? [{
+              name: menuSection.ordersName,
+              href: '/dashboard/menu/orders',
+              icon: ReceiptText,
+            }]
+          : []),
       ],
     },
 
@@ -186,11 +193,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             title: menuSection.title,
             collapsible: true,
             items: [
-              {
-                name: menuSection.ordersName,
-                href: '/dashboard/menu/orders',
-                icon: ReceiptText,
-              },
               ...(isHotel
                 ? [
                     {
