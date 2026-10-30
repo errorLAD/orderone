@@ -40,6 +40,10 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  html.dashboard-text-90 {
+    font-size: 90%;
+  }
+
   * {
     border-color: #e2e8f0;
     box-sizing: border-box;

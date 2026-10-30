@@ -20,6 +20,11 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
+    document.documentElement.classList.add('dashboard-text-90');
+    return () => document.documentElement.classList.remove('dashboard-text-90');
+  }, []);
+
+  useEffect(() => {
     if (!isLoadingAuth && !currentUser) {
       router.replace('/login');
     }
