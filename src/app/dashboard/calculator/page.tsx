@@ -219,19 +219,21 @@ export default function CalculatorPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl space-y-5 pb-6 sm:space-y-6">
-      <header className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-        <div className="flex min-w-0 items-center gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200"><Calculator size={21} /></span>
           <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600">Billing tools</p><h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Calculator</h1><p className="hidden text-sm text-slate-500 sm:block">Manual bills and sales across your business.</p></div>
         </div>
+        <div className="flex w-full min-w-0 items-center justify-between gap-2 md:w-auto md:justify-end">
+        <nav className="inline-flex min-w-0 max-w-full flex-1 flex-nowrap gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:gap-2 sm:p-2 md:flex-none" aria-label="Calculator sections">
+          {([['billing', 'Manual Billing', Calculator], ['history', 'Bill History', FileText], ['sales', 'Daily Sales', CalendarDays]] as const).map(([id, label, Icon]) => (
+            <button key={id} onClick={() => { setTab(id); setError(''); }} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition sm:min-h-12 sm:gap-2 sm:px-4 sm:text-sm ${tab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={15} className="shrink-0 sm:h-4 sm:w-4" /><span className="hidden md:inline">{label}</span><span className="md:hidden">{id === 'billing' ? 'Billing' : id === 'history' ? 'History' : 'Sales'}</span></button>
+          ))}
+        </nav>
         <button onClick={() => { void loadBills(); if (tab === 'sales') void loadReport(); }} aria-label="Refresh calculator data" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 sm:px-4"><RefreshCw size={16} /><span className="hidden sm:inline">Refresh</span></button>
+        </div>
       </header>
 
-      <nav className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:gap-2 sm:p-2" aria-label="Calculator sections">
-        {([['billing', 'Manual Billing', Calculator], ['history', 'Bill History', FileText], ['sales', 'Daily Sales', CalendarDays]] as const).map(([id, label, Icon]) => (
-          <button key={id} onClick={() => { setTab(id); setError(''); }} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition sm:min-h-12 sm:gap-2 sm:px-4 sm:text-sm ${tab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={15} className="shrink-0 sm:h-4 sm:w-4" /><span className="truncate">{label}</span></button>
-        ))}
-      </nav>
 
       {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
       {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>}
