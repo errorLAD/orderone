@@ -20,6 +20,7 @@ import {
   LogOut,
   X,
   ShieldAlert,
+  LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdmin } from '@/context/AdminContext';
@@ -43,6 +44,7 @@ export function AdminSidebar({ mobileOpen, onCloseMobile }: AdminSidebarProps) {
     { label: 'Payments', href: '/admin/payments', icon: Receipt },
     { label: 'Store Orders', href: '/admin/orders/store', icon: ShoppingBag },
     { label: 'Menu Orders', href: '/admin/orders/menu', icon: UtensilsCrossed },
+    { label: 'Support Messages', href: '/admin/support', icon: LifeBuoy },
     { label: 'Reports & Analytics', href: '/admin/reports', icon: BarChart3 },
     { label: 'Notifications', href: '/admin/notifications', icon: Bell, badge: unreadNotifications },
     { label: 'Audit Logs', href: '/admin/audit-logs', icon: ScrollText },

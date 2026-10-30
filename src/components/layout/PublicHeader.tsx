@@ -39,6 +39,7 @@ export function PublicHeader() {
           <Link href="/refund-policy" className="hover:text-slate-900 transition-colors">
             Refunds
           </Link>
+          <Link href="/support" className="text-indigo-700 hover:text-indigo-900 transition-colors">Support</Link>
         </nav>
 
         {/* Right CTA & Mobile Toggle */}
@@ -110,6 +111,7 @@ export function PublicHeader() {
             >
               Refund & Cancellation Policy
             </Link>
+            <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="min-h-10 flex items-center px-3 py-2 rounded-lg text-indigo-700 hover:bg-slate-50">Contact Support</Link>
           </nav>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">

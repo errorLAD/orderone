@@ -136,7 +136,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <a
-                  href={`mailto:${PLATFORM_CONFIG.supportEmail}`}
+                  href="/support"
                   className="hover:text-slate-900 transition-colors inline-flex items-center gap-1"
                 >
                   <Mail className="w-3.5 h-3.5" /> Contact Support
