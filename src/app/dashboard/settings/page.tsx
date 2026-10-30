@@ -62,6 +62,9 @@ export default function BusinessSettingsPage() {
   const [autoAcceptOrders, setAutoAcceptOrders] = useState(false);
   const [tableRoomLabelMode, setTableRoomLabelMode] = useState<'table' | 'room' | 'table_or_room'>('table_or_room');
   const [customTableRoomLabel, setCustomTableRoomLabel] = useState('');
+  const [waiterCallsEnabled, setWaiterCallsEnabled] = useState(true);
+  const [waiterAlertInterval, setWaiterAlertInterval] = useState('6');
+  const canOfferWaiterCalls = currentBusiness?.type === 'restaurant' || currentBusiness?.category === 'restaurant';
 
   useEffect(() => {
     if (currentBusiness) {
@@ -91,6 +94,8 @@ export default function BusinessSettingsPage() {
         (currentBusiness.type === 'hotel' ? 'room' : 'table_or_room')
       );
       setCustomTableRoomLabel(currentBusiness.settings.orderSettings.customTableRoomLabel || '');
+      setWaiterCallsEnabled(currentBusiness.settings.waiterCalls?.enabled !== false);
+      setWaiterAlertInterval(String(currentBusiness.settings.waiterCalls?.alertIntervalSeconds || 6));
     }
   }, [currentBusiness]);
 
@@ -131,6 +136,10 @@ export default function BusinessSettingsPage() {
           tokenPrefixStore,
           tokenPrefixMenu,
           operatingHours,
+          waiterCalls: canOfferWaiterCalls ? {
+            enabled: waiterCallsEnabled,
+            alertIntervalSeconds: Math.min(60, Math.max(3, Number(waiterAlertInterval) || 6)),
+          } : undefined,
         },
       };
 
@@ -255,6 +264,29 @@ export default function BusinessSettingsPage() {
             </div>
           </div>
         </div>
+
+        {canOfferWaiterCalls && (
+          <div className="rounded-2xl border border-amber-200 bg-white p-5 shadow-2xs space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900"><BellRing className="h-4 w-4 text-amber-600" /> Table Service · Call a Waiter</h3>
+                <p className="mt-1 max-w-2xl text-xs text-slate-500">Let dine-in guests call your team from the menu. Calls appear on this dashboard and keep alerting until staff acknowledges them.</p>
+              </div>
+              <label className="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">
+                <input type="checkbox" checked={waiterCallsEnabled} onChange={(event) => setWaiterCallsEnabled(event.target.checked)} className="h-4 w-4 accent-amber-600" />
+                Enable waiter calls
+              </label>
+            </div>
+            <label className="flex max-w-sm flex-col gap-1.5 text-xs font-semibold text-slate-700">
+              Repeat alert every
+              <span className="flex items-center gap-2">
+                <input type="number" min={3} max={60} value={waiterAlertInterval} onChange={(event) => setWaiterAlertInterval(event.target.value)} disabled={!waiterCallsEnabled} className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50" />
+                seconds
+              </span>
+              <span className="text-[11px] font-normal text-slate-500">The distinct call-bell repeats until acknowledged. Staff can silence it without dismissing the request.</span>
+            </label>
+          </div>
+        )}
 
         {/* Real-Time Order Sound & Notifications Alerts */}
         <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">

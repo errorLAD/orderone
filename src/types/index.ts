@@ -143,6 +143,10 @@ export interface BusinessSettings {
     tableRoomLabelMode?: 'table' | 'room' | 'table_or_room';
     customTableRoomLabel?: string;
   };
+  waiterCalls?: {
+    enabled?: boolean;
+    alertIntervalSeconds?: number;
+  };
   tokenPrefixStore: string; // e.g. "S-"
   tokenPrefixMenu: string;  // e.g. "M-"
   tokenPrefixPos?: string;   // e.g. "POS-"

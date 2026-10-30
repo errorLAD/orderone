@@ -11,6 +11,7 @@ import {
   Store,
   UtensilsCrossed,
   Search,
+  PhoneCall,
   ShoppingBag,
   Sparkles,
   Phone,
@@ -85,6 +86,60 @@ export function StorefrontRenderer({
 
   const [isSearchOpen, setIsSearchOpen] = React.useState<boolean>(Boolean(search?.trim()));
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const isWaiterCallEligible = !isPreview &&
+    (business.type === 'restaurant' || business.category === 'restaurant') &&
+    Boolean(business.settings?.orderSettings?.enableDineIn) &&
+    business.settings?.waiterCalls?.enabled !== false;
+  const [waiterDialogOpen, setWaiterDialogOpen] = React.useState(false);
+  const [waiterTable, setWaiterTable] = React.useState('');
+  const [waiterRequest, setWaiterRequest] = React.useState<{ id: string; tableNumber: string; status: 'pending' | 'acknowledged' | 'completed'; createdAt: string } | null>(null);
+  const [waiterAccessToken, setWaiterAccessToken] = React.useState('');
+  const [waiterSending, setWaiterSending] = React.useState(false);
+  const [waiterError, setWaiterError] = React.useState('');
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qrTable = params.get('table') || params.get('tableNumber');
+    if (qrTable) setWaiterTable(qrTable.replace(/^(table\s*(no\.?|#)?\s*)/i, '').trim());
+  }, [business.slug]);
+
+  React.useEffect(() => {
+    if (!waiterRequest || !waiterAccessToken || waiterRequest.status === 'completed') return;
+    const refreshStatus = async () => {
+      try {
+        const params = new URLSearchParams({ requestId: waiterRequest.id });
+        const response = await fetch(`/api/waiter-requests?${params.toString()}`, {
+          cache: 'no-store', headers: { Authorization: `Bearer ${waiterAccessToken}` },
+        });
+        const data = await response.json();
+        if (data.success && data.request) setWaiterRequest(data.request);
+      } catch { /* keep showing the last known status while offline */ }
+    };
+    const timer = window.setInterval(refreshStatus, 4000);
+    return () => window.clearInterval(timer);
+  }, [waiterRequest?.id, waiterRequest?.status, waiterAccessToken]);
+
+  const callWaiter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!waiterTable.trim() || waiterSending) return;
+    setWaiterSending(true);
+    setWaiterError('');
+    try {
+      const response = await fetch('/api/waiter-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: business.slug, tableNumber: waiterTable.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Could not call a waiter.');
+      setWaiterRequest(data.request);
+      setWaiterAccessToken(data.accessToken);
+    } catch (error: any) {
+      setWaiterError(error.message || 'Could not call a waiter. Please try again.');
+    } finally {
+      setWaiterSending(false);
+    }
+  };
 
   const renderCategoryTabIcon = (name: string) => {
     const lower = name.toLowerCase();
@@ -512,6 +567,17 @@ export function StorefrontRenderer({
               >
                 <Search className="w-4 h-4" />
               </button>
+              {isWaiterCallEligible && (
+                <button
+                  type="button"
+                  onClick={() => { setWaiterError(''); setWaiterDialogOpen(true); }}
+                  className="relative w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg transition-all hover:bg-white/30 active:scale-95 cursor-pointer"
+                  title="Call a waiter"
+                  aria-label="Call a waiter"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Text overlay: left-aligned, upper area */}
@@ -622,6 +688,18 @@ export function StorefrontRenderer({
               >
                 <Search className="w-4 h-4" />
               </button>
+
+              {isWaiterCallEligible && (
+                <button
+                  type="button"
+                  onClick={() => { setWaiterError(''); setWaiterDialogOpen(true); }}
+                  className="relative flex items-center justify-center w-9 h-9 rounded-xl border border-white/20 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/30 active:scale-95 cursor-pointer shrink-0 mb-0.5"
+                  title="Call a waiter"
+                  aria-label="Call a waiter"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                </button>
+              )}
 
               {/* Cart Button on Modern Header */}
               <button
@@ -1168,6 +1246,76 @@ export function StorefrontRenderer({
           </div>
         </div>
       </footer>
+      {waiterDialogOpen && isWaiterCallEligible && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/55 p-0 sm:p-4" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setWaiterDialogOpen(false);
+        }}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="waiter-call-title"
+            className="w-full max-w-md rounded-t-3xl sm:rounded-2xl bg-white p-5 sm:p-6 shadow-2xl pb-safe"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="waiter-call-title" className="text-lg font-black text-slate-900">Call a waiter</h2>
+                <p className="mt-1 text-sm text-slate-500">Tell our team where you are seated.</p>
+              </div>
+              <button type="button" onClick={() => setWaiterDialogOpen(false)} aria-label="Close" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {waiterRequest ? (
+              <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+                <p className="font-bold text-slate-900">Table {waiterRequest.tableNumber}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Request sent at {new Date(waiterRequest.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                </p>
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-indigo-700">
+                  <span className={cn('h-2 w-2 rounded-full', waiterRequest.status === 'completed' ? 'bg-emerald-500' : waiterRequest.status === 'acknowledged' ? 'bg-amber-500' : 'bg-indigo-500 animate-pulse')} />
+                  {waiterRequest.status === 'completed' ? 'Completed' : waiterRequest.status === 'acknowledged' ? 'Acknowledged' : 'Pending'}
+                </div>
+                {waiterRequest.status === 'completed' && (
+                  <button type="button" onClick={() => { setWaiterRequest(null); setWaiterAccessToken(''); setWaiterError(''); }} className="mt-4 block text-xs font-bold text-indigo-700 hover:underline">
+                    Make another request
+                  </button>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={callWaiter} className="mt-5 space-y-4">
+                <label className="block text-sm font-bold text-slate-700" htmlFor="waiter-table-select">Choose a table</label>
+                <select
+                  id="waiter-table-select"
+                  value={/^\d+$/.test(waiterTable) && Number(waiterTable) <= 30 ? waiterTable : ''}
+                  onChange={(event) => { if (event.target.value) setWaiterTable(event.target.value); }}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-base text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Select a table (or enter below)</option>
+                  {Array.from({ length: 30 }, (_, index) => String(index + 1)).map((number) => <option key={number} value={number}>Table {number}</option>)}
+                </select>
+                <label className="block text-sm font-bold text-slate-700" htmlFor="waiter-table-number">Or enter your table number</label>
+                <input
+                  id="waiter-table-number"
+                  autoFocus
+                  required
+                  maxLength={32}
+                  value={waiterTable}
+                  onChange={(event) => setWaiterTable(event.target.value)}
+                  placeholder="For example, 5"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-base text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+                {waiterError && <p role="alert" className="text-sm font-medium text-rose-600">{waiterError}</p>}
+                <button type="submit" disabled={waiterSending || !waiterTable.trim()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+                  <PhoneCall className="h-4 w-4" />
+                  {waiterSending ? 'Sending request…' : 'Call waiter'}
+                </button>
+                <p className="text-center text-xs text-slate-500">Please wait 20 seconds before calling again.</p>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

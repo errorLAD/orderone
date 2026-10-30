@@ -7,6 +7,7 @@ import { TopBar } from '@/components/dashboard/TopBar';
 import { useApp } from '@/context/AppContext';
 import { OrderAlertProvider } from '@/context/OrderAlertContext';
 import { OrderAlertOverlay } from '@/components/dashboard/OrderAlertOverlay';
+import { WaiterCallAlert } from '@/components/dashboard/WaiterCallAlert';
 import { Loader2 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -41,6 +42,7 @@ export default function DashboardLayout({
     <OrderAlertProvider>
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans relative">
         <OrderAlertOverlay />
+        <WaiterCallAlert />
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
           <TopBar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
