@@ -183,7 +183,6 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
     <div className="storefront-notification-cart-scene">
       <NotificationCartPuller />
       <div className="storefront-notification-cart" role="group" aria-label="Store social media links">
-        <div className="storefront-notification-cart-canopy" aria-hidden="true" />
         <div className="storefront-notification-cart-links">
           {activeItems.map((item) => renderItem(item))}
         </div>
