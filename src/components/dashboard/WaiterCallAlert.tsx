@@ -25,7 +25,7 @@ export function WaiterCallAlert() {
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [muted, setMuted] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const isRestaurant = currentBusiness?.type === 'restaurant' || currentBusiness?.category === 'restaurant';
@@ -55,7 +55,11 @@ export function WaiterCallAlert() {
         const data = await response.json();
         if (!cancelled && data.success && Array.isArray(data.requests)) {
           setRequests(data.requests);
-          if (data.requests.some((item: WaiterRequest) => item.status === 'pending')) setMuted(false);
+          const hasActiveCalls = data.requests.some((item: WaiterRequest) => item.status !== 'completed');
+          if (hasActiveCalls) {
+            setMuted(false);
+            setPanelOpen(true);
+          }
         }
       } catch { /* reconnecting stream will deliver new changes */ }
     };
@@ -121,7 +125,7 @@ export function WaiterCallAlert() {
     setAudioReady(orderSound.isAudioUnlocked());
   };
 
-  if (!enabled || requests.length === 0) return null;
+  if (!enabled || !requests.some((request) => request.status !== 'completed')) return null;
   const pendingCount = requests.filter((request) => request.status === 'pending').length;
 
   if (!panelOpen) {
