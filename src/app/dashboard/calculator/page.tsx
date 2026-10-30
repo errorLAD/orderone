@@ -212,57 +212,58 @@ export default function CalculatorPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 p-4 pb-24 sm:space-y-6 sm:p-6 lg:p-8">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-indigo-600"><Calculator size={22} /></span>
-          <div><h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Calculator</h1><p className="text-sm text-slate-500">Manual bills and sales across your business.</p></div>
+    <main className="mx-auto w-full max-w-7xl space-y-5 pb-28 sm:space-y-6 sm:pb-24">
+      <header className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200"><Calculator size={21} /></span>
+          <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600">Billing tools</p><h1 className="truncate text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Calculator</h1><p className="hidden text-sm text-slate-500 sm:block">Manual bills and sales across your business.</p></div>
         </div>
-        <button onClick={() => { void loadBills(); if (tab === 'sales') void loadReport(); }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm"><RefreshCw size={16} /> Refresh</button>
+        <button onClick={() => { void loadBills(); if (tab === 'sales') void loadReport(); }} aria-label="Refresh calculator data" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 sm:px-4"><RefreshCw size={16} /><span className="hidden sm:inline">Refresh</span></button>
       </header>
 
-      <nav className="flex w-full gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2" aria-label="Calculator sections">
-        {[['billing', 'Manual Billing'], ['history', 'Bill History'], ['sales', 'Daily Sales']].map(([id, label]) => (
-          <button key={id} onClick={() => { setTab(id as typeof tab); setError(''); }} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 text-sm font-semibold ${tab === id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
+      <nav className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:gap-2 sm:p-2" aria-label="Calculator sections">
+        {([['billing', 'Manual Billing', Calculator], ['history', 'Bill History', FileText], ['sales', 'Daily Sales', CalendarDays]] as const).map(([id, label, Icon]) => (
+          <button key={id} onClick={() => { setTab(id); setError(''); }} className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-1.5 text-[11px] font-semibold transition sm:min-h-12 sm:gap-2 sm:px-3 sm:text-sm ${tab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={15} className="shrink-0 sm:h-4 sm:w-4" /><span className="truncate">{label}</span></button>
         ))}
       </nav>
 
       {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
       {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>}
 
-      {tab === 'billing' && <section className="grid gap-5">
-        <div className="min-w-0 space-y-4">
-          <section className="mx-auto w-full max-w-[460px] rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Calculator keypad">
-            <div className="flex min-h-32 flex-col justify-end overflow-hidden rounded-2xl bg-slate-950 px-5 py-4 text-right text-white sm:min-h-36">
-              <div className="min-h-6 truncate text-sm text-slate-400" aria-live="polite">{expression || ' '}</div>
-              <output className="mt-1 block truncate text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl" aria-label={`Calculator value ${display}`}>{display}</output>
+      {tab === 'billing' && <section className="grid items-start gap-4 xl:grid-cols-[minmax(290px,0.85fr)_minmax(0,1.15fr)] xl:gap-5">
+        <div className="min-w-0">
+          <section className="mx-auto w-full max-w-[520px] overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5 xl:mx-0 xl:max-w-none" aria-label="Calculator keypad">
+            <div className="flex min-h-28 flex-col justify-end overflow-hidden rounded-2xl bg-slate-950 px-4 py-3 text-right text-white shadow-inner sm:min-h-32 sm:px-5 sm:py-4">
+              <div className="min-h-5 truncate text-xs font-medium text-slate-400" aria-live="polite">{expression || 'AMOUNT'}</div>
+              <output className="mt-1 block truncate text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl" aria-label={`Calculator value ${display}`}><span className="mr-1 text-2xl text-slate-400 sm:text-3xl">&#8377;</span>{display}</output>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2">
+            <div className="mt-3 grid grid-cols-4 gap-2 sm:gap-2.5">
               {['AC','DEL','%','/','7','8','9','*','4','5','6','-','1','2','3','+','+/-','0','.','='].map(key => {
                 const special = ['AC','DEL','%','/','*','-','+','='].includes(key);
                 const label = key === '*' ? '×' : key === '/' ? '÷' : key === '-' ? '−' : key === '+/-' ? '±' : key;
-                return <button key={key} type="button" onClick={() => pressCalculatorKey(key)} aria-label={key === 'DEL' ? 'Delete last digit' : label} className={`min-h-14 rounded-2xl text-lg font-semibold transition active:scale-[0.98] sm:min-h-16 ${key === '=' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : special ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>{label}</button>;
+                return <button key={key} type="button" onClick={() => pressCalculatorKey(key)} aria-label={key === 'DEL' ? 'Delete last digit' : label} className={`min-h-14 rounded-xl text-lg font-semibold transition duration-150 active:scale-[0.97] sm:min-h-16 sm:rounded-2xl ${key === '=' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 hover:bg-indigo-700' : special ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>{label}</button>;
               })}
             </div>
-            <div className="mt-4 border-t border-slate-100 pt-4">
-              <p className="mb-3 text-sm font-bold text-slate-800">Add this amount to the bill</p>
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:p-4">
+              <div className="mb-3"><p className="text-sm font-bold text-slate-900">Add amount to bill</p><p className="mt-0.5 text-xs text-slate-500">Enter an optional name, quantity, or unit.</p></div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_84px_92px]">
-                <label className="col-span-2 text-xs font-semibold text-slate-500 sm:col-span-1">Item name <input value={lineName} onChange={e => setLineName(e.target.value)} placeholder="Optional item name" className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-                <label className="text-xs font-semibold text-slate-500">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={lineQuantity} onChange={e => setLineQuantity(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-                <label className="text-xs font-semibold text-slate-500">Unit <input value={lineUnit} onChange={e => setLineUnit(e.target.value)} placeholder="pcs / kg" className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+                <label className="col-span-2 min-w-0 text-[11px] font-semibold text-slate-500 sm:col-span-1 sm:text-xs">Item name <input value={lineName} onChange={e => setLineName(e.target.value)} placeholder="Optional item name" className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
+                <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={lineQuantity} onChange={e => setLineQuantity(e.target.value)} className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
+                <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Unit <input value={lineUnit} onChange={e => setLineUnit(e.target.value)} placeholder="pcs / kg" className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
               </div>
-              <button type="button" onClick={addCalculatedLine} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white hover:bg-slate-800">+ Add {formatINR(Number(display) || 0)} to bill</button>
+              <button type="button" onClick={addCalculatedLine} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99]"><span aria-hidden="true">+</span> Add {formatINR(Number(display) || 0)} to bill</button>
             </div>
           </section>
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-3 flex items-center justify-between"><div><h2 className="font-bold text-slate-900">Current bill</h2><p className="text-xs text-slate-500">{items.length} item{items.length === 1 ? '' : 's'} - amounts calculate automatically</p></div>{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-rose-600 hover:bg-rose-50">Clear bill</button>}</div>
-            {items.length === 0 ? <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">Use the keypad above, then add each amount to this bill.</p> : <div className="space-y-3">{items.map((item, index) => <div key={index} className="grid grid-cols-2 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_84px_100px_120px_40px] sm:items-end">
-              <label className="col-span-2 text-xs font-semibold text-slate-500 sm:col-span-1">Item <input value={item.productName} onChange={e => updateItem(index, 'productName', e.target.value)} placeholder={`Item ${index + 1}`} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
-              <label className="text-xs font-semibold text-slate-500">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
-              <label className="text-xs font-semibold text-slate-500">Unit <input value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="pcs" className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
-              <label className="text-xs font-semibold text-slate-500">Each (INR) <input type="number" inputMode="decimal" min="0" step="0.01" value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
-              <button type="button" aria-label={`Remove bill item ${index + 1}`} onClick={() => setItems(current => current.filter((_, i) => i !== index))} className="grid min-h-10 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={17} /></button>
-              <p className="col-span-2 text-right text-sm font-bold text-slate-800 sm:col-span-5">Line total: {formatINR((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0))}</p>
+        </div>
+        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-2"><h2 className="font-bold text-slate-900">Current bill</h2><span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700">{items.length}</span></div><p className="mt-0.5 text-xs text-slate-500">Items and totals update automatically</p></div>{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:text-sm">Clear all</button>}</div>
+            {items.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center"><span className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-white text-slate-400 shadow-sm"><FileText size={19} /></span><p className="mt-3 text-sm font-semibold text-slate-700">Your bill is empty</p><p className="mt-1 text-xs text-slate-500">Use the keypad, then tap Add to bill.</p></div> : <div className="space-y-2.5">{items.map((item, index) => <div key={index} className="grid grid-cols-2 gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:grid-cols-[minmax(0,1fr)_76px_90px_110px_40px] sm:items-end sm:gap-2.5">
+              <label className="col-span-2 min-w-0 text-[11px] font-semibold text-slate-500 sm:col-span-1 sm:text-xs">Item name <input value={item.productName} onChange={e => updateItem(index, 'productName', e.target.value)} placeholder={`Item ${index + 1}`} className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
+              <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+              <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Unit <input value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="pcs" className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+              <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Each (&#8377;) <input type="number" inputMode="decimal" min="0" step="0.01" value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', e.target.value)} className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+              <button type="button" aria-label={`Remove bill item ${index + 1}`} onClick={() => setItems(current => current.filter((_, i) => i !== index))} className="mt-5 grid min-h-10 min-w-10 place-items-center self-end rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"><Trash2 size={17} /></button>
+              <p className="col-span-2 text-right text-xs font-bold text-slate-800 sm:col-span-5">Line total: {formatINR((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0))}</p>
             </div>)}</div>}
             <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
               <label className="text-sm font-semibold text-slate-700">Discount <div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-lg border border-slate-200 bg-slate-50 px-2 text-sm"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-lg border border-l-0 border-slate-200 px-3 text-sm" /></div></label>
@@ -272,8 +273,7 @@ export default function CalculatorPage() {
               <div><p className="text-xs font-medium uppercase text-slate-500">Grand total</p><p className="mt-1 text-2xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
               <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[190px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill...' : 'Save full bill'}</button>
             </div>
-          </section>
-        </div>
+        </section>
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur xl:hidden">
           <div><p className="text-[11px] font-medium uppercase text-slate-500">Bill total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
           <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[155px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white disabled:opacity-50"><Save size={17} /> {saving ? 'Saving...' : 'Save bill'}</button>
