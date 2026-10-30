@@ -183,6 +183,7 @@ export default function HomePage() {
             <a href="#faq" className="hover:text-slate-900 transition-colors">
               FAQ
             </a>
+            <Link href="/support" className="text-indigo-700 hover:text-indigo-900 transition-colors">Support</Link>
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -249,6 +250,7 @@ export default function HomePage() {
               >
                 Frequently Asked Questions
               </a>
+              <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="min-h-10 flex items-center px-3 py-2 rounded-lg text-indigo-700 hover:bg-slate-100">Contact Support</Link>
             </nav>
             <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
               <Link
