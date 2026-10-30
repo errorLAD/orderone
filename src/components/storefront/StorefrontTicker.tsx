@@ -151,7 +151,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 font-bold text-[10px] shadow-2xs hover:shadow-xs transition-all active:scale-95 shrink-0',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-xl bg-white border border-slate-200 text-slate-800 font-bold text-[9px] shadow-2xs hover:shadow-xs transition-all active:scale-95 shrink-0',
         item.colorClasses
       )}
       title={item.label}
