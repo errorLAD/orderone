@@ -47,7 +47,8 @@ import {
 import { PosMobileBottomBar } from '@/components/dashboard/PosMobileBottomBar';
 
 export default function PosBillingPage() {
-  const { currentBusiness, currentRole, setCurrentBusiness } = useApp();
+  const { currentBusiness, currentRole, currentUser, setCurrentBusiness } = useApp();
+  const canOpenManualCalculator = (currentUser?.role || currentRole) === 'owner';
 
   // Entitlement Check: POS is included in Basic, Gold, and Diamond plans
   const isSubscriptionExpired =
@@ -630,6 +631,15 @@ export default function PosBillingPage() {
               <Clock className="w-3.5 h-3.5 text-indigo-600" />
               <span>History</span>
             </button>
+            {canOpenManualCalculator && (
+              <Link
+                href="/dashboard/calculator"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-700 hover:bg-indigo-50 transition"
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                <span>Calculator</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>
