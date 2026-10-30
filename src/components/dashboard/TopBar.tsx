@@ -58,12 +58,12 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-2.5 sm:px-4 gap-2 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
       {/* Sidebar toggle & business selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <button
           onClick={onToggleSidebar}
-          className="p-2 text-slate-600 rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="h-10 w-10 shrink-0 inline-flex items-center justify-center text-slate-600 rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           aria-label={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
           title={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
         >
@@ -100,7 +100,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
             ) : (
               <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
             )}
-            <span className="max-w-[140px] sm:max-w-[200px] truncate">
+            <span className="max-w-[88px] sm:max-w-[200px] truncate">
               {currentBusiness?.name}
             </span>
             <span className="text-[10px] text-slate-500 font-normal capitalize hidden sm:inline">
@@ -126,7 +126,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
               ) : (
                 <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               )}
-              <span className="max-w-[140px] sm:max-w-[180px] truncate">
+              <span className="max-w-[88px] sm:max-w-[180px] truncate">
                 {currentBusiness?.name || 'Select Business'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -230,7 +230,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
       </div>
 
       {/* Right: Audio toggle, Role switcher & Notifications */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
         {/* Sound Chimes & Ringing Control */}
         {isRinging ? (
           <button
@@ -245,7 +245,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className={cn(
-              'p-2 rounded-lg text-xs font-medium transition-colors border',
+              'h-10 w-10 inline-flex items-center justify-center rounded-lg text-xs font-medium transition-colors border',
               soundEnabled
                 ? 'text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
                 : 'text-slate-400 bg-slate-100 border-slate-200 hover:bg-slate-200'
@@ -260,7 +260,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
         <div className="relative">
           <button
             onClick={() => setShowUserDropdown(!showUserDropdown)}
-            className="flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
+            className="h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
           >
             <div className="w-5 h-5 rounded-full bg-[#4F46E5] text-white flex items-center justify-center text-[10px] font-bold">
               {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
@@ -330,7 +330,7 @@ export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarPr
         <div className="relative">
           <button
             onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-            className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200"
+            className="relative h-10 w-10 shrink-0 inline-flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200"
             title="Real-time Order Alerts"
           >
             <Bell className="w-4 h-4" />

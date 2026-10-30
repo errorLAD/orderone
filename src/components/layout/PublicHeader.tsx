@@ -11,7 +11,7 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 font-sans">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-2.5 sm:px-6 h-16 flex items-center justify-between gap-2">
         {/* Brand Logo & Operator Tag */}
         <OrderOneLogo
           href="/"
@@ -43,13 +43,13 @@ export function PublicHeader() {
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           <Link
             href="/login"
-            className="hidden xs:inline-flex px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+            className="hidden sm:inline-flex min-h-10 items-center px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
           >
             Sign In
           </Link>
           <Link
             href="/login"
-            className="px-3 sm:px-3.5 py-1.5 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-xs transition-all flex items-center gap-1"
+            className="min-h-10 px-2.5 sm:px-3.5 py-1.5 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-xs transition-all flex items-center gap-1"
           >
             <span>Register</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -59,7 +59,7 @@ export function PublicHeader() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg md:hidden transition-colors"
+            className="h-10 w-10 shrink-0 inline-flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg md:hidden transition-colors"
             aria-label="Toggle Public Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -74,35 +74,35 @@ export function PublicHeader() {
             <Link
               href="/about"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
               About Us & Platform Architecture
             </Link>
             <Link
               href="/dashboard/subscription"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Subscription Plans (₹49 Basic & ₹149 Gold)
             </Link>
             <Link
               href="/terms"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Terms and Conditions
             </Link>
             <Link
               href="/privacy-policy"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
               href="/refund-policy"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+              className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
               Refund & Cancellation Policy
             </Link>

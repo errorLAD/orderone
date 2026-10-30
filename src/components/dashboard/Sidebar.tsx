@@ -484,7 +484,7 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
                           href={item.href}
                           onClick={onClose}
                           className={cn(
-                            'group flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all',
+                            'group flex min-h-10 items-center justify-between px-2.5 py-2.5 sm:py-2 rounded-xl text-xs font-medium transition-all',
                             isActive
                               ? 'bg-indigo-50/90 text-indigo-700 font-bold border border-indigo-200/60 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'

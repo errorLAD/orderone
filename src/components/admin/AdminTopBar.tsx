@@ -32,9 +32,9 @@ export function AdminTopBar({ onOpenMobile }: AdminTopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200/90 px-4 sm:px-6 flex items-center justify-between shadow-2xs">
+    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200/90 px-2.5 sm:px-6 flex items-center justify-between gap-2 shadow-2xs">
       {/* Left: Mobile hamburger & breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <button
           onClick={onOpenMobile}
           className="p-2 -ml-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 lg:hidden"
@@ -43,17 +43,17 @@ export function AdminTopBar({ onOpenMobile }: AdminTopBarProps) {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+        <div className="flex items-center gap-2 min-w-0 text-xs font-medium text-slate-500">
           <Link href="/admin" className="hover:text-indigo-600 transition-colors hidden sm:inline">
             Admin
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
-          <h1 className="text-sm font-black text-slate-900 tracking-tight">{getPageTitle()}</h1>
+          <h1 className="max-w-[46vw] sm:max-w-none truncate text-sm font-black text-slate-900 tracking-tight">{getPageTitle()}</h1>
         </div>
       </div>
 
       {/* Right: Notification pill, Admin badge, logout */}
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
         {/* Link to public landing */}
         <Link
           href="/"

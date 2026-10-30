@@ -77,6 +77,12 @@
     @apply w-full overflow-x-auto overscroll-x-contain;
     -webkit-overflow-scrolling: touch;
   }
+
+  /* Wide data tables scroll inside their own container, never the page. */
+  .responsive-table-scroll > table,
+  .overflow-x-auto > table {
+    min-width: max-content;
+  }
 }
 
 @media (max-width: 639px) {
@@ -88,10 +94,6 @@
   h1 {
     font-size: 1.0625rem !important;
     line-height: 1.35 !important;
-  }
-
-  table {
-    min-width: 36rem;
   }
 
 }

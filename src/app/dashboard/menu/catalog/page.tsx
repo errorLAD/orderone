@@ -889,6 +889,7 @@ export default function MenuCatalogPage() {
       ) : (
         /* TABLE VIEW */
         <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
+          <div className="overflow-x-auto overscroll-x-contain">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
@@ -1026,6 +1027,7 @@ export default function MenuCatalogPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

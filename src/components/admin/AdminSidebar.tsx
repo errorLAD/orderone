@@ -100,7 +100,7 @@ export function AdminSidebar({ mobileOpen, onCloseMobile }: AdminSidebarProps) {
                 href={item.href}
                 onClick={onCloseMobile}
                 className={cn(
-                  'flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all group',
+                  'flex min-h-10 items-center justify-between px-3 py-2.5 sm:py-2 rounded-xl font-semibold transition-all group',
                   isActive
                     ? 'bg-indigo-600 text-white shadow-xs font-bold'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
