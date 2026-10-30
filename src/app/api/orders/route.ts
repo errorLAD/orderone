@@ -134,11 +134,14 @@ export async function POST(req: NextRequest) {
     let resolvedTableNumber: string | undefined = undefined;
 
     if (effectiveTableRoom) {
-      if (isHotelBusiness || validatedData.customer.roomNumber || validatedData.roomNumber) {
+      if (isHotelBusiness) {
+        // Hotel business: use roomNumber only
         resolvedRoomNumber = effectiveTableRoom;
-        resolvedTableNumber = effectiveTableRoom;
+        resolvedTableNumber = undefined;
       } else {
+        // Restaurant / café / store: use tableNumber only
         resolvedTableNumber = effectiveTableRoom;
+        resolvedRoomNumber = undefined;
       }
     }
 

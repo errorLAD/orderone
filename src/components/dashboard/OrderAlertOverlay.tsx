@@ -124,6 +124,17 @@ export function OrderAlertOverlay() {
               const isStore = order.sourceType === 'store';
               const targetUrl = isStore ? '/dashboard/store/orders' : '/dashboard/menu/orders';
 
+              // Determine whether this order is strictly a Hotel In-Room Dining vs Restaurant / Dining Table
+              const isHotelBusiness = currentBusiness?.type === 'hotel' || currentBusiness?.category === 'hotel';
+              const isRoomOrder = isHotelBusiness && Boolean(order.customer?.roomNumber);
+
+              // Extract and clean table / room identifiers
+              const rawTable = (order.customer?.tableNumber || (!isHotelBusiness ? order.customer?.roomNumber : '') || '').trim();
+              const cleanTable = rawTable ? rawTable.replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim() : '';
+
+              const rawRoom = (order.customer?.roomNumber || '').trim();
+              const cleanRoom = rawRoom ? rawRoom.replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim() : '';
+
               return (
                 <div 
                   key={order.id} 
@@ -132,13 +143,13 @@ export function OrderAlertOverlay() {
                   {/* Order Details */}
                   <div className="flex items-start gap-3 min-w-0">
                     <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
-                      order.customer?.roomNumber
+                      isRoomOrder
                         ? 'bg-amber-50 text-amber-800 border border-amber-300'
                         : isStore
                         ? 'bg-sky-50 text-sky-700 border border-sky-200'
                         : 'bg-orange-50 text-orange-700 border border-orange-200'
                     }`}>
-                      {order.customer?.roomNumber ? (
+                      {isRoomOrder ? (
                         <BedDouble className="w-5 h-5 text-amber-700" />
                       ) : isStore ? (
                         <Store className="w-5 h-5" />
@@ -154,25 +165,27 @@ export function OrderAlertOverlay() {
                         </span>
 
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                          order.customer?.roomNumber
+                          isRoomOrder
                             ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold'
                             : isStore 
                             ? 'bg-sky-100 text-sky-800 border border-sky-300' 
-                            : 'bg-orange-100 text-orange-800 border border-orange-300'
+                            : 'bg-orange-100 text-orange-800 border border-orange-300 font-extrabold'
                         }`}>
-                          {order.customer?.roomNumber
-                            ? `Room Service • Room ${order.customer.roomNumber}`
+                          {isRoomOrder
+                            ? `Room Service • Room ${cleanRoom}`
                             : isStore
                             ? 'Store Order'
-                            : 'Menu Order'}
+                            : cleanTable
+                            ? `Table No. ${cleanTable}`
+                            : 'Dine-In Order'}
                         </span>
 
                         <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                          {order.customer?.roomNumber
-                            ? `In-Room Dining ${order.customer.floorNumber ? `(Floor ${order.customer.floorNumber})` : ''}`
+                          {isRoomOrder
+                            ? `In-Room Dining ${order.customer?.floorNumber ? `(Floor ${order.customer.floorNumber})` : ''}`
                             : isFoodBiz 
-                            ? (isStore ? 'Takeout Merch' : `Kitchen Ticket ${order.customer?.tableNumber ? `• ${/^(table|room)\b/i.test(order.customer.tableNumber) ? order.customer.tableNumber : `Table #${order.customer.tableNumber}`}` : ''}`)
-                            : (isStore ? (order.customer?.tableNumber ? `Store • ${order.customer.tableNumber}` : 'Online Storefront') : 'Counter Inquiry')}
+                            ? (isStore ? 'Takeout Merch' : `Kitchen Ticket ${cleanTable ? `• Table No. ${cleanTable}` : ''}`)
+                            : (isStore ? (cleanTable ? `Store • ${cleanTable}` : 'Online Storefront') : 'Counter Inquiry')}
                         </span>
                       </div>
 

@@ -73,17 +73,22 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
     );
   }
 
-  const isHotelOrder = Boolean(order.customer?.roomNumber);
+  const isHotelOrder = Boolean(order.businessType === 'hotel' || (order.customer?.roomNumber && !order.customer?.tableNumber && !/table/i.test(order.customer?.roomNumber)));
+  const cleanRoom = order.customer?.roomNumber ? order.customer.roomNumber.replace(/^(room|table)\s*(no\.?|#)?\s*/i, '').trim() : '';
+  const rawTable = (order.tableNumber || order.customer?.tableNumber || (!isHotelOrder ? order.customer?.roomNumber : '') || '').trim();
+  const cleanTable = rawTable ? rawTable.replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim() : '';
 
   const steps = [
-    { key: 'new', label: 'Order Received', desc: isHotelOrder ? 'Sent to kitchen for room service' : 'Sent to counter' },
+    { key: 'new', label: 'Order Received', desc: isHotelOrder ? 'Sent to kitchen for room service' : 'Sent to kitchen & counter' },
     { key: 'accepted', label: 'Accepted', desc: 'Confirmed by kitchen staff' },
     { key: 'preparing', label: 'Preparing', desc: order.sourceType === 'menu' ? 'Cooking in kitchen' : 'Packing items' },
     {
       key: 'ready',
       label: isHotelOrder ? 'Ready for Delivery' : 'Ready!',
       desc: isHotelOrder
-        ? `Fresh food ready, dispatching to Room ${order.customer?.roomNumber}`
+        ? `Fresh food ready, dispatching to Room ${cleanRoom || order.customer?.roomNumber}`
+        : cleanTable
+        ? `Fresh food ready for Table No. ${cleanTable}`
         : order.sourceType === 'menu'
         ? 'Pick up from counter / serving'
         : 'Ready for pickup / dispatch',
@@ -92,8 +97,8 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
       key: 'completed',
       label: isHotelOrder ? 'Delivered to Room' : 'Completed',
       desc: isHotelOrder
-        ? `Delivered to Room ${order.customer?.roomNumber}. Enjoy your meal!`
-        : 'Enjoy your purchase!',
+        ? `Delivered to Room ${cleanRoom || order.customer?.roomNumber}. Enjoy your meal!`
+        : 'Enjoy your meal!',
     },
   ];
 
@@ -134,15 +139,12 @@ export default function GuestOrderTrackingPage({ params }: { params: { trackingI
 
           {isHotelOrder ? (
             <div className="inline-block mt-2 px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-800 text-xs font-black border border-amber-200">
-              🛏️ Delivering to Room {order.customer?.roomNumber}
+              🛏️ Delivering to Room No. {cleanRoom || order.customer?.roomNumber}
               {order.customer?.floorNumber ? ` (Floor ${order.customer.floorNumber})` : ''}
             </div>
-          ) : (order.tableNumber || order.customer?.tableNumber) ? (
-            <div className="inline-block mt-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200">
-              {(() => {
-                const val = (order.tableNumber || order.customer?.tableNumber || '').trim();
-                return /^(table|room)\b/i.test(val) ? `🍽️ ${val}` : `🍽️ Table ${val}`;
-              })()}
+          ) : cleanTable ? (
+            <div className="inline-block mt-2 px-3.5 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black border border-indigo-200">
+              🍽️ Table No. {cleanTable}
             </div>
           ) : null}
 

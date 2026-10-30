@@ -21,6 +21,7 @@ import { formatINR, formatDate, cn } from '@/lib/utils';
 
 export default function MenuOrdersPage() {
   const { currentBusiness, currentRole } = useApp();
+  const isHotel = currentBusiness?.type === 'hotel' || currentBusiness?.category === 'hotel';
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -256,13 +257,13 @@ export default function MenuOrdersPage() {
                       <div>
                         <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                           <span>{order.customer.name}</span>
-                          {order.customer.roomNumber ? (
+                          {isHotel && order.customer.roomNumber ? (
                             <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
                               🛏️ Room {order.customer.roomNumber}{order.customer.floorNumber ? ` (Fl ${order.customer.floorNumber})` : ''}
                             </span>
-                          ) : order.customer.tableNumber ? (
+                          ) : (order.customer.tableNumber || (!isHotel && order.customer.roomNumber)) ? (
                             <span className="px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-200">
-                              🍽️ {/^(table|room)\b/i.test(order.customer.tableNumber) ? order.customer.tableNumber : `Table ${order.customer.tableNumber}`}
+                              🍽️ Table {String(order.customer.tableNumber || order.customer.roomNumber).replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim()}
                             </span>
                           ) : null}
                         </div>

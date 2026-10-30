@@ -73,11 +73,10 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
   const [submittingOrder, setSubmittingOrder] = useState<boolean>(false);
   const [orderError, setOrderError] = useState<string | null>(null);
 
-  // Check if hotel business
+  // Check if hotel business strictly based on business category
   const isHotel = Boolean(
     business?.type === 'hotel' ||
-    business?.category === 'hotel' ||
-    roomNumber
+    business?.category === 'hotel'
   );
 
   // Dynamic label for Table / Room Number as configured by business owner
@@ -92,11 +91,13 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       const sp = new URLSearchParams(window.location.search);
       const r = sp.get('room');
       const t = sp.get('table');
-      const prefill = (r || t || '').trim();
-      if (prefill) {
-        setTableOrRoomNumber(prefill);
-        setRoomNumber(r ? r.trim() : prefill);
-        setTableNumber(t ? t.trim() : prefill);
+      if (r) {
+        setRoomNumber(r.trim());
+        setTableOrRoomNumber(r.trim());
+        setFulfilmentMethod('dine_in');
+      } else if (t) {
+        setTableNumber(t.trim());
+        setTableOrRoomNumber(t.trim());
         setFulfilmentMethod('dine_in');
       }
     }
@@ -273,8 +274,9 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       addOnIds: cart[item.product.id]?.addOnIds,
     }));
 
-    // Optional Table / Room Number
-    const finalTableRoom = (tableOrRoomNumber || roomNumber || tableNumber).trim() || undefined;
+    // Optional Table vs Room Number
+    const rawNumber = (tableOrRoomNumber || (isHotel ? roomNumber : tableNumber) || '').trim();
+    const cleanNumber = rawNumber ? rawNumber.replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim() : '';
 
     const orderPayload = {
       businessId: business.id,
@@ -282,8 +284,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
       customer: {
         name: guestName.trim() || 'Guest Customer',
         phone: guestPhone.trim() || undefined,
-        tableNumber: finalTableRoom,
-        roomNumber: finalTableRoom,
+        tableNumber: !isHotel && cleanNumber ? cleanNumber : undefined,
+        roomNumber: isHotel && cleanNumber ? cleanNumber : undefined,
         notes: guestNotes,
       },
       items,
@@ -753,8 +755,8 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
                       value={tableOrRoomNumber}
                       onChange={(e) => {
                         setTableOrRoomNumber(e.target.value);
-                        setRoomNumber(e.target.value);
-                        setTableNumber(e.target.value);
+                        if (isHotel) setRoomNumber(e.target.value);
+                        else setTableNumber(e.target.value);
                       }}
                       placeholder={tableRoomConfig.placeholder}
                       className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
@@ -762,7 +764,7 @@ export default function PublicMenuPage({ params }: { params: { slug: string } })
                     <p className="text-[11px] text-slate-500 leading-tight">
                       {isHotel
                         ? 'Enter your hotel room number (or leave blank if picking up from counter).'
-                        : 'Enter your table or room number (leave blank for takeaway or if not applicable).'}
+                        : 'Enter your dining table number (leave blank for takeaway or counter ordering).'}
                     </p>
                   </div>
 

@@ -1259,6 +1259,24 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
 
   const initialStatus: OrderStatus = business.settings.orderSettings.autoAcceptOrders ? 'accepted' : 'new';
 
+  // Normalize and enforce Table vs Room Number semantics strictly based on business category
+  const isHotel = business.type === 'hotel' || business.category === 'hotel';
+  if (input.customer) {
+    if (isHotel) {
+      // Hotel business: roomNumber is valid, tableNumber should not be used
+      const rawRoom = (input.customer.roomNumber || input.customer.tableNumber || '').trim();
+      const cleanRoom = rawRoom.replace(/^(room|table)\s*(no\.?|#)?\s*/i, '').trim();
+      input.customer.roomNumber = cleanRoom ? cleanRoom : undefined;
+      input.customer.tableNumber = undefined;
+    } else {
+      // Restaurant / food business: tableNumber is valid, roomNumber should NEVER be set
+      const rawTable = (input.customer.tableNumber || input.customer.roomNumber || '').trim();
+      const cleanTable = rawTable.replace(/^(table|room)\s*(no\.?|#)?\s*/i, '').trim();
+      input.customer.tableNumber = cleanTable ? cleanTable : undefined;
+      input.customer.roomNumber = undefined;
+    }
+  }
+
   const newOrder: Order = {
     id: generateId('ord'),
     businessId: input.businessId,
@@ -1300,7 +1318,6 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
 
   // Generate Notification for Owner/Staff Dashboard
   const tableOrRoom = (input.customer.tableNumber || input.customer.roomNumber || '').trim();
-  const isHotel = business.type === 'hotel' || business.category === 'hotel';
   const locationTag = tableOrRoom
     ? (/^(table|room)\b/i.test(tableOrRoom) ? tableOrRoom : (isHotel ? `Room ${tableOrRoom}` : `Table ${tableOrRoom}`))
     : '';
