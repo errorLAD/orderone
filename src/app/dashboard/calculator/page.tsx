@@ -48,8 +48,20 @@ export default function CalculatorPage() {
   const [report, setReport] = useState<SalesReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
 
+  const currentDraftItems = useMemo(() => {
+    const amount = Number(display);
+    const quantity = Number(lineQuantity);
+    if (amount > 0 && Number.isFinite(amount) && quantity > 0 && Number.isFinite(quantity)) {
+      return [...items, {
+        productName: lineName.trim() || `Item ${items.length + 1}`,
+        quantity: String(quantity), unit: lineUnit.trim(), unitPrice: amount.toFixed(2),
+      }];
+    }
+    return items;
+  }, [items, display, lineQuantity, lineName, lineUnit]);
+
   const totals = useMemo(() => {
-    const subtotal = Math.round(items.reduce((sum, row) => {
+    const subtotal = Math.round(currentDraftItems.reduce((sum, row) => {
       const quantity = Number(row.quantity) || 0;
       const price = Number(row.unitPrice) || 0;
       return sum + Math.round(quantity * price * 100) / 100;
@@ -60,7 +72,7 @@ export default function CalculatorPage() {
     const taxable = Math.max(0, subtotal - discount);
     const tax = Math.round(taxable * Math.max(0, Number(taxRate) || 0)) / 100;
     return { subtotal, discount, tax, total: Math.round((taxable + tax) * 100) / 100 };
-  }, [items, discountType, discountValue, taxRate]);
+  }, [currentDraftItems, discountType, discountValue, taxRate]);
 
   const loadBills = useCallback(async (append = false) => {
     if (!currentBusiness?.id) return;
@@ -159,26 +171,9 @@ export default function CalculatorPage() {
       setStoredValue(left); setPendingOperator(key); setExpression(`${left} ${operatorLabel}`); setWaitingForOperand(true);
     }
   };
-  const addCalculatedLine = () => {
-    if (pendingOperator && storedValue !== null) {
-      setError('Press = to finish the calculation before adding it to the bill.'); return;
-    }
-    const amount = Number(display);
-    const quantity = Number(lineQuantity);
-    if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(quantity) || quantity <= 0) {
-      setError('Enter a valid amount and a quantity greater than zero.'); return;
-    }
-    setItems(current => [...current, {
-      productName: lineName.trim() || `Item ${current.length + 1}`,
-      quantity: String(quantity), unit: lineUnit.trim(), unitPrice: amount.toFixed(2),
-    }]);
-    setLineName(''); setLineQuantity('1'); setLineUnit('');
-    setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false);
-    setError(''); setNotice('');
-  };
-  const saveBill = async () => {
+  const saveBill = async (itemsToSave: DraftItem[]) => {
     if (!currentBusiness?.id || saving) return;
-    const validItems = items.filter(item => Number(item.quantity) > 0 && Number(item.unitPrice) >= 0 && item.unitPrice.trim() !== '');
+    const validItems = itemsToSave.filter(item => Number(item.quantity) > 0 && Number(item.unitPrice) >= 0 && item.unitPrice.trim() !== '');
     if (!validItems.length) { setError('Enter a quantity and price for at least one item.'); return; }
     setSaving(true); setError(''); setNotice('');
     const stableRequestId = requestId || (typeof crypto !== 'undefined' && crypto.randomUUID
@@ -197,19 +192,33 @@ export default function CalculatorPage() {
       setBills(current => [data.bill, ...current.filter(bill => bill.id !== data.bill.id)]);
       if (isNewBill) setHistoryTotal(current => current + 1);
       setNotice(`Bill ${data.bill.billNumber} saved with all items.`);
-      setSelectedBill(data.bill); setItems([]); setDiscountValue('0');
+      setSelectedBill(data.bill); setItems([]); setLineName(''); setLineQuantity('1'); setLineUnit(''); setDiscountValue('0');
       setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false);
       setRequestId(''); setTab('history');
     } catch (e: any) { setError(e.message || 'Bill could not be saved.'); }
     finally { setSaving(false); }
   };
 
+  const saveCurrentBill = () => {
+    if (pendingOperator && storedValue !== null) {
+      setError('Press = to finish the calculation before saving the bill.'); return;
+    }
+    const amount = Number(display);
+    const quantity = Number(lineQuantity);
+    if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
+      setError('Enter a valid amount and a quantity greater than zero.'); return;
+    }
+    void saveBill([...items, {
+      productName: lineName.trim() || `Item ${items.length + 1}`,
+      quantity: String(quantity), unit: lineUnit.trim(), unitPrice: amount.toFixed(2),
+    }]);
+  };
   if (!isBusinessOwner) {
     return <main className="mx-auto max-w-3xl p-5 sm:p-8"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">The Calculator is available to the business owner.</div></main>;
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 pb-28 sm:space-y-6 sm:pb-24">
+    <main className="mx-auto w-full max-w-7xl space-y-5 pb-6 sm:space-y-6">
       <header className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
         <div className="flex min-w-0 items-center gap-3">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-200"><Calculator size={21} /></span>
@@ -241,23 +250,25 @@ export default function CalculatorPage() {
               })}
             </div>
             <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:p-4">
-              <div className="mb-3"><p className="text-sm font-bold text-slate-900">Add amount to bill</p><p className="mt-0.5 text-xs text-slate-500">Enter an optional name, quantity, or unit.</p></div>
+              <div className="mb-3"><p className="text-sm font-bold text-slate-900">Bill item details</p><p className="mt-0.5 text-xs text-slate-500">Enter an optional name, quantity, or unit.</p></div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_84px_92px]">
                 <label className="col-span-2 min-w-0 text-[11px] font-semibold text-slate-500 sm:col-span-1 sm:text-xs">Item name <input value={lineName} onChange={e => setLineName(e.target.value)} placeholder="Optional item name" className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
                 <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={lineQuantity} onChange={e => setLineQuantity(e.target.value)} className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
                 <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Unit <input value={lineUnit} onChange={e => setLineUnit(e.target.value)} placeholder="pcs / kg" className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
               </div>
-              <button type="button" onClick={addCalculatedLine} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99]"><span aria-hidden="true">+</span> Add {formatINR(Number(display) || 0)} to bill</button>
             </div>
             <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
               <label className="text-xs font-semibold text-slate-600">Discount<div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-xl border border-slate-200 bg-slate-50 px-2.5 text-sm"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-slate-200 bg-white px-3 text-sm text-slate-900" /></div></label>
               <label className="text-xs font-semibold text-slate-600">Tax rate (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900" /></label>
             </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+              <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{currentDraftItems.length} item{currentDraftItems.length === 1 ? '' : 's'} · Grand total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
+              <div className="flex w-full gap-2 sm:w-auto">
+                {currentDraftItems.length > 0 && <button type="button" onClick={() => { setItems([]); setLineName(''); setLineQuantity('1'); setLineUnit(''); setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false); }} className="min-h-12 rounded-xl px-3 text-sm font-semibold text-rose-600 hover:bg-rose-50">Clear</button>}
+                <button type="button" onClick={saveCurrentBill} disabled={saving} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:min-w-[190px]"><Save size={17} /> {saving ? 'Saving...' : 'Save full bill'}</button>
+              </div>
+            </div>
           </section>
-        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur sm:inset-x-4 sm:bottom-4 sm:rounded-2xl sm:border sm:px-5 sm:shadow-xl xl:inset-x-auto xl:left-1/2 xl:w-full xl:max-w-2xl xl:-translate-x-1/2">
-          <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{items.length} item{items.length === 1 ? '' : 's'}</p><p className="truncate text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
-          <div className="flex shrink-0 items-center gap-2">{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-11 rounded-xl px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 sm:text-sm">Clear</button>}<button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[145px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 sm:min-w-[165px]"><Save size={17} /> {saving ? 'Saving...' : 'Save full bill'}</button></div>
-        </div>
       </section>}
       {tab === 'history' && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5"><div><h2 className="text-lg font-bold text-slate-900">Saved calculator bills</h2><p className="mt-1 text-sm text-slate-500">{bills.length} recent bill{bills.length === 1 ? '' : 's'}</p></div><button onClick={() => void loadBills()} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label="Refresh bill history"><RefreshCw size={16} /></button></div>
