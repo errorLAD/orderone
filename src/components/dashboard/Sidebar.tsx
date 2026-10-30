@@ -183,6 +183,11 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
               icon: ReceiptText,
             }]
           : []),
+        {
+          name: 'Calculator',
+          href: '/dashboard/calculator',
+          icon: Calculator,
+        },
       ],
     },
 
@@ -230,18 +235,16 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
             title: storeSection.title,
             collapsible: true,
             items: [
-              ...(pathname === '/dashboard/calculator' ? [] : [
-                {
-                  name: storeSection.ordersName,
-                  href: '/dashboard/store/orders',
-                  icon: ShoppingBag,
-                },
-                {
-                  name: storeSection.tokensName,
-                  href: '/dashboard/store/tokens',
-                  icon: Clock,
-                },
-              ]),
+              {
+                name: storeSection.ordersName,
+                href: '/dashboard/store/orders',
+                icon: ShoppingBag,
+              },
+              {
+                name: storeSection.tokensName,
+                href: '/dashboard/store/tokens',
+                icon: Clock,
+              },
               {
                 name: storeSection.catalogName,
                 href: '/dashboard/store/catalog',

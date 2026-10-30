@@ -17,21 +17,20 @@ import {
 } from '@/types';
 
 // Supabase Connection URL with verified IPv4/IPv6 compatibility (use port 6543 for transaction pooling)
-const rawConnectionString =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres.rayaxzxakcxsgrlvlsuc:gokul%40mishra%401996@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres';
+const rawConnectionString = process.env.DATABASE_URL;
 
-// Ensure Supabase pooler uses transaction mode (port 6543) instead of session mode (port 5432 with 15 client cap)
-const connectionString = rawConnectionString.replace(
+// Use the transaction pooler when DATABASE_URL points at the session pooler.
+const connectionString = rawConnectionString?.replace(
   'pooler.supabase.com:5432',
   'pooler.supabase.com:6543'
-);
+) || '';
 
 // Global singleton to prevent connection leaks across Next.js dev server hot-reloads
 const globalForPg = globalThis as unknown as { _pgPool?: Pool };
 let isConnected = false;
 
 export function getPgPool(): Pool {
+  if (!connectionString) throw new Error('DATABASE_URL is required for database access.');
   if (!globalForPg._pgPool) {
     globalForPg._pgPool = new Pool({
       connectionString,

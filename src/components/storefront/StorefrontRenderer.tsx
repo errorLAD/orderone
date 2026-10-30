@@ -934,7 +934,7 @@ export function StorefrontRenderer({
                   {/* Product Image */}
                   <div className="relative aspect-square bg-slate-100 overflow-hidden">
                     {p.imageUrl ? (
-                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400">
                         {isRestaurant ? <UtensilsCrossed className="w-8 h-8 opacity-40" /> : <Package className="w-8 h-8 opacity-40" />}

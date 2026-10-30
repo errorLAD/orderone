@@ -161,8 +161,10 @@ export async function syncWithPostgres(): Promise<boolean> {
   }
 }
 
-// Background initial sync
-syncWithPostgres().catch(() => {});
+// Avoid database writes during Next.js static generation; refresh the cache only at runtime.
+if (process.env.NEXT_PHASE !== 'phase-production-build') {
+  syncWithPostgres().catch(() => {});
+}
 
 // Memory Realtime Subscribers for Live Server-Sent Events / Order Updates
 type OrderListener = (event: { type: string; order: Order; notification: NotificationItem }) => void;
@@ -3257,6 +3259,7 @@ export async function getPosBills(
     startDate?: string;
     endDate?: string;
     source?: 'pos' | 'calculator';
+    timeZone?: string;
   }
 ): Promise<{ bills: PosBill[]; totalCount: number }> {
   const limit = options?.limit || 50;
@@ -3277,15 +3280,23 @@ export async function getPosBills(
   }
 
   if (search) {
-    const searchFilter = ` AND (bill_number ILIKE $${paramIdx} OR customer_name ILIKE $${paramIdx} OR customer_phone ILIKE $${paramIdx})`;
+    const searchFilter = ` AND (bill_number ILIKE $${paramIdx} OR customer_name ILIKE $${paramIdx} OR customer_phone ILIKE $${paramIdx} OR EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(pos_bills.items, '[]'::jsonb)) AS bill_items(item) WHERE COALESCE(item->>'productName', item->>'product_name', '') ILIKE $${paramIdx}))`;
     query += searchFilter;
     countQuery += searchFilter;
     params.push(`%${search}%`);
     paramIdx++;
   }
 
+  let timeZoneParamIdx: number | undefined;
+  if (options?.timeZone && (options.startDate || options.endDate)) {
+    timeZoneParamIdx = paramIdx++;
+    params.push(options.timeZone);
+  }
+
   if (options?.startDate) {
-    const startFilter = ` AND created_at >= $${paramIdx}`;
+    const startFilter = timeZoneParamIdx
+      ? ` AND created_at >= ($${paramIdx}::date::timestamp AT TIME ZONE $${timeZoneParamIdx})`
+      : ` AND created_at >= $${paramIdx}`;
     query += startFilter;
     countQuery += startFilter;
     params.push(options.startDate);
@@ -3293,7 +3304,9 @@ export async function getPosBills(
   }
 
   if (options?.endDate) {
-    const endFilter = ` AND created_at <= $${paramIdx}`;
+    const endFilter = timeZoneParamIdx
+      ? ` AND created_at < (($${paramIdx}::date + INTERVAL '1 day')::timestamp AT TIME ZONE $${timeZoneParamIdx})`
+      : ` AND created_at <= $${paramIdx}`;
     query += endFilter;
     countQuery += endFilter;
     params.push(options.endDate);

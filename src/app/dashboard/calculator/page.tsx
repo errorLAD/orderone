@@ -5,7 +5,6 @@ import { Calculator, Save, RefreshCw, FileText, Eye, Download, Printer, Calendar
 import { useApp } from '@/context/AppContext';
 import { formatINR } from '@/lib/utils';
 import { PosBill } from '@/types';
-import { downloadPosBillPdf } from '@/lib/posPdfGenerator';
 
 type DraftItem = { productName: string; quantity: string; unit: string; unitPrice: string };
 type SalesReport = {
@@ -36,6 +35,9 @@ export default function CalculatorPage() {
   const [discountValue, setDiscountValue] = useState('0');
   const [taxRate, setTaxRate] = useState(String(currentBusiness?.settings?.orderSettings?.taxRatePercentage || 0));
   const [bills, setBills] = useState<PosBill[]>([]);
+  const [billSearch, setBillSearch] = useState('');
+  const [billStartDate, setBillStartDate] = useState('');
+  const [billEndDate, setBillEndDate] = useState('');
   const [historyTotal, setHistoryTotal] = useState(0);
   const historyOffset = useRef(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -82,7 +84,8 @@ export default function CalculatorPage() {
     setError('');
     try {
       const offset = append ? historyOffset.current : 0;
-      const response = await fetch(`/api/calculator/bills?businessId=${encodeURIComponent(currentBusiness.id)}&limit=50&offset=${offset}`);
+      const query = new URLSearchParams({ businessId: currentBusiness.id, limit: '50', offset: String(offset), search: billSearch.trim(), startDate: billStartDate, endDate: billEndDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata' });
+      const response = await fetch(`/api/calculator/bills?${query}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not load bills.');
       setBills(current => append ? [...current, ...(data.bills || [])] : data.bills || []);
@@ -90,7 +93,7 @@ export default function CalculatorPage() {
       historyOffset.current = offset + (data.bills || []).length;
     } catch (e: any) { setError(e.message || 'Could not load bills.'); }
     finally { setLoading(false); setLoadingMore(false); }
-  }, [currentBusiness?.id]);
+  }, [currentBusiness?.id, billSearch, billStartDate, billEndDate]);
 
   const loadReport = useCallback(async () => {
     if (!currentBusiness?.id) return;
@@ -107,7 +110,11 @@ export default function CalculatorPage() {
     finally { setReportLoading(false); }
   }, [currentBusiness?.id, startDate, endDate]);
 
-  useEffect(() => { void loadBills(); }, [loadBills]);
+  useEffect(() => {
+    if (tab !== 'history') return;
+    const timer = window.setTimeout(() => { void loadBills(); }, 250);
+    return () => window.clearTimeout(timer);
+  }, [tab, loadBills]);
   useEffect(() => { if (tab === 'sales') void loadReport(); }, [tab, loadReport]);
   useEffect(() => {
     const configuredTax = currentBusiness?.settings?.orderSettings?.taxRatePercentage;
@@ -201,6 +208,10 @@ export default function CalculatorPage() {
     finally { setSaving(false); }
   };
 
+  const downloadBillPdf = async (bill: PosBill) => {
+    const { downloadPosBillPdf } = await import('@/lib/posPdfGenerator');
+    await downloadPosBillPdf(bill, currentBusiness);
+  };
   const saveCurrentBill = () => {
     if (pendingOperator && storedValue !== null) {
       setError('Press = to finish the calculation before saving the bill.'); return;
@@ -285,7 +296,14 @@ export default function CalculatorPage() {
       </section>}
       {tab === 'history' && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5"><div><h2 className="text-lg font-bold text-slate-900">Saved calculator bills</h2><p className="mt-1 text-sm text-slate-500">{bills.length} recent bill{bills.length === 1 ? '' : 's'}</p></div><button onClick={() => void loadBills()} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label="Refresh bill history"><RefreshCw size={16} /></button></div>
-        {loading ? <p className="p-8 text-center text-sm text-slate-500">Loading saved bills…</p> : bills.length === 0 ? <div className="p-10 text-center"><FileText className="mx-auto text-slate-300" size={32} /><p className="mt-3 font-semibold text-slate-700">No calculator bills yet</p><button onClick={() => setTab('billing')} className="mt-3 text-sm font-semibold text-indigo-600">Create your first bill</button></div> : <><div className="divide-y divide-slate-100">{bills.map(bill => <article key={bill.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="min-w-0"><p className="font-bold text-slate-900">{bill.billNumber} <span className="ml-1 text-xs font-medium text-indigo-600">Manual</span></p><p className="mt-1 text-xs text-slate-500">{new Date(bill.createdAt).toLocaleDateString('en-IN')} · {new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {bill.items.length} item{bill.items.length === 1 ? '' : 's'}</p><p className="mt-1 truncate text-xs text-slate-500">{bill.items.map(item => item.productName).join(', ')}</p></div><div className="flex items-center justify-between gap-3 sm:justify-end"><strong className="text-lg text-slate-900">{formatINR(bill.totalAmount)}</strong><button onClick={() => setSelectedBill(bill)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700"><Eye size={16} /> View</button><button onClick={() => void downloadPosBillPdf(bill, currentBusiness)} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label={`Download ${bill.billNumber} PDF`}><Download size={16} /></button></div></article>)}</div>{bills.length < historyTotal && <div className="border-t border-slate-100 p-4 text-center"><button onClick={() => void loadBills(true)} disabled={loadingMore} className="min-h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">{loadingMore ? 'Loading…' : `Load older bills (${historyTotal - bills.length} remaining)`}</button></div>}</>}
+        <div className="grid gap-2 border-b border-slate-100 p-4 sm:grid-cols-[minmax(180px,1.4fr)_minmax(130px,1fr)_minmax(130px,1fr)_auto] sm:p-5">
+          <label className="sr-only" htmlFor="calculator-bill-search">Search bill number or item</label>
+          <input id="calculator-bill-search" type="search" value={billSearch} onChange={e => setBillSearch(e.target.value)} placeholder="Search bill number or item" className="min-h-11 min-w-0 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+          <label className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs text-slate-500"><span>From</span><input aria-label="Bill history start date" type="date" value={billStartDate} max={billEndDate || undefined} onChange={e => setBillStartDate(e.target.value)} className="min-h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none" /></label>
+          <label className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs text-slate-500"><span>To</span><input aria-label="Bill history end date" type="date" value={billEndDate} min={billStartDate || undefined} onChange={e => setBillEndDate(e.target.value)} className="min-h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-900 outline-none" /></label>
+          {(billSearch || billStartDate || billEndDate) && <button type="button" onClick={() => { setBillSearch(''); setBillStartDate(''); setBillEndDate(''); }} className="min-h-11 rounded-xl px-3 text-sm font-semibold text-rose-600 hover:bg-rose-50">Clear</button>}
+        </div>
+        {loading ? <p className="p-8 text-center text-sm text-slate-500">Loading saved bills…</p> : bills.length === 0 ? <div className="p-10 text-center"><FileText className="mx-auto text-slate-300" size={32} /><p className="mt-3 font-semibold text-slate-700">{billSearch || billStartDate || billEndDate ? 'No bills match these filters' : 'No calculator bills yet'}</p><button onClick={() => setTab('billing')} className="mt-3 text-sm font-semibold text-indigo-600">Create your first bill</button></div> : <><div className="divide-y divide-slate-100">{bills.map(bill => <article key={bill.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="min-w-0"><p className="font-bold text-slate-900">{bill.billNumber} <span className="ml-1 text-xs font-medium text-indigo-600">Manual</span></p><p className="mt-1 text-xs text-slate-500">{new Date(bill.createdAt).toLocaleDateString('en-IN')} · {new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {bill.items.length} item{bill.items.length === 1 ? '' : 's'}</p><p className="mt-1 truncate text-xs text-slate-500">{bill.items.map(item => item.productName).join(', ')}</p></div><div className="flex items-center justify-between gap-3 sm:justify-end"><strong className="text-lg text-slate-900">{formatINR(bill.totalAmount)}</strong><button onClick={() => setSelectedBill(bill)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700"><Eye size={16} /> View</button><button onClick={() => void downloadBillPdf(bill)} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label={`Download ${bill.billNumber} PDF`}><Download size={16} /></button></div></article>)}</div>{bills.length < historyTotal && <div className="border-t border-slate-100 p-4 text-center"><button onClick={() => void loadBills(true)} disabled={loadingMore} className="min-h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">{loadingMore ? 'Loading…' : `Load older bills (${historyTotal - bills.length} remaining)`}</button></div>}</>}
       </section>}
 
       {tab === 'sales' && <section className="space-y-4">
@@ -299,7 +317,7 @@ export default function CalculatorPage() {
           <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Manual bill</p><h2 className="mt-1 text-xl font-bold text-slate-900">{selectedBill.billNumber}</h2><p className="mt-1 text-sm text-slate-500">{new Date(selectedBill.createdAt).toLocaleString('en-IN')}</p></div><button onClick={() => setSelectedBill(null)} className="min-h-10 min-w-10 rounded-full bg-slate-100 text-slate-700" aria-label="Close bill details">×</button></div>
           <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[460px] text-left text-sm"><thead><tr className="border-b text-xs uppercase text-slate-500"><th className="py-2">Item</th><th className="py-2 text-right">Qty / unit</th><th className="py-2 text-right">Price</th><th className="py-2 text-right">Amount</th></tr></thead><tbody>{selectedBill.items.map(item => <tr key={item.id} className="border-b border-slate-100"><td className="py-3 font-medium text-slate-800">{item.productName}</td><td className="py-3 text-right text-slate-600">{item.quantity} {item.unit || ''}</td><td className="py-3 text-right text-slate-600">{formatINR(item.unitPrice)}</td><td className="py-3 text-right font-semibold text-slate-900">{formatINR(item.totalPrice)}</td></tr>)}</tbody></table></div>
           <dl className="ml-auto mt-5 max-w-xs space-y-2 text-sm"><div className="flex justify-between"><dt>Subtotal</dt><dd>{formatINR(selectedBill.subtotal)}</dd></div><div className="flex justify-between"><dt>Discount</dt><dd>− {formatINR(selectedBill.discountAmount)}</dd></div><div className="flex justify-between"><dt>Tax ({selectedBill.taxRate}%)</dt><dd>{formatINR(selectedBill.taxAmount)}</dd></div><div className="flex justify-between border-t pt-3 text-base font-bold"><dt>Total</dt><dd>{formatINR(selectedBill.totalAmount)}</dd></div></dl>
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button onClick={() => window.print()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"><Printer size={16} /> Print bill</button><button onClick={() => void downloadPosBillPdf(selectedBill, currentBusiness)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white"><Download size={16} /> Download PDF</button></div>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><button onClick={() => window.print()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"><Printer size={16} /> Print bill</button><button onClick={() => void downloadBillPdf(selectedBill)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white"><Download size={16} /> Download PDF</button></div>
         </div>
         <style jsx global>{`@media print { body * { visibility: hidden !important; } .print-area, .print-area * { visibility: visible !important; } .print-area { position: fixed !important; inset: 0 auto auto 0 !important; width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border-radius: 0 !important; box-shadow: none !important; } }`}</style>
       </div>}
