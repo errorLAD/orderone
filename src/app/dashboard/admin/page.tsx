@@ -151,7 +151,7 @@ export default function PlatformAdminPage() {
           <div className="text-2xl font-black text-slate-900 mt-2">
             {data?.activeSubscriptions ?? 0} Active
           </div>
-          <span className="text-[11px] text-emerald-600 font-medium">₹20/mo Entry Plan Active</span>
+          <span className="text-[11px] text-emerald-600 font-medium">₹49/mo Basic Plan Active</span>
         </div>
       </div>
 

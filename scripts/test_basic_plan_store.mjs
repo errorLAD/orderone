@@ -45,7 +45,7 @@ function makeRequest(path, options = {}, body = null) {
 
 async function verify() {
   console.log('\n================================================================');
-  console.log('🧪 VERIFYING MATERIALS & INVENTORY IS IN ₹20 PLAN');
+  console.log('🧪 VERIFYING MATERIALS & INVENTORY IS IN ₹49 PLAN');
   console.log('================================================================\n');
 
   // 1. Check plan_basic configuration from API
@@ -62,7 +62,7 @@ async function verify() {
     console.error('❌ FAIL: Basic plan must have allowsStore = true!');
     process.exit(1);
   }
-  console.log('✅ PASS: Basic plan (₹20/mo) has allowsStore = true');
+  console.log('✅ PASS: Basic plan (₹49/mo) has allowsStore = true');
 
   // 2. Find or register a hardware business on plan_basic
   const bizRes = await makeRequest('/api/businesses');
@@ -70,7 +70,7 @@ async function verify() {
   
   let targetBiz = hwBiz;
   if (!targetBiz) {
-    console.log('Creating a test Hardware business on ₹20 Basic plan...');
+    console.log('Creating a test Hardware business on ₹49 Basic plan...');
     const regRes = await makeRequest('/api/auth/register-business', { method: 'POST' }, {
       businessName: `Test Hardware Store ${Date.now()}`,
       category: 'hardware',
@@ -85,7 +85,7 @@ async function verify() {
 
   console.log(`Testing Business: "${targetBiz.name}" (${targetBiz.id}) on plan: ${targetBiz.subscription?.planId} (₹${targetBiz.subscription?.amount}/mo)`);
 
-  // 3. Create a hardware product on the ₹20 plan
+  // 3. Create a hardware product on the ₹49 plan
   const createProdRes = await makeRequest('/api/products', { method: 'POST' }, {
     businessId: targetBiz.id,
     sourceType: 'store',
@@ -100,12 +100,12 @@ async function verify() {
   });
 
   if (createProdRes.status !== 200 || !createProdRes.data.success) {
-    console.error('❌ FAIL: Failed to create store product on ₹20 plan:', createProdRes.data);
+    console.error('❌ FAIL: Failed to create store product on ₹49 plan:', createProdRes.data);
     process.exit(1);
   }
-  console.log('✅ PASS: Successfully created store product on ₹20 Basic plan!');
+  console.log('✅ PASS: Successfully created store product on ₹49 Basic plan!');
 
-  // 4. Create a store order on the ₹20 plan
+  // 4. Create a store order on the ₹49 plan
   const storeOrderRes = await makeRequest('/api/orders', { method: 'POST' }, {
     businessId: targetBiz.id,
     sourceType: 'store',
@@ -116,13 +116,13 @@ async function verify() {
   });
 
   if (storeOrderRes.status !== 200 || !storeOrderRes.data.success) {
-    console.error('❌ FAIL: Failed to create store order on ₹20 plan:', storeOrderRes.data);
+    console.error('❌ FAIL: Failed to create store order on ₹49 plan:', storeOrderRes.data);
     process.exit(1);
   }
-  console.log(`✅ PASS: Successfully created store order on ₹20 plan! Token: ${storeOrderRes.data.order.tokenNumber}`);
+  console.log(`✅ PASS: Successfully created store order on ₹49 plan! Token: ${storeOrderRes.data.order.tokenNumber}`);
 
   console.log('\n================================================================');
-  console.log('🎉 SUCCESS: MATERIALS & INVENTORY IS FULLY ACCESSIBLE IN ₹20 PLAN!');
+  console.log('🎉 SUCCESS: MATERIALS & INVENTORY IS FULLY ACCESSIBLE IN ₹49 PLAN!');
   console.log('================================================================\n');
 }
 

@@ -268,11 +268,11 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
                 <span>{catConfig.label} Inventory Requires Gold Plan</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300">
-                  Current: Basic ₹20/mo
+                  Current: Basic ₹49/mo
                 </span>
               </h3>
               <p className="text-xs text-amber-900/80 mt-1 max-w-2xl leading-relaxed">
-                Your business is currently subscribed to the Basic plan (₹20/mo, Menu module only). Upgrade to the <span className="font-semibold text-amber-950">Gold Plan (₹99/mo)</span> to unlock complete {catConfig.shortLabel} product SKUs, stock levels, site contractor orders, and custom UPI QR checkout payments.
+                Your business is currently subscribed to the Basic plan (₹49/mo, Menu module only). Upgrade to the <span className="font-semibold text-amber-950">Gold Plan (₹149/mo)</span> to unlock complete {catConfig.shortLabel} product SKUs, stock levels, site contractor orders, and custom UPI QR checkout payments.
               </p>
             </div>
           </div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
             href="/dashboard/subscription"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 transition-colors shrink-0 shadow-xs"
           >
-            <span>Upgrade to Gold (₹99/mo)</span>
+            <span>Upgrade to Gold (₹149/mo)</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

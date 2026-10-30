@@ -34,18 +34,18 @@ async function runRazorpaySubscriptionTests() {
 
   try {
     // ----------------------------------------------------------------
-    // TEST 1: Subscription Plans & Pricing (Basic ₹20, Gold ₹99)
+    // TEST 1: Subscription Plans & Pricing (Basic ₹49, Gold ₹149)
     // ----------------------------------------------------------------
     console.log('\n[TEST 1] Verifying Subscription Plans & 30-day Pricing...');
     const publicPlans = await getSubscriptionPlans(false);
     const basicPlan = publicPlans.find((p) => p.id === 'plan_basic');
     const goldPlan = publicPlans.find((p) => p.id === 'plan_gold');
 
-    if (!basicPlan || basicPlan.priceMonthly !== 20) {
-      throw new Error(`Basic plan pricing mismatch: expected ₹20, got ${basicPlan?.priceMonthly}`);
+    if (!basicPlan || basicPlan.priceMonthly !== 49) {
+      throw new Error(`Basic plan pricing mismatch: expected ₹49, got ${basicPlan?.priceMonthly}`);
     }
-    if (!goldPlan || goldPlan.priceMonthly !== 99) {
-      throw new Error(`Gold plan pricing mismatch: expected ₹99, got ${goldPlan?.priceMonthly}`);
+    if (!goldPlan || goldPlan.priceMonthly !== 149) {
+      throw new Error(`Gold plan pricing mismatch: expected ₹149, got ${goldPlan?.priceMonthly}`);
     }
     console.log(`✓ PASS: Basic Plan is ₹${basicPlan.priceMonthly}/30 days, Gold Plan is ₹${goldPlan.priceMonthly}/30 days.`);
 
@@ -108,7 +108,7 @@ async function runRazorpaySubscriptionTests() {
     const mockRawBody = JSON.stringify({
       event: 'payment.captured',
       payload: {
-        payment: { entity: { id: samplePaymentId, order_id: sampleOrderId, amount: 9900 } },
+        payment: { entity: { id: samplePaymentId, order_id: sampleOrderId, amount: 14900 } },
       },
     });
     const validWebhookSig = crypto

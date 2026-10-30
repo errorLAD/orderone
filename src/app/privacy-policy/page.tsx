@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
                   <strong>Supabase & PostgreSQL:</strong> Our cloud database infrastructure is hosted securely via Supabase, employing encrypted connections, authenticated role-based access, and isolated database schemas.
                 </li>
                 <li>
-                  <strong>Razorpay:</strong> Platform subscription purchases are processed via <strong>Razorpay</strong>. When subscribing to Basic (₹20) or Gold (₹99), payment information is transmitted securely to Razorpay using standard PCI-DSS compliant encryption. OrderOne.in does not store your credit card numbers, debit card CVVs, or UPI banking PINs. See the <a href="https://razorpay.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-600 hover:underline">Razorpay Privacy Policy</a> for more information about its privacy practices.
+                  <strong>Razorpay:</strong> Platform subscription purchases are processed via <strong>Razorpay</strong>. When subscribing to Basic (₹49) or Gold (₹149), payment information is transmitted securely to Razorpay using standard PCI-DSS compliant encryption. OrderOne.in does not store your credit card numbers, debit card CVVs, or UPI banking PINs. See the <a href="https://razorpay.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-600 hover:underline">Razorpay Privacy Policy</a> for more information about its privacy practices.
                 </li>
               </ul>
             </section>

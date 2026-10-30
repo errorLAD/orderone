@@ -109,7 +109,7 @@ async function runLegalAndBrandingTests() {
   console.log('✓ PASS: Storefront renderer preserves individual merchant trade name and logo without platform overwrite.');
 
   // ----------------------------------------------------------------
-  // TEST 7: Verify Plans and Pricing (Basic ₹20, Gold ₹99, Diamond Hidden)
+  // TEST 7: Verify Plans and Pricing (Basic ₹49, Gold ₹149, Diamond Hidden)
   // ----------------------------------------------------------------
   console.log('\n[TEST 7] Verifying Plan Pricing and Admin-Only Diamond...');
   const publicPlans = await getSubscriptionPlans(false);
@@ -117,10 +117,10 @@ async function runLegalAndBrandingTests() {
   const gold = publicPlans.find((p) => p.id === 'plan_gold');
   const diamond = publicPlans.find((p) => p.id === 'plan_diamond');
 
-  if (!basic || basic.priceMonthly !== 20) throw new Error('Basic plan price is not ₹20!');
-  if (!gold || gold.priceMonthly !== 99) throw new Error('Gold plan price is not ₹99!');
+  if (!basic || basic.priceMonthly !== 49) throw new Error('Basic plan price is not ₹49!');
+  if (!gold || gold.priceMonthly !== 149) throw new Error('Gold plan price is not ₹149!');
   if (diamond) throw new Error('Diamond plan is visible to public!');
-  console.log('✓ PASS: Basic ₹20/30 days, Gold ₹99/30 days, Diamond hidden from public self-checkout.');
+  console.log('✓ PASS: Basic ₹49/30 days, Gold ₹149/30 days, Diamond hidden from public self-checkout.');
 
   console.log('\n================================================================');
   console.log('ALL LEGAL PAGES, BRANDING & RAZORPAY VERIFICATIONS PASSED! ✓');

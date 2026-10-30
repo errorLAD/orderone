@@ -49,7 +49,7 @@ async function main() {
     planId: 'plan_basic',
     status: 'active',
     billingCycle: 'monthly',
-    amount: 20.00,
+    amount: 49.00,
   });
 
   await pool.query(
@@ -128,7 +128,7 @@ async function main() {
     // Test Gold business assertion
     await pool.query(
       `UPDATE businesses SET subscription = $1::jsonb WHERE id = $2`,
-      [JSON.stringify({ planId: 'plan_gold', status: 'active', billingCycle: 'monthly', amount: 99.00 }), testBizId]
+      [JSON.stringify({ planId: 'plan_gold', status: 'active', billingCycle: 'monthly', amount: 149.00 }), testBizId]
     );
 
     // With Gold, 20 products and 10 categories should now NOT be blocked

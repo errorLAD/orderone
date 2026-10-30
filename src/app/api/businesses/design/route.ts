@@ -89,7 +89,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Business not found' }, { status: 404 });
     }
 
-    // STRICT SERVER-SIDE ENFORCEMENT: Gold Plan Requirement (₹99/month)
+    // STRICT SERVER-SIDE ENFORCEMENT: Gold Plan Requirement (₹149/month)
     const planId = business.subscription?.planId || 'plan_basic';
     const isGold = hasActiveGoldAccess(business);
     if (!isGold) {
@@ -97,7 +97,7 @@ export async function PUT(req: NextRequest) {
         {
           success: false,
           error:
-            'Storefront Design Customization is a Gold feature (₹99/month). Please upgrade your subscription to customize and publish your storefront.',
+            'Storefront Design Customization is a Gold feature (₹149/month). Please upgrade your subscription to customize and publish your storefront.',
           requiresUpgrade: true,
         },
         { status: 403 }

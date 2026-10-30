@@ -50,10 +50,9 @@ A multi-tenant SaaS platform built for Indian cafes, restaurants, bakeries, juic
 - **Business Owner**: Full storefront, product catalog, pricing, order fulfillment, and billing control.
 - **Store / Kitchen Staff**: Order fulfillment and token calling.
 
-### 7. SaaS Subscriptions (₹20/mo Entry Plan)
-- **Micro Starter**: ₹20/month (₹200/year) — Perfect for small Indian street vendors, tea stalls and retail kiosks.
-- **Business Pro**: ₹49/month (₹490/year) — Both Store & Menu enabled simultaneously, TV display, analytics.
-- **Multi-Branch Elite**: ₹99/month (₹990/year) — Unlimited products, priority support.
+### 7. SaaS Subscriptions
+- **Basic**: ₹49/month (₹490/year) — Essential catalog, menu, and order management.
+- **Gold**: ₹149/month (₹1,490/year) — Store and Menu modules, expanded limits, and premium features.
 
 ---
 
@@ -109,7 +108,7 @@ npx --yes tsx test_core.mjs
 | `/dashboard/menu/orders` | Restaurant kitchen tickets ONLY (M-Tokens) |
 | `/dashboard/menu/tokens` | Kitchen cooking & serving queue |
 | `/dashboard/qr-codes` | Printable branded QR posters |
-| `/dashboard/subscription` | SaaS plans & ₹20/mo billing |
+| `/dashboard/subscription` | SaaS plans and billing |
 | `/dashboard/settings` | Business settings & channel toggles |
 | `/dashboard/admin` | Platform super administrator console |
 | `/store/annapurna-foods` | Public customer retail store |

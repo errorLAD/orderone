@@ -169,7 +169,7 @@ export default function GstInvoiceSettingsPage() {
           </div>
 
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-block mb-3">
-            Gold Plan Feature (₹99/month)
+            Gold Plan Feature (₹149/month)
           </span>
 
           <h2 className="text-lg font-black text-[#0F172A] mb-2">
@@ -177,12 +177,12 @@ export default function GstInvoiceSettingsPage() {
           </h2>
 
           <p className="text-xs text-[#64748B] max-w-md mx-auto leading-relaxed mb-6">
-            Your store is currently on the <strong>Basic plan (₹20/month)</strong>. Custom GST registration, automated CGST + SGST tax breakdown, and compliant Tax Invoices are exclusive to the <strong>Gold plan</strong>.
+            Your store is currently on the <strong>Basic plan (₹49/month)</strong>. Custom GST registration, automated CGST + SGST tax breakdown, and compliant Tax Invoices are exclusive to the <strong>Gold plan</strong>.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto text-left mb-6 text-xs">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-              <p className="font-bold text-[#0F172A]">Basic (₹20/mo)</p>
+              <p className="font-bold text-[#0F172A]">Basic (₹49/mo)</p>
               <ul className="text-[11px] text-[#64748B] mt-1 space-y-1">
                 <li>• Ordinary order receipts only</li>
                 <li>• No GST configuration</li>
@@ -193,7 +193,7 @@ export default function GstInvoiceSettingsPage() {
 
             <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200">
               <p className="font-bold text-indigo-900 flex items-center justify-between">
-                <span>Gold (₹99/mo)</span>
+                <span>Gold (₹149/mo)</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-800 font-bold">Unlocks This</span>
               </p>
               <ul className="text-[11px] text-indigo-950 mt-1 space-y-1">
@@ -210,7 +210,7 @@ export default function GstInvoiceSettingsPage() {
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-xl font-black text-xs shadow-md transition-all"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Upgrade to Gold for ₹99/mo</span>
+            <span>Upgrade to Gold for ₹149/mo</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

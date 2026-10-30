@@ -57,8 +57,8 @@ async function migrate() {
       name: 'Basic',
       slug: 'basic',
       description: 'Essential digital menu and ordering for food stalls, tea cafes & restaurants',
-      price_monthly: 20,
-      price_annual: 200,
+      price_monthly: 49,
+      price_annual: 490,
       features: JSON.stringify([
         'Digital Food & Drink Menu',
         'Customer QR Code ordering',
@@ -66,7 +66,7 @@ async function migrate() {
         'Kitchen tokens & real-time alerts',
         'Store module locked'
       ]),
-      max_products: 100,
+      max_products: 20,
       max_staff: 1,
       allows_store: false,
       allows_menu: true,
@@ -81,8 +81,8 @@ async function migrate() {
       name: 'Gold',
       slug: 'gold',
       description: 'Complete retail store + dining menu suite with custom UPI QR payment collection',
-      price_monthly: 99,
-      price_annual: 990,
+      price_monthly: 149,
+      price_annual: 1490,
       features: JSON.stringify([
         'All Basic Menu features',
         'Full Retail Store Module',
@@ -92,7 +92,7 @@ async function migrate() {
         'Direct customer UPI payment on checkout',
         'Sales & stock analytics'
       ]),
-      max_products: 1000,
+      max_products: 50,
       max_staff: 5,
       allows_store: true,
       allows_menu: true,
@@ -157,7 +157,7 @@ async function migrate() {
       p.allows_tv_display, p.allows_analytics, p.is_popular, p.is_visible, p.custom_upi
     ]);
   }
-  console.log('✓ Upserted 3 plans (Basic ₹20, Gold ₹99, Diamond ₹150 [hidden])');
+  console.log('✓ Upserted 3 plans (Basic ₹49, Gold ₹149, Diamond ₹249 [hidden])');
 
   // 5. Clean up old plan references in businesses
   await pool.query(`

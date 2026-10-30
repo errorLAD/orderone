@@ -66,12 +66,12 @@ export function PublicFooter() {
             <ul className="space-y-2">
               <li>
                 <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
-                  Basic Plan — ₹20 / 30 Days
+                  Basic Plan — ₹49 / 30 Days
                 </Link>
               </li>
               <li>
                 <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
-                  Gold Plan — ₹99 / 30 Days
+                  Gold Plan — ₹149 / 30 Days
                 </Link>
               </li>
               <li>

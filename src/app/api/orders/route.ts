@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: access.message || 'Store orders are not included in your current Basic plan. Please upgrade to Gold (₹99/mo).',
+            error: access.message || 'Store orders are not included in your current Basic plan. Please upgrade to Gold (₹149/mo).',
             code: 'STORE_MODULE_LOCKED',
           },
           { status: 403 }

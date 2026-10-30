@@ -90,9 +90,9 @@ async function runTests() {
     const restBizId = restReg.data.business.id;
 
     // ----------------------------------------------------
-    // TEST 2: Restaurant Menu Creation on Basic Plan (₹20/mo)
+    // TEST 2: Restaurant Menu Creation on Basic Plan (₹49/mo)
     // ----------------------------------------------------
-    console.log('\n--- TEST 2: Restaurant Menu Creation on Basic Plan (₹20/mo) ---');
+    console.log('\n--- TEST 2: Restaurant Menu Creation on Basic Plan (₹49/mo) ---');
     const restCatRes = await makeRequest(`/api/categories?businessId=${restBizId}&sourceType=menu`);
     let restCatId = restCatRes.data.categories?.[0]?.id;
     if (!restCatId) {
@@ -147,7 +147,7 @@ async function runTests() {
     // ----------------------------------------------------
     // TEST 4: Verify Server-Side Store Lock on Basic Plan
     // ----------------------------------------------------
-    console.log('\n--- TEST 4: Verify Store Module Lock on Basic Plan (₹20/mo) ---');
+    console.log('\n--- TEST 4: Verify Store Module Lock on Basic Plan (₹49/mo) ---');
     const hardCatRes = await makeRequest(`/api/categories?businessId=${hardBizId}&sourceType=store`);
     let hardCatId = hardCatRes.data.categories?.[0]?.id;
     if (!hardCatId) {
@@ -175,9 +175,9 @@ async function runTests() {
     assert(lockedStoreAttempt.data.error.includes('Gold'), `Error explains Gold plan requirement (got: "${lockedStoreAttempt.data.error}")`);
 
     // ----------------------------------------------------
-    // TEST 5: Upgrade Hardware Business to Gold Plan (₹99/mo)
+    // TEST 5: Upgrade Hardware Business to Gold Plan (₹149/mo)
     // ----------------------------------------------------
-    console.log('\n--- TEST 5: Upgrade Hardware Business to Gold Plan (₹99/mo) ---');
+    console.log('\n--- TEST 5: Upgrade Hardware Business to Gold Plan (₹149/mo) ---');
     const upgradeRes = await makeRequest('/api/subscriptions', { method: 'POST' }, {
       businessId: hardBizId,
       planId: 'plan_gold',

@@ -53,7 +53,7 @@ async function runTests() {
     planId: 'plan_basic',
     status: 'active',
     billingCycle: 'monthly',
-    amount: 20.00
+    amount: 49.00
   });
 
   await pool.query(`

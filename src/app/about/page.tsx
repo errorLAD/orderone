@@ -166,7 +166,7 @@ export default function AboutUsPage() {
           <section className="p-8 bg-gradient-to-br from-[#0F172A] to-slate-900 rounded-3xl text-white text-center space-y-4">
             <h2 className="text-2xl font-black tracking-tight">Ready to launch your digital store?</h2>
             <p className="text-xs text-slate-300 max-w-md mx-auto">
-              Get started with OrderOne.in in under two minutes with our Basic (₹20/30 days) or Gold (₹99/30 days) plans.
+              Get started with OrderOne.in in under two minutes with our Basic (₹49/30 days) or Gold (₹149/30 days) plans.
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link

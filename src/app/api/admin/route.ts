@@ -34,11 +34,11 @@ export async function POST(req: NextRequest) {
     if (action === 'toggle_status' && businessId && status) {
       await updateBusiness(businessId, {
         subscription: {
-          planId: 'plan_starter',
+          planId: 'plan_basic',
           status,
           billingCycle: 'monthly',
           renewsAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-          amount: 20,
+          amount: 49,
         },
       });
 

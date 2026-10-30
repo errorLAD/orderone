@@ -56,10 +56,10 @@ export default function RefundPolicyPage() {
               </p>
               <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
                 <li>
-                  <strong>Basic Plan (₹20 / 30 days):</strong> Essential digital menu, token management, up to 20 products, 10 categories.
+                  <strong>Basic Plan (₹49 / 30 days):</strong> Essential digital menu, token management, up to 20 products, 10 categories.
                 </li>
                 <li>
-                  <strong>Gold Plan (₹99 / 30 days):</strong> Dual Store & Menu modules, up to 50 products, 30 categories, storefront design appearance customization, custom merchant UPI, and GST invoicing.
+                  <strong>Gold Plan (₹149 / 30 days):</strong> Dual Store & Menu modules, up to 50 products, 30 categories, storefront design appearance customization, custom merchant UPI, and GST invoicing.
                 </li>
               </ul>
               <p>
@@ -90,7 +90,7 @@ export default function RefundPolicyPage() {
             <section className="pt-6 space-y-3">
               <h2 className="text-base font-black text-slate-900">3. Plan Upgrades</h2>
               <p>
-                When upgrading from Basic to Gold (₹99), the upgraded Gold tier activates immediately upon verified Razorpay payment, initiating a fresh 30-day validity term from the date and timestamp of payment. The transaction is recorded in your billing history with full receipt access.
+                When upgrading from Basic to Gold (₹149), the upgraded Gold tier activates immediately upon verified Razorpay payment, initiating a fresh 30-day validity term from the date and timestamp of payment. The transaction is recorded in your billing history with full receipt access.
               </p>
             </section>
 

@@ -291,7 +291,7 @@ export default function StorefrontDesignPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-base tracking-tight">
-                  Unlock Storefront Design with Gold Plan (₹99/month)
+                  Unlock Storefront Design with Gold Plan (₹149/month)
                 </h3>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
                   Locked Feature
@@ -309,7 +309,7 @@ export default function StorefrontDesignPage() {
             href="/dashboard/subscription"
             className="px-4 py-2.5 bg-white text-orange-950 font-black text-xs rounded-xl shadow-md hover:bg-amber-50 transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
           >
-            <span>Upgrade to Gold (₹99/mo)</span>
+            <span>Upgrade to Gold (₹149/mo)</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -924,12 +924,12 @@ export default function StorefrontDesignPage() {
               <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
                 Storefront Design Customization (including the Modern Visual template, hero cover
                 banners, and custom brand colors) is exclusively available to businesses with the{' '}
-                <strong>Gold Plan (₹99/month)</strong>.
+                <strong>Gold Plan (₹149/month)</strong>.
               </p>
             </div>
 
             <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200/80 text-xs text-amber-900 space-y-1.5">
-              <div className="font-bold">What you get with Gold (₹99/mo):</div>
+              <div className="font-bold">What you get with Gold (₹149/mo):</div>
               <ul className="space-y-1 text-[11px] text-amber-800">
                 <li className="flex items-center gap-1.5">
                   <Check className="w-3 h-3 text-amber-600 shrink-0" />

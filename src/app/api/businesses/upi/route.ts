@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Custom UPI payment configuration requires the Gold subscription plan (₹99/mo). Please upgrade your subscription to enable custom UPI payments.',
+          error: 'Custom UPI payment configuration requires the Gold subscription plan (₹149/mo). Please upgrade your subscription to enable custom UPI payments.',
           code: 'GOLD_PLAN_REQUIRED',
         },
         { status: 403 }

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json(
         {
           success: false,
-          error: 'Dynamic order UPI payment QR codes require the Gold subscription plan (₹99/mo).',
+          error: 'Dynamic order UPI payment QR codes require the Gold subscription plan (₹149/mo).',
           code: 'GOLD_PLAN_REQUIRED',
         },
         { status: 403 }

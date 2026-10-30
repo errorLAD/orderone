@@ -45,14 +45,14 @@ async function runTests() {
     
     // Check Basic plan properties
     const basicPlan = plansData.plans.find(p => p.id === 'plan_basic');
-    assert(basicPlan.priceMonthly === 20, 'Basic plan is ₹20/month');
+    assert(basicPlan.priceMonthly === 49, 'Basic plan is ₹49/month');
     assert(basicPlan.allowsMenu === true, 'Basic plan allows Menu module');
     assert(basicPlan.allowsStore === false, 'Basic plan locks Store module');
     assert(basicPlan.customUpi === false, 'Basic plan has customUpi = false');
 
     // Check Gold plan properties
     const goldPlan = plansData.plans.find(p => p.id === 'plan_gold');
-    assert(goldPlan.priceMonthly === 99, 'Gold plan is ₹99/month');
+    assert(goldPlan.priceMonthly === 149, 'Gold plan is ₹149/month');
     assert(goldPlan.allowsMenu === true, 'Gold plan allows Menu module');
     assert(goldPlan.allowsStore === true, 'Gold plan allows Store module');
     assert(goldPlan.customUpi === true, 'Gold plan has customUpi = true');
@@ -159,7 +159,7 @@ async function runTests() {
     const checkoutData = await checkoutRes.json();
     assert(checkoutRes.status === 200, 'Subscription checkout returned 200');
     assert(checkoutData.payment && checkoutData.payment.id, 'Checkout returned payment record');
-    assert(checkoutData.payment.amount === 99, 'Gold subscription checkout amount is ₹99');
+    assert(checkoutData.payment.amount === 149, 'Gold subscription checkout amount is ₹149');
     assert(checkoutData.platformUpi && checkoutData.platformUpi.upiId, 'Checkout provided platform UPI ID for merchant payment');
 
     const paymentId = checkoutData.payment.id;

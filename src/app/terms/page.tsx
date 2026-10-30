@@ -95,10 +95,10 @@ export default function TermsAndConditionsPage() {
               </p>
               <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
                 <li>
-                  <strong>Basic Plan — ₹20 for 30 days:</strong> Includes essential catalog and menu management, up to 20 products/items, 10 categories, token queue management, and storefront QR codes.
+                  <strong>Basic Plan — ₹49 for 30 days:</strong> Includes essential catalog and menu management, up to 20 products/items, 10 categories, token queue management, and storefront QR codes.
                 </li>
                 <li>
-                  <strong>Gold Plan — ₹99 for 30 days:</strong> Includes full Store & Menu modules, up to 50 products/items, 30 categories, storefront design appearance customization, custom merchant UPI payment setup, and GST tax invoicing tools.
+                  <strong>Gold Plan — ₹149 for 30 days:</strong> Includes full Store & Menu modules, up to 50 products/items, 30 categories, storefront design appearance customization, custom merchant UPI payment setup, and GST tax invoicing tools.
                 </li>
                 <li>
                   <strong>Diamond Plan — ₹150 for 30 days:</strong> An enterprise tier managed directly by platform administrators.

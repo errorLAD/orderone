@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'GST configuration and Tax Invoices require an active Gold subscription plan (₹99/mo). Please upgrade to access tax configuration.',
+          error: 'GST configuration and Tax Invoices require an active Gold subscription plan (₹149/mo). Please upgrade to access tax configuration.',
           code: 'GOLD_PLAN_REQUIRED',
         },
         { status: 403 }

@@ -243,7 +243,7 @@ export function PlanUsageCard({
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Upgrade to Gold (₹99)</span>
+            <span>Upgrade to Gold (₹149)</span>
           </Link>
         )}
       </div>
@@ -330,7 +330,7 @@ export function PlanUsageCard({
             </div>
             <p className="text-[11px] text-rose-800 leading-relaxed">
               {isBasic
-                ? 'Upgrade to Gold (₹99/mo) to unlock up to 50 products/items, 30 categories, custom UPI payments, and dual Store + Menu modules.'
+                ? 'Upgrade to Gold (₹149/mo) to unlock up to 50 products/items, 30 categories, custom UPI payments, and dual Store + Menu modules.'
                 : 'Deleting unused or out-of-stock items will immediately free up capacity, or you can contact support for enterprise quotas.'}
             </p>
             {isBasic && (
@@ -357,7 +357,7 @@ export function PlanUsageCard({
             </div>
             <p className="text-[11px] text-rose-800 leading-relaxed">
               {isBasic
-                ? 'Upgrade to Gold (₹99/mo) to expand your capacity up to 30 categories and 50 items.'
+                ? 'Upgrade to Gold (₹149/mo) to expand your capacity up to 30 categories and 50 items.'
                 : 'Delete unused categories to free up slots for new collections.'}
             </p>
             {isBasic && (

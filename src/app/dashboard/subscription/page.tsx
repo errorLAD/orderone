@@ -465,7 +465,7 @@ export default function SubscriptionPage() {
       {/* Current Subscription Capacity & Plan Usage Card */}
       <PlanUsageCard />
 
-      {/* Available Plans Grid: Basic (₹20) vs Gold (₹99) */}
+      {/* Available Plans Grid: Basic (₹49) vs Gold (₹149) */}
       <div>
         <div className="mb-3">
           <h2 className="text-sm font-black text-slate-900">Choose Your Subscription Plan</h2>
@@ -598,8 +598,8 @@ export default function SubscriptionPage() {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-[#64748B] font-semibold">
                 <th className="p-3">Feature</th>
-                <th className="p-3 text-center">Basic (₹20 / 30 days)</th>
-                <th className="p-3 text-center text-[#4F46E5]">Gold (₹99 / 30 days)</th>
+                <th className="p-3 text-center">Basic (₹49 / 30 days)</th>
+                <th className="p-3 text-center text-[#4F46E5]">Gold (₹149 / 30 days)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
