@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Calculator, Plus, Trash2, Save, RefreshCw, FileText, Eye, Download, Printer, CalendarDays } from 'lucide-react';
+import { Calculator, Trash2, Save, RefreshCw, FileText, Eye, Download, Printer, CalendarDays } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { formatINR } from '@/lib/utils';
 import { PosBill } from '@/types';
@@ -12,7 +12,6 @@ type SalesReport = {
   channels: Record<'pos' | 'calculator' | 'store' | 'menu', { count: number; revenue: number }>;
   totalCount: number; totalRevenue: number;
 };
-const emptyItem = (): DraftItem => ({ productName: '', quantity: '1', unit: '', unitPrice: '' });
 const dateInput = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
@@ -22,7 +21,15 @@ export default function CalculatorPage() {
   const { currentBusiness, currentRole, currentUser } = useApp();
   const isBusinessOwner = (currentUser?.role || currentRole) === 'owner';
   const [tab, setTab] = useState<'billing' | 'history' | 'sales'>('billing');
-  const [items, setItems] = useState<DraftItem[]>([emptyItem()]);
+  const [items, setItems] = useState<DraftItem[]>([]);
+  const [display, setDisplay] = useState('0');
+  const [expression, setExpression] = useState('');
+  const [storedValue, setStoredValue] = useState<number | null>(null);
+  const [pendingOperator, setPendingOperator] = useState<string | null>(null);
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const [lineName, setLineName] = useState('');
+  const [lineQuantity, setLineQuantity] = useState('1');
+  const [lineUnit, setLineUnit] = useState('');
   const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
   const [discountValue, setDiscountValue] = useState('0');
   const [taxRate, setTaxRate] = useState(String(currentBusiness?.settings?.orderSettings?.taxRatePercentage || 0));
@@ -96,6 +103,82 @@ export default function CalculatorPage() {
   const updateItem = (index: number, key: keyof DraftItem, value: string) => {
     setItems(current => current.map((item, i) => i === index ? { ...item, [key]: value } : item));
   };
+  const runOperation = (left: number, right: number, op: string) => {
+    if (op === '+') return left + right;
+    if (op === '-') return left - right;
+    if (op === '*') return left * right;
+    if (op === '/') return right === 0 ? NaN : left / right;
+    return right;
+  };
+  const pressCalculatorKey = (key: string) => {
+    setError('');
+    if (/^\d$/.test(key)) {
+      setDisplay(current => waitingForOperand || current === '0' ? key : current.length < 14 ? current + key : current);
+      setWaitingForOperand(false);
+      return;
+    }
+    if (key === '.') {
+      setDisplay(current => waitingForOperand ? '0.' : current.includes('.') ? current : current + '.');
+      setWaitingForOperand(false);
+      return;
+    }
+    if (key === 'AC') {
+      setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false);
+      return;
+    }
+    if (key === 'DEL') {
+      setDisplay(current => current.length > 1 ? current.slice(0, -1) : '0');
+      setWaitingForOperand(false);
+      return;
+    }
+    if (key === '%') {
+      const value = Number(display) / 100;
+      setDisplay(String(Number(value.toPrecision(10))));
+      setWaitingForOperand(true);
+      return;
+    }
+    if (key === '+/-') {
+      setDisplay(current => String(-Number(current)));
+      return;
+    }
+    if (key === '=') {
+      if (pendingOperator && storedValue !== null) {
+        const result = runOperation(storedValue, Number(display), pendingOperator);
+        if (!Number.isFinite(result)) { setError('Cannot divide by zero.'); return; }
+        const rounded = Number(result.toFixed(2));
+        setDisplay(String(rounded)); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(true);
+      }
+      return;
+    }
+    if (['+', '-', '*', '/'].includes(key)) {
+      let left = Number(display);
+      if (pendingOperator && storedValue !== null && !waitingForOperand) {
+        left = runOperation(storedValue, Number(display), pendingOperator);
+        if (!Number.isFinite(left)) { setError('Cannot divide by zero.'); return; }
+        left = Number(left.toFixed(2));
+        setDisplay(String(left));
+      }
+      const operatorLabel = key === '*' ? '×' : key === '/' ? '÷' : key === '-' ? '−' : key;
+      setStoredValue(left); setPendingOperator(key); setExpression(`${left} ${operatorLabel}`); setWaitingForOperand(true);
+    }
+  };
+  const addCalculatedLine = () => {
+    if (pendingOperator && storedValue !== null) {
+      setError('Press = to finish the calculation before adding it to the bill.'); return;
+    }
+    const amount = Number(display);
+    const quantity = Number(lineQuantity);
+    if (!Number.isFinite(amount) || amount < 0 || !Number.isFinite(quantity) || quantity <= 0) {
+      setError('Enter a valid amount and a quantity greater than zero.'); return;
+    }
+    setItems(current => [...current, {
+      productName: lineName.trim() || `Item ${current.length + 1}`,
+      quantity: String(quantity), unit: lineUnit.trim(), unitPrice: amount.toFixed(2),
+    }]);
+    setLineName(''); setLineQuantity('1'); setLineUnit('');
+    setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false);
+    setError(''); setNotice('');
+  };
   const saveBill = async () => {
     if (!currentBusiness?.id || saving) return;
     const validItems = items.filter(item => Number(item.quantity) > 0 && Number(item.unitPrice) >= 0 && item.unitPrice.trim() !== '');
@@ -117,7 +200,8 @@ export default function CalculatorPage() {
       setBills(current => [data.bill, ...current.filter(bill => bill.id !== data.bill.id)]);
       if (isNewBill) setHistoryTotal(current => current + 1);
       setNotice(`Bill ${data.bill.billNumber} saved with all items.`);
-      setSelectedBill(data.bill); setItems([emptyItem()]); setDiscountValue('0');
+      setSelectedBill(data.bill); setItems([]); setDiscountValue('0');
+      setDisplay('0'); setExpression(''); setStoredValue(null); setPendingOperator(null); setWaitingForOperand(false);
       setRequestId(''); setTab('history');
     } catch (e: any) { setError(e.message || 'Bill could not be saved.'); }
     finally { setSaving(false); }
@@ -139,39 +223,64 @@ export default function CalculatorPage() {
 
       <nav className="flex w-full gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2" aria-label="Calculator sections">
         {[['billing', 'Manual Billing'], ['history', 'Bill History'], ['sales', 'Daily Sales']].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id as typeof tab)} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 text-sm font-semibold ${tab === id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
+          <button key={id} onClick={() => { setTab(id as typeof tab); setError(''); }} className={`min-h-11 flex-1 whitespace-nowrap rounded-xl px-4 text-sm font-semibold ${tab === id ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
         ))}
       </nav>
 
       {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
       {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>}
 
-      {tab === 'billing' && <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-900">New manual bill</h2><p className="mt-1 text-sm text-slate-500">Add items and their price. Product names are optional.</p></div><button onClick={() => setItems(current => [...current, emptyItem()])} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-indigo-50 px-3 text-sm font-semibold text-indigo-700"><Plus size={17} /> Add item</button></div>
-          <div className="space-y-3">
-            {items.map((item, index) => <div key={index} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:grid-cols-[minmax(120px,1.6fr)_minmax(80px,.65fr)_minmax(75px,.6fr)_minmax(100px,.8fr)_40px] sm:items-end sm:bg-white sm:p-2">
-              <label className="min-w-0 text-xs font-semibold text-slate-500">Item name <input value={item.productName} onChange={e => updateItem(index, 'productName', e.target.value)} placeholder={`Item ${index + 1} (optional)`} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-              <label className="text-xs font-semibold text-slate-500">Quantity <input type="number" inputMode="decimal" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-              <label className="text-xs font-semibold text-slate-500">Unit <input value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="pcs, kg" className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-              <label className="text-xs font-semibold text-slate-500">Unit price (₹) <input type="number" inputMode="decimal" min="0" step="0.01" value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', e.target.value)} placeholder="0.00" className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
-              <button aria-label="Remove item" disabled={items.length === 1} onClick={() => setItems(current => current.filter((_, i) => i !== index))} className="grid min-h-10 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"><Trash2 size={17} /></button>
-              <div className="text-right text-sm font-bold text-slate-800 sm:hidden">Line: {formatINR((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0))}</div>
-            </div>)}
-          </div>
-          <div className="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2">
-            <label className="text-sm font-semibold text-slate-700">Discount <div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-lg border border-slate-200 bg-slate-50 px-2 text-sm"><option value="fixed">₹ amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-lg border border-l-0 border-slate-200 px-3 text-sm" /></div></label>
-            <label className="text-sm font-semibold text-slate-700">Tax rate (%) <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm" /></label>
-          </div>
+      {tab === 'billing' && <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4">
+          <section className="mx-auto w-full max-w-[460px] rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Calculator keypad">
+            <div className="flex min-h-32 flex-col justify-end overflow-hidden rounded-2xl bg-slate-950 px-5 py-4 text-right text-white sm:min-h-36">
+              <div className="min-h-6 truncate text-sm text-slate-400" aria-live="polite">{expression || ' '}</div>
+              <output className="mt-1 block truncate text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl" aria-label={`Calculator value ${display}`}>{display}</output>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {['AC','DEL','%','/','7','8','9','*','4','5','6','-','1','2','3','+','+/-','0','.','='].map(key => {
+                const special = ['AC','DEL','%','/','*','-','+','='].includes(key);
+                const label = key === '*' ? '×' : key === '/' ? '÷' : key === '-' ? '−' : key === '+/-' ? '±' : key;
+                return <button key={key} type="button" onClick={() => pressCalculatorKey(key)} aria-label={key === 'DEL' ? 'Delete last digit' : label} className={`min-h-14 rounded-2xl text-lg font-semibold transition active:scale-[0.98] sm:min-h-16 ${key === '=' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : special ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>{label}</button>;
+              })}
+            </div>
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="mb-3 text-sm font-bold text-slate-800">Add this amount to the bill</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_84px_92px]">
+                <label className="col-span-2 text-xs font-semibold text-slate-500 sm:col-span-1">Item name <input value={lineName} onChange={e => setLineName(e.target.value)} placeholder="Optional item name" className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+                <label className="text-xs font-semibold text-slate-500">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={lineQuantity} onChange={e => setLineQuantity(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+                <label className="text-xs font-semibold text-slate-500">Unit <input value={lineUnit} onChange={e => setLineUnit(e.target.value)} placeholder="pcs / kg" className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 px-3 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
+              </div>
+              <button type="button" onClick={addCalculatedLine} className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 font-bold text-white hover:bg-slate-800">+ Add {formatINR(Number(display) || 0)} to bill</button>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="mb-3 flex items-center justify-between"><div><h2 className="font-bold text-slate-900">Current bill</h2><p className="text-xs text-slate-500">{items.length} item{items.length === 1 ? '' : 's'} - amounts calculate automatically</p></div>{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-rose-600 hover:bg-rose-50">Clear bill</button>}</div>
+            {items.length === 0 ? <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">Use the keypad above, then add each amount to this bill.</p> : <div className="space-y-3">{items.map((item, index) => <div key={index} className="grid grid-cols-2 gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_84px_100px_120px_40px] sm:items-end">
+              <label className="col-span-2 text-xs font-semibold text-slate-500 sm:col-span-1">Item <input value={item.productName} onChange={e => updateItem(index, 'productName', e.target.value)} placeholder={`Item ${index + 1}`} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
+              <label className="text-xs font-semibold text-slate-500">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
+              <label className="text-xs font-semibold text-slate-500">Unit <input value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} placeholder="pcs" className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
+              <label className="text-xs font-semibold text-slate-500">Each (INR) <input type="number" inputMode="decimal" min="0" step="0.01" value={item.unitPrice} onChange={e => updateItem(index, 'unitPrice', e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900" /></label>
+              <button type="button" aria-label={`Remove bill item ${index + 1}`} onClick={() => setItems(current => current.filter((_, i) => i !== index))} className="grid min-h-10 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={17} /></button>
+              <p className="col-span-2 text-right text-sm font-bold text-slate-800 sm:col-span-5">Line total: {formatINR((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0))}</p>
+            </div>)}</div>}
+            <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-700">Discount <div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-lg border border-slate-200 bg-slate-50 px-2 text-sm"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-lg border border-l-0 border-slate-200 px-3 text-sm" /></div></label>
+              <label className="text-sm font-semibold text-slate-700">Tax rate (%) <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm" /></label>
+            </div>
+          </section>
         </div>
-        <aside className="h-fit rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 sm:p-6 xl:sticky xl:top-5">
+        <aside className="hidden h-fit rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 shadow-sm xl:sticky xl:top-5 xl:block">
           <h2 className="text-lg font-bold text-slate-900">Bill summary</h2>
-          <dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-3 text-slate-600"><dt>Subtotal</dt><dd className="font-semibold text-slate-900">{formatINR(totals.subtotal)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Discount</dt><dd className="font-semibold text-emerald-700">− {formatINR(totals.discount)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Tax ({Number(taxRate) || 0}%)</dt><dd className="font-semibold text-slate-900">{formatINR(totals.tax)}</dd></div><div className="border-t border-indigo-100 pt-3"><div className="flex justify-between gap-3 text-base font-bold text-slate-900"><dt>Grand total</dt><dd>{formatINR(totals.total)}</dd></div></div></dl>
-          <button onClick={saveBill} disabled={saving || totals.total <= 0} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill…' : 'Save full bill'}</button>
-          <p className="mt-3 text-xs leading-5 text-slate-500">The bill number, every item, quantity, unit, price, discount, tax, and total are saved to your business records.</p>
+          <dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-3 text-slate-600"><dt>Subtotal</dt><dd className="font-semibold text-slate-900">{formatINR(totals.subtotal)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Discount</dt><dd className="font-semibold text-emerald-700">- {formatINR(totals.discount)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Tax ({Number(taxRate) || 0}%)</dt><dd className="font-semibold text-slate-900">{formatINR(totals.tax)}</dd></div><div className="border-t border-indigo-100 pt-3"><div className="flex justify-between gap-3 text-base font-bold text-slate-900"><dt>Grand total</dt><dd>{formatINR(totals.total)}</dd></div></div></dl>
+          <button onClick={saveBill} disabled={saving || totals.total <= 0} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill...' : 'Save full bill'}</button>
+          <p className="mt-3 text-xs leading-5 text-slate-500">Saves item names, quantities, units, prices, discount, tax, total, and timestamp.</p>
         </aside>
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur xl:hidden">
+          <div><p className="text-[11px] font-medium uppercase text-slate-500">Bill total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
+          <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[155px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white disabled:opacity-50"><Save size={17} /> {saving ? 'Saving...' : 'Save bill'}</button>
+        </div>
       </section>}
-
       {tab === 'history' && <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5"><div><h2 className="text-lg font-bold text-slate-900">Saved calculator bills</h2><p className="mt-1 text-sm text-slate-500">{bills.length} recent bill{bills.length === 1 ? '' : 's'}</p></div><button onClick={() => void loadBills()} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label="Refresh bill history"><RefreshCw size={16} /></button></div>
         {loading ? <p className="p-8 text-center text-sm text-slate-500">Loading saved bills…</p> : bills.length === 0 ? <div className="p-10 text-center"><FileText className="mx-auto text-slate-300" size={32} /><p className="mt-3 font-semibold text-slate-700">No calculator bills yet</p><button onClick={() => setTab('billing')} className="mt-3 text-sm font-semibold text-indigo-600">Create your first bill</button></div> : <><div className="divide-y divide-slate-100">{bills.map(bill => <article key={bill.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="min-w-0"><p className="font-bold text-slate-900">{bill.billNumber} <span className="ml-1 text-xs font-medium text-indigo-600">Manual</span></p><p className="mt-1 text-xs text-slate-500">{new Date(bill.createdAt).toLocaleDateString('en-IN')} · {new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {bill.items.length} item{bill.items.length === 1 ? '' : 's'}</p><p className="mt-1 truncate text-xs text-slate-500">{bill.items.map(item => item.productName).join(', ')}</p></div><div className="flex items-center justify-between gap-3 sm:justify-end"><strong className="text-lg text-slate-900">{formatINR(bill.totalAmount)}</strong><button onClick={() => setSelectedBill(bill)} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700"><Eye size={16} /> View</button><button onClick={() => void downloadPosBillPdf(bill, currentBusiness)} className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-slate-200 text-slate-600" aria-label={`Download ${bill.billNumber} PDF`}><Download size={16} /></button></div></article>)}</div>{bills.length < historyTotal && <div className="border-t border-slate-100 p-4 text-center"><button onClick={() => void loadBills(true)} disabled={loadingMore} className="min-h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 disabled:opacity-50">{loadingMore ? 'Loading…' : `Load older bills (${historyTotal - bills.length} remaining)`}</button></div>}</>}
