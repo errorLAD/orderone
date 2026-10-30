@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Bell,
   Volume2,
   VolumeX,
@@ -27,9 +29,10 @@ import { useOrderAlert } from '@/context/OrderAlertContext';
 
 interface TopBarProps {
   onToggleSidebar: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
-export function TopBar({ onToggleSidebar }: TopBarProps) {
+export function TopBar({ onToggleSidebar, isSidebarCollapsed = false }: TopBarProps) {
   const {
     currentUser,
     logout,
@@ -56,14 +59,16 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-white/95 backdrop-blur-md border-b border-slate-200/80">
-      {/* Left: Mobile hamburger & business selector */}
+      {/* Sidebar toggle & business selector */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="p-2 text-slate-600 rounded-lg hover:bg-slate-100 lg:hidden focus:outline-none"
-          aria-label="Toggle Navigation"
+          className="p-2 text-slate-600 rounded-lg hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-label={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
+          title={isSidebarCollapsed ? 'Open sidebar' : 'Close sidebar'}
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5 lg:hidden" />
+          {isSidebarCollapsed ? <PanelLeftOpen className="hidden w-5 h-5 lg:block" /> : <PanelLeftClose className="hidden w-5 h-5 lg:block" />}
         </button>
 
         {/* Business Selector: Strictly authorized businesses only */}
