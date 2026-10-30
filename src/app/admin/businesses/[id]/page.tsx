@@ -199,7 +199,18 @@ export default function AdminBusinessDetailPage({ params }: { params: { id: stri
     );
   }
 
-  const { business, products, categories, orders, payments, subscriptionHistory } = data;
+  const { business } = data;
+  const productData = data.products;
+  const categoryData = data.categories;
+  const products = Array.isArray(productData) ? productData : (productData?.list ?? []);
+  const productCount = Array.isArray(productData) ? productData.length : (productData?.total ?? products.length);
+  const categories = Array.isArray(categoryData) ? categoryData : (categoryData?.list ?? []);
+  const categoryCount = Array.isArray(categoryData) ? categoryData.length : (categoryData?.total ?? categories.length);
+  const orderData = data.orders;
+  const orders = Array.isArray(orderData)
+    ? orderData
+    : [...(orderData?.storeOrders ?? []), ...(orderData?.menuOrders ?? [])];
+  const payments = Array.isArray(data.payments) ? data.payments : [];
   const isSuspended = business.subscription?.status === 'suspended';
   const plan = business.subscription?.planId?.replace('plan_', '') || 'basic';
 
@@ -417,12 +428,12 @@ export default function AdminBusinessDetailPage({ params }: { params: { id: stri
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-slate-600">Product / Item Quota</span>
-                  <span className="text-slate-900">{products.length} / {plan === 'gold' ? 50 : 20}</span>
+                  <span className="text-slate-900">{productCount} / {plan === 'gold' ? 50 : 20}</span>
                 </div>
                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-indigo-600 rounded-full"
-                    style={{ width: `${Math.min(100, (products.length / (plan === 'gold' ? 50 : 20)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (productCount / (plan === 'gold' ? 50 : 20)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -430,12 +441,12 @@ export default function AdminBusinessDetailPage({ params }: { params: { id: stri
               <div>
                 <div className="flex justify-between font-semibold mb-1">
                   <span className="text-slate-600">Category Quota</span>
-                  <span className="text-slate-900">{categories.length} / {plan === 'gold' ? 30 : 10}</span>
+                  <span className="text-slate-900">{categoryCount} / {plan === 'gold' ? 30 : 10}</span>
                 </div>
                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-indigo-600 rounded-full"
-                    style={{ width: `${Math.min(100, (categories.length / (plan === 'gold' ? 30 : 10)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (categoryCount / (plan === 'gold' ? 30 : 10)) * 100)}%` }}
                   />
                 </div>
               </div>
