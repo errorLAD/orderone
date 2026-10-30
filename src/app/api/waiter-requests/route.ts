@@ -137,6 +137,11 @@ async function createWaiterStream(req: NextRequest, businessId: string | null) {
         if (channel && supabase) void supabase.removeChannel(channel);
       };
 
+      // Keep the stream reliable even when Realtime credentials/publication are
+      // unavailable or a serverless connection drops its channel subscription.
+      void poll();
+      pollTimer = setInterval(poll, 3000);
+
       if (supabase) {
         channel = supabase.channel(`waiter-requests-${businessId}-${crypto.randomUUID()}`)
           .on('postgres_changes', {
@@ -144,17 +149,7 @@ async function createWaiterStream(req: NextRequest, businessId: string | null) {
           }, (payload) => {
             if (payload.new && Object.keys(payload.new).length) send(payload.new as Record<string, any>);
           })
-          .subscribe((status) => {
-            if ((status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') && !pollTimer) {
-              pollTimer = setInterval(poll, 2500);
-            } else if (status === 'SUBSCRIBED' && !pollTimer) {
-              // Catch changes during channel setup; Supabase Realtime handles the live path.
-              void poll();
-              pollTimer = setInterval(poll, 10000);
-            }
-          });
-      } else {
-        pollTimer = setInterval(poll, 2500);
+          .subscribe();
       }
       req.signal.addEventListener('abort', cleanup, { once: true });
     },
