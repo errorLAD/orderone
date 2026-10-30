@@ -63,7 +63,47 @@ export function CustomQrCanvas({
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = activeHeaderLogoUrl;
-    img.onload = () => setHeaderLogoImg(img);
+    img.onload = () => {
+      try {
+        // Merchants often upload logos saved on a solid white canvas. Remove
+        // only near-white, neutral pixels for the QR rendering so the logo
+        // blends into the chosen QR background; keep the source file intact.
+        const sourceCanvas = document.createElement('canvas');
+        sourceCanvas.width = img.naturalWidth;
+        sourceCanvas.height = img.naturalHeight;
+        const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
+        if (!sourceContext || !sourceCanvas.width || !sourceCanvas.height) {
+          setHeaderLogoImg(img);
+          return;
+        }
+
+        sourceContext.drawImage(img, 0, 0);
+        const imageData = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+        const pixels = imageData.data;
+        for (let i = 0; i < pixels.length; i += 4) {
+          const red = pixels[i];
+          const green = pixels[i + 1];
+          const blue = pixels[i + 2];
+          const lightest = Math.max(red, green, blue);
+          const darkest = Math.min(red, green, blue);
+          if (darkest < 238 || lightest - darkest > 22) continue;
+
+          const brightness = (red + green + blue) / 3;
+          const remainingAlpha = Math.max(0, Math.min(1, (252 - brightness) / 14));
+          pixels[i + 3] = Math.round(pixels[i + 3] * remainingAlpha);
+        }
+
+        sourceContext.putImageData(imageData, 0, 0);
+        const transparentLogo = new Image();
+        transparentLogo.onload = () => setHeaderLogoImg(transparentLogo);
+        transparentLogo.onerror = () => setHeaderLogoImg(img);
+        transparentLogo.src = sourceCanvas.toDataURL('image/png');
+      } catch (error) {
+        // Cross-origin logos without canvas permission still render normally.
+        console.warn('Could not remove white pixels from header logo; using original image.', error);
+        setHeaderLogoImg(img);
+      }
+    };
     img.onerror = () => {
       console.warn('Failed to load header logo image');
       setHeaderLogoImg(null);
