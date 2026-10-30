@@ -107,9 +107,19 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <a href="https://razorpay.com/terms/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors font-medium">
+                  Razorpay Terms
+                </a>
+              </li>
+              <li>
                 <Link href="/privacy-policy" className="hover:text-slate-900 transition-colors font-medium">
                   Privacy Policy
                 </Link>
+              </li>
+              <li>
+                <a href="https://razorpay.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors font-medium">
+                  Razorpay Privacy Policy
+                </a>
               </li>
               <li>
                 <Link href="/refund-policy" className="hover:text-slate-900 transition-colors font-medium">

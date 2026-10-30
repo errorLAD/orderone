@@ -108,7 +108,7 @@ export default function TermsAndConditionsPage() {
                 <strong>30-Day Validity Term:</strong> Each successful subscription payment activates platform access for a term of thirty (30) days, calculated from verified payment completion.
               </p>
               <p>
-                <strong>Razorpay Payment Processing:</strong> Platform subscription charges are processed securely through <strong>Razorpay</strong>. By making a payment, you agree to abide by Razorpay’s terms of service. All prices are listed in Indian Rupees (INR).
+                <strong>Razorpay Payment Processing:</strong> Platform subscription charges are processed securely through <strong>Razorpay</strong>. By making a payment, you agree to abide by <a href="https://razorpay.com/terms/" target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-600 hover:underline">Razorpay’s terms of service</a>. All prices are listed in Indian Rupees (INR).
               </p>
             </section>
 

@@ -44,7 +44,7 @@ export default function RefundPolicyPage() {
 
           {/* Policy Overview Notice */}
           <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl text-xs text-amber-950 leading-relaxed">
-            This policy applies to subscription fees paid by business merchants to <strong>OrderOne.in</strong> (operated by <strong>{PLATFORM_CONFIG.legalCompanyName}</strong>) via <strong>Razorpay</strong>. Merchant transactions with their own storefront customers are governed directly between the merchant and customer.
+            This policy applies to subscription fees paid by business merchants to <strong>OrderOne.in</strong> (operated by <strong>{PLATFORM_CONFIG.legalCompanyName}</strong>) via <strong>Razorpay</strong>. Merchant transactions with their own storefront customers are governed directly between the merchant and customer. For information about Razorpay’s handling of payment data, see its <a href="https://razorpay.com/privacy-policy/" target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-600 hover:underline">Privacy Policy</a>.
           </div>
 
           <div className="space-y-8 text-xs sm:text-sm text-slate-700 leading-relaxed divide-y divide-slate-100">
