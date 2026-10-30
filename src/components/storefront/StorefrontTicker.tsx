@@ -76,7 +76,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       key: 'whatsapp',
       label: 'Chat on WhatsApp',
       url: social.whatsapp.trim(),
-      icon: <MessageCircle className="w-3.5 h-3.5 shrink-0" />,
+      icon: <MessageCircle className="w-3 h-3 shrink-0" />,
       colorClasses: 'hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 hover:border-emerald-300',
     });
   }
@@ -90,7 +90,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       key: 'google',
       label: 'Rate on Google',
       url: social.googleBusiness.trim(),
-      icon: <GoogleIcon className="w-3.5 h-3.5 shrink-0" />,
+      icon: <GoogleIcon className="w-3 h-3 shrink-0" />,
       colorClasses: 'hover:bg-blue-50 text-slate-800 hover:text-blue-700 hover:border-blue-300',
       extra: <span className="text-amber-500 font-black text-[9px] tracking-tight">★★★★★</span>,
     });
@@ -105,7 +105,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       key: 'instagram',
       label: 'Follow on Instagram',
       url: social.instagram.trim(),
-      icon: <InstagramIcon className="w-3.5 h-3.5 shrink-0" />,
+      icon: <InstagramIcon className="w-3 h-3 shrink-0" />,
       colorClasses: 'hover:bg-pink-50 text-slate-800 hover:text-pink-600 hover:border-pink-300',
     });
   }
@@ -119,7 +119,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       key: 'youtube',
       label: 'Watch on YouTube',
       url: social.youtube.trim(),
-      icon: <YouTubeIcon className="w-3.5 h-3.5 shrink-0" />,
+      icon: <YouTubeIcon className="w-3 h-3 shrink-0" />,
       colorClasses: 'hover:bg-red-50 text-slate-800 hover:text-red-600 hover:border-red-300',
     });
   }
@@ -133,7 +133,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       key: 'facebook',
       label: 'Follow on Facebook',
       url: social.facebook.trim(),
-      icon: <FacebookIcon className="w-3.5 h-3.5 shrink-0" />,
+      icon: <FacebookIcon className="w-3 h-3 shrink-0" />,
       colorClasses: 'hover:bg-sky-50 text-slate-800 hover:text-[#1877F2] hover:border-sky-300',
     });
   }
@@ -151,7 +151,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-800 font-bold text-[11px] shadow-2xs hover:shadow-xs transition-all active:scale-95 shrink-0',
+        'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-800 font-bold text-[10px] shadow-2xs hover:shadow-xs transition-all active:scale-95 shrink-0',
         item.colorClasses
       )}
       title={item.label}
