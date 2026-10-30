@@ -13,6 +13,8 @@ function isEligibleRestaurant(business: Awaited<ReturnType<typeof getBusinessByI
   return Boolean(
     business &&
     (business.type === 'restaurant' || business.category === 'restaurant') &&
+    (business.isStoreOpen ?? business.settings?.isStoreOpen ?? true) &&
+    (business.onlineOrderingEnabled ?? business.settings?.onlineOrderingEnabled ?? true) &&
     business.settings?.orderSettings?.enableDineIn &&
     business.settings?.waiterCalls?.enabled !== false
   );

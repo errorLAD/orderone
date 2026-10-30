@@ -29,7 +29,9 @@ export function WaiterCallAlert() {
   const [updating, setUpdating] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const isRestaurant = currentBusiness?.type === 'restaurant' || currentBusiness?.category === 'restaurant';
-  const enabled = Boolean(isRestaurant && currentBusiness?.settings?.orderSettings?.enableDineIn && currentBusiness?.settings?.waiterCalls?.enabled !== false);
+  const storeOpen = currentBusiness?.isStoreOpen ?? currentBusiness?.settings?.isStoreOpen ?? true;
+  const onlineOrderingEnabled = currentBusiness?.onlineOrderingEnabled ?? currentBusiness?.settings?.onlineOrderingEnabled ?? true;
+  const enabled = Boolean(isRestaurant && storeOpen && onlineOrderingEnabled && currentBusiness?.settings?.orderSettings?.enableDineIn && currentBusiness?.settings?.waiterCalls?.enabled !== false);
   const businessId = currentBusiness?.id;
   const alertInterval = currentBusiness?.settings?.waiterCalls?.alertIntervalSeconds || 6;
 

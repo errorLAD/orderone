@@ -94,6 +94,7 @@ export function StorefrontRenderer({
   const [waiterError, setWaiterError] = React.useState('');
   const isWaiterCallEligible = !isPreview &&
     (business.type === 'restaurant' || business.category === 'restaurant') &&
+    canAcceptOnlineOrders &&
     Boolean(business.settings?.orderSettings?.enableDineIn) &&
     business.settings?.waiterCalls?.enabled !== false &&
     Boolean(waiterTable.trim());
