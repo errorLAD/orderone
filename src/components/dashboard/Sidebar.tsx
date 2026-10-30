@@ -230,16 +230,18 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
             title: storeSection.title,
             collapsible: true,
             items: [
-              {
-                name: storeSection.ordersName,
-                href: '/dashboard/store/orders',
-                icon: ShoppingBag,
-              },
-              {
-                name: storeSection.tokensName,
-                href: '/dashboard/store/tokens',
-                icon: Clock,
-              },
+              ...(pathname === '/dashboard/calculator' ? [] : [
+                {
+                  name: storeSection.ordersName,
+                  href: '/dashboard/store/orders',
+                  icon: ShoppingBag,
+                },
+                {
+                  name: storeSection.tokensName,
+                  href: '/dashboard/store/tokens',
+                  icon: Clock,
+                },
+              ]),
               {
                 name: storeSection.catalogName,
                 href: '/dashboard/store/catalog',
