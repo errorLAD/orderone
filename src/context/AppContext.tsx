@@ -27,7 +27,7 @@ interface AppContextType {
   // Business & Role State
   currentBusiness: Business | null;
   setCurrentBusiness: (biz: Business) => void;
-  updateStoreOperations: (params: { isStoreOpen?: boolean; onlineOrderingEnabled?: boolean }) => Promise<{ success: boolean; error?: string }>;
+  updateStoreOperations: (params: { isStoreOpen?: boolean; onlineOrderingEnabled?: boolean; waiterCallsEnabled?: boolean }) => Promise<{ success: boolean; error?: string }>;
   businesses: Business[];
   refreshBusinesses: () => Promise<void>;
   currentRole: Role;
@@ -495,7 +495,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
-  const updateStoreOperations = async (params: { isStoreOpen?: boolean; onlineOrderingEnabled?: boolean }) => {
+  const updateStoreOperations = async (params: { isStoreOpen?: boolean; onlineOrderingEnabled?: boolean; waiterCallsEnabled?: boolean }) => {
     if (!currentBusiness) {
       return { success: false, error: 'No active business selected' };
     }
@@ -510,6 +510,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       params.onlineOrderingEnabled !== undefined
         ? params.onlineOrderingEnabled
         : (currentBusiness.onlineOrderingEnabled ?? currentBusiness.settings?.onlineOrderingEnabled ?? true);
+    const newWaiterCallsEnabled = params.waiterCallsEnabled !== undefined
+      ? params.waiterCallsEnabled
+      : currentBusiness.settings?.waiterCalls?.enabled !== false;
 
     // Optimistic update
     const updatedBiz: Business = {
@@ -520,6 +523,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...currentBusiness.settings,
         isStoreOpen: newIsStoreOpen,
         onlineOrderingEnabled: newOnlineOrderingEnabled,
+        waiterCalls: { ...currentBusiness.settings?.waiterCalls, enabled: newWaiterCallsEnabled },
       },
     };
 

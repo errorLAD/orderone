@@ -13,6 +13,7 @@ import {
   X,
   Power,
   ShoppingBag,
+  BellRing,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,8 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
   const isStoreOpen = currentBusiness.isStoreOpen ?? currentBusiness.settings?.isStoreOpen ?? true;
   const onlineOrderingEnabled =
     currentBusiness.onlineOrderingEnabled ?? currentBusiness.settings?.onlineOrderingEnabled ?? true;
+  const waiterCallsEnabled = currentBusiness.settings?.waiterCalls?.enabled !== false;
+  const canManageWaiterCalls = (currentBusiness.type === 'restaurant' || currentBusiness.category === 'restaurant') && Boolean(currentBusiness.settings?.orderSettings?.enableDineIn);
 
   const canAcceptOnlineOrders = isStoreOpen && onlineOrderingEnabled;
 
@@ -103,6 +106,12 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
     setIsUpdatingOrdering(false);
   };
 
+  const handleToggleWaiterCalls = async () => {
+    const result = await updateStoreOperations({ waiterCallsEnabled: !waiterCallsEnabled });
+    setFeedback({ type: result.success ? 'success' : 'error', message: result.success ? `Waiter calls ${waiterCallsEnabled ? 'disabled' : 'enabled'}.` : result.error || 'Failed to update waiter calls.' });
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
   return (
     <div
       className={cn(
@@ -146,6 +155,15 @@ export function StoreOperationsCard({ className, compact = false }: StoreOperati
               )}
             </div>
           </div>
+
+          {canManageWaiterCalls && (
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => void handleToggleWaiterCalls()} disabled={!canAcceptOnlineOrders} className={cn('relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50', waiterCallsEnabled && canAcceptOnlineOrders ? 'bg-amber-600' : 'bg-slate-300')} title={waiterCallsEnabled ? 'Disable waiter calls' : 'Enable waiter calls'} aria-label="Toggle waiter calls">
+                <span className={cn('pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform', waiterCallsEnabled && canAcceptOnlineOrders ? 'translate-x-4' : 'translate-x-0')} />
+              </button>
+              <span className="flex items-center gap-1 text-xs font-bold text-slate-700 whitespace-nowrap"><BellRing className="h-3.5 w-3.5" />Waiter Calls: {waiterCallsEnabled && canAcceptOnlineOrders ? 'ON' : 'OFF'}</span>
+            </div>
+          )}
         </div>
 
         {/* Center: The Two Fast Operational Toggles */}
