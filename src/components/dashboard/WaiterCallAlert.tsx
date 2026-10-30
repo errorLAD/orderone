@@ -137,7 +137,7 @@ export function WaiterCallAlert() {
     <aside className="pointer-events-none fixed right-3 top-[4.75rem] z-40 w-[min(24rem,calc(100vw-1.5rem))] sm:right-5 sm:top-20" aria-label="Waiter calls">
       <div className="pointer-events-auto overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl">
         <div className="flex items-center justify-between gap-2 bg-amber-500 px-3.5 py-3 text-white sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <BellRing className="h-4 w-4 shrink-0" />
             <p className="truncate text-sm font-black">Waiter calls{pendingCount ? ` · ${pendingCount} pending` : ''}</p>
           </div>
@@ -147,8 +147,8 @@ export function WaiterCallAlert() {
                 <VolumeX className="h-3.5 w-3.5" /> Stop Alert
               </button>
             )}
-            <button type="button" onClick={() => setPanelOpen(false)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-white/20 hover:text-white" aria-label="Close waiter calls panel" title="Close">
-              <X className="h-4 w-4" />
+            <button type="button" onClick={() => setPanelOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/70 bg-white text-amber-700 shadow-sm hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-white/70" aria-label="Close waiter calls panel" title="Close">
+              <X className="h-5 w-5" strokeWidth={3} />
             </button>
           </div>
         </div>
