@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, Check, CheckCircle2, Clock3, HandHelping, VolumeX } from 'lucide-react';
+import { BellRing, Check, CheckCircle2, Clock3, HandHelping, VolumeX, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useOrderAlert } from '@/context/OrderAlertContext';
 import { orderSound } from '@/lib/orderSound';
@@ -25,6 +25,7 @@ export function WaiterCallAlert() {
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [muted, setMuted] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const isRestaurant = currentBusiness?.type === 'restaurant' || currentBusiness?.category === 'restaurant';
@@ -34,7 +35,10 @@ export function WaiterCallAlert() {
 
   const mergeRequest = useCallback((request: WaiterRequest) => {
     setRequests((previous) => [request, ...previous.filter((item) => item.id !== request.id)].slice(0, 50));
-    if (request.status === 'pending') setMuted(false);
+    if (request.status === 'pending') {
+      setMuted(false);
+      setPanelOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -118,6 +122,17 @@ export function WaiterCallAlert() {
   if (!enabled || requests.length === 0) return null;
   const pendingCount = requests.filter((request) => request.status === 'pending').length;
 
+  if (!panelOpen) {
+    return (
+      <aside className="pointer-events-none fixed right-3 top-[4.75rem] z-40 sm:right-5 sm:top-20" aria-label="Waiter calls">
+        <button type="button" onClick={() => setPanelOpen(true)} className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-300 bg-white px-4 py-2.5 text-sm font-bold text-amber-900 shadow-xl hover:bg-amber-50">
+          <BellRing className="h-4 w-4" />
+          Waiter calls{pendingCount ? ` · ${pendingCount} pending` : ''}
+        </button>
+      </aside>
+    );
+  }
+
   return (
     <aside className="pointer-events-none fixed right-3 top-[4.75rem] z-40 w-[min(24rem,calc(100vw-1.5rem))] sm:right-5 sm:top-20" aria-label="Waiter calls">
       <div className="pointer-events-auto overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl">
@@ -126,11 +141,16 @@ export function WaiterCallAlert() {
             <BellRing className="h-4 w-4 shrink-0" />
             <p className="truncate text-sm font-black">Waiter calls{pendingCount ? ` · ${pendingCount} pending` : ''}</p>
           </div>
-          {pendingCount > 0 && (
-            <button type="button" onClick={() => { orderSound.stopWaiterRinging(); setMuted(true); }} className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/20 px-2 py-1.5 text-xs font-bold hover:bg-white/30" title="Stop waiter alert sound">
-              <VolumeX className="h-3.5 w-3.5" /> Stop Alert
+          <div className="flex shrink-0 items-center gap-1">
+            {pendingCount > 0 && (
+              <button type="button" onClick={() => { orderSound.stopWaiterRinging(); setMuted(true); }} className="inline-flex items-center gap-1 rounded-lg bg-white/20 px-2 py-1.5 text-xs font-bold hover:bg-white/30" title="Stop waiter alert sound">
+                <VolumeX className="h-3.5 w-3.5" /> Stop Alert
+              </button>
+            )}
+            <button type="button" onClick={() => setPanelOpen(false)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-white/20 hover:text-white" aria-label="Close waiter calls panel" title="Close">
+              <X className="h-4 w-4" />
             </button>
-          )}
+          </div>
         </div>
         {!audioReady && pendingCount > 0 && (
           <div className="flex items-center justify-between gap-2 bg-amber-50 px-3.5 py-2 text-xs text-amber-900">
