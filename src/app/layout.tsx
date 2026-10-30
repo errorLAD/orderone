@@ -16,9 +16,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'InfraBlue Materials Technology Private Limited', url: SITE_URL }],
   creator: 'InfraBlue Materials Technology Private Limited',
   publisher: 'InfraBlue Materials Technology Private Limited',
-  alternates: {
-    canonical: '/',
-  },
+  alternates: { canonical: '/' },
   openGraph: DEFAULT_SEO.openGraph,
   twitter: DEFAULT_SEO.twitter,
   robots: DEFAULT_SEO.robots,

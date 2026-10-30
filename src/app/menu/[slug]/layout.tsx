@@ -18,11 +18,9 @@ export async function generateMetadata({
   }
 
   const title = `${business.name} | Digital Food Menu & Dining Orders`;
-  const description = business.description
-    ? `${business.description} — View digital menu, order food, and get live tokens at ${business.name}, ${business.address || 'India'}.`
-    : `Explore digital restaurant menu and contactless ordering for ${business.name}. Instant kitchen tickets powered by OrderOne.in.`;
+  const description = (business.description?.trim() || `View the digital menu and ordering information published by ${business.name} on OrderOne.`).slice(0, 155);
   const canonicalUrl = `${SITE_URL}/menu/${business.slug}`;
-  const ogImage = business.logoUrl || `${SITE_URL}/og-image.png`;
+  const ogImage = business.logoUrl || `${SITE_URL}/opengraph-image`;
 
   return {
     title,
@@ -40,8 +38,6 @@ export async function generateMetadata({
       images: [
         {
           url: ogImage,
-          width: 800,
-          height: 800,
           alt: `${business.name} Restaurant Menu Logo`,
         },
       ],

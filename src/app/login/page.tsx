@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,12 +25,19 @@ import { BusinessType } from '@/types';
 import { cn } from '@/lib/utils';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
 import { OrderOneLogo } from '@/components/ui/OrderOneLogo';
+import { trackConversion } from '@/components/analytics/GoogleAnalytics';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, registerBusiness } = useApp();
 
   const [mode, setMode] = useState<'signin' | 'register'>('signin');
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'register') {
+      setMode('register');
+    }
+  }, []);
   
   // Sign In Form State
   const [loginEmail, setLoginEmail] = useState('');
@@ -118,6 +125,10 @@ export default function LoginPage() {
       });
 
       if (res.success && res.business) {
+        trackConversion('sign_up', { method: 'email', business_category: category });
+        if (res.business.subscription?.status === 'trial') {
+          trackConversion('start_trial', { method: 'email', business_category: category });
+        }
         // Connected flow: seamlessly proceed to category setup wizard
         window.location.href = '/onboarding';
       } else {

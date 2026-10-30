@@ -1,44 +1,43 @@
 import { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seoConfig';
 import { pgQuery } from '@/lib/postgres';
+import { SEO_ARTICLES, SEO_SOLUTIONS } from '@/lib/marketingContent';
 
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const currentDate = new Date().toISOString();
-
   // Core Static Marketing & Legal Pages
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
       priority: 1.0,
     },
     {
       url: `${SITE_URL}/about`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/terms`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/privacy-policy`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/refund-policy`,
-      lastModified: currentDate,
-      changeFrequency: 'monthly',
       priority: 0.5,
     },
+    { url: `${SITE_URL}/solutions`, priority: 0.85 },
+    { url: `${SITE_URL}/resources`, priority: 0.75 },
+    ...SEO_SOLUTIONS.map((solution) => ({
+      url: `${SITE_URL}/solutions/${solution.slug}`,
+      priority: 0.8,
+    })),
+    ...SEO_ARTICLES.map((article) => ({
+      url: `${SITE_URL}/resources/${article.slug}`,
+      priority: 0.7,
+    })),
   ];
 
   // Dynamic Storefront & Menu URLs from Real PostgreSQL Businesses
@@ -57,12 +56,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       const settings = typeof row.settings === 'string' ? JSON.parse(row.settings) : (row.settings || {});
       const modules = settings.modules || { store: true, menu: true };
-      const lastMod = row.updated_at ? new Date(row.updated_at).toISOString() : currentDate;
+      const sourceDate = row.updated_at || row.created_at;
+      const lastMod = sourceDate ? new Date(sourceDate).toISOString() : undefined;
 
       if (modules.store !== false) {
         dynamicRoutes.push({
           url: `${SITE_URL}/store/${slug}`,
-          lastModified: lastMod,
+          ...(lastMod ? { lastModified: lastMod } : {}),
           changeFrequency: 'weekly',
           priority: 0.85,
         });
@@ -71,7 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (modules.menu !== false) {
         dynamicRoutes.push({
           url: `${SITE_URL}/menu/${slug}`,
-          lastModified: lastMod,
+          ...(lastMod ? { lastModified: lastMod } : {}),
           changeFrequency: 'weekly',
           priority: 0.85,
         });

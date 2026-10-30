@@ -29,6 +29,7 @@ import { formatINR, formatDate, cn } from '@/lib/utils';
 import { useSearchParams } from 'next/navigation';
 import { PlanUsageCard } from '@/components/dashboard/PlanUsageCard';
 import { PLATFORM_CONFIG } from '@/lib/platformConfig';
+import { trackConversion } from '@/components/analytics/GoogleAnalytics';
 
 export default function SubscriptionPage() {
   const { currentBusiness, refreshBusinesses } = useApp();
@@ -199,6 +200,13 @@ export default function SubscriptionPage() {
 
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
+              trackConversion('purchase', {
+                transaction_id: response.razorpay_payment_id,
+                value: Number(orderData.amount || 0) / 100,
+                currency: orderData.currency || 'INR',
+                item_name: orderData.plan.name,
+                billing_cycle: billingCycle,
+              });
               setPaymentSuccess({
                 planName: orderData.plan.name,
                 paymentId: response.razorpay_payment_id,

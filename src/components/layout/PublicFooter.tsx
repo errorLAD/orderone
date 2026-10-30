@@ -32,6 +32,11 @@ export function PublicFooter() {
           <div className="space-y-3 text-xs">
             <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Platform Modules</h4>
             <ul className="space-y-2">
+              <li><Link href="/solutions" className="hover:text-slate-900 transition-colors">Retail POS & Billing Software</Link></li>
+              <li><Link href="/solutions/restaurant-billing" className="hover:text-slate-900 transition-colors">Restaurant Billing & QR Menus</Link></li>
+              <li><Link href="/solutions/grocery-shop-management" className="hover:text-slate-900 transition-colors">Grocery Shop Management</Link></li>
+              <li><Link href="/solutions/hardware-shop-billing" className="hover:text-slate-900 transition-colors">Hardware Shop Billing</Link></li>
+              <li><Link href="/solutions/inventory-management" className="hover:text-slate-900 transition-colors">Inventory Management</Link></li>
               <li>
                 <Link href="/about" className="hover:text-slate-900 transition-colors">
                   Digital Online Storefronts
@@ -57,6 +62,9 @@ export function PublicFooter() {
                   Supermarkets & Grocery Kirana
                 </Link>
               </li>
+              <li><Link href="/resources" className="hover:text-slate-900 transition-colors">Business Guides</Link></li>
+              <li><Link href="/resources/how-to-set-up-a-restaurant-qr-menu" className="hover:text-slate-900 transition-colors">Restaurant QR Menu Guide</Link></li>
+              <li><Link href="/resources/retail-billing-software-checklist" className="hover:text-slate-900 transition-colors">Retail Billing Checklist</Link></li>
             </ul>
           </div>
 
@@ -65,12 +73,12 @@ export function PublicFooter() {
             <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Plans & Billing</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
+                <Link href="/#pricing" className="hover:text-slate-900 transition-colors">
                   Basic Plan — ₹49 / 30 Days
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
+                <Link href="/#pricing" className="hover:text-slate-900 transition-colors">
                   Gold Plan — ₹149 / 30 Days
                 </Link>
               </li>

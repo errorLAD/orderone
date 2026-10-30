@@ -25,7 +25,9 @@ export function PublicHeader() {
           <Link href="/about" className="hover:text-slate-900 transition-colors">
             About Us
           </Link>
-          <Link href="/dashboard/subscription" className="hover:text-slate-900 transition-colors">
+          <Link href="/solutions" className="hover:text-slate-900 transition-colors">Solutions</Link>
+          <Link href="/resources" className="hover:text-slate-900 transition-colors">Guides</Link>
+          <Link href="/#pricing" className="hover:text-slate-900 transition-colors">
             Plans & Pricing
           </Link>
           <Link href="/terms" className="hover:text-slate-900 transition-colors">
@@ -48,7 +50,7 @@ export function PublicHeader() {
             Sign In
           </Link>
           <Link
-            href="/login"
+            href="/login?mode=register"
             className="min-h-10 px-2.5 sm:px-3.5 py-1.5 text-xs font-bold text-white bg-[#4F46E5] hover:bg-[#4338CA] rounded-xl shadow-xs transition-all flex items-center gap-1"
           >
             <span>Register</span>
@@ -78,12 +80,14 @@ export function PublicHeader() {
             >
               About Us & Platform Architecture
             </Link>
+            <Link href="/solutions" onClick={() => setMobileMenuOpen(false)} className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">Business Solutions</Link>
+            <Link href="/resources" onClick={() => setMobileMenuOpen(false)} className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">Guides & Resources</Link>
             <Link
-              href="/dashboard/subscription"
+              href="/#pricing"
               onClick={() => setMobileMenuOpen(false)}
               className="min-h-10 flex items-center px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
             >
-              Subscription Plans (₹49 Basic & ₹149 Gold)
+              Plans & Pricing
             </Link>
             <Link
               href="/terms"

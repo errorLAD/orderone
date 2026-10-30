@@ -18,11 +18,9 @@ export async function generateMetadata({
   }
 
   const title = `${business.name} | Online Store & Products`;
-  const description = business.description
-    ? `${business.description} — Shop online at ${business.name}, ${business.address || 'India'}. Fast pickup and delivery.`
-    : `Browse verified products and place orders online with ${business.name}. Fast digital ordering powered by OrderOne.in.`;
+  const description = (business.description?.trim() || `Browse the products listed by ${business.name} on its OrderOne storefront.`).slice(0, 155);
   const canonicalUrl = `${SITE_URL}/store/${business.slug}`;
-  const ogImage = business.logoUrl || `${SITE_URL}/og-image.png`;
+  const ogImage = business.logoUrl || `${SITE_URL}/opengraph-image`;
 
   return {
     title,
@@ -40,8 +38,6 @@ export async function generateMetadata({
       images: [
         {
           url: ogImage,
-          width: 800,
-          height: 800,
           alt: `${business.name} Storefront Logo`,
         },
       ],

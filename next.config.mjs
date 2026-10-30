@@ -6,6 +6,8 @@ const nextConfig = {
 
   // ─── Bundle optimisation ────────────────────────────────────────────────────
   experimental: {
+    // Keep build workers bounded for the memory limit used by production CI.
+    cpus: 1,
     // Tree-shake icon/chart libraries so only imported symbols are bundled
     optimizePackageImports: ['lucide-react', 'recharts'],
   },

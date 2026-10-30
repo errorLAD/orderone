@@ -1,15 +1,16 @@
 import { PLATFORM_CONFIG } from './platformConfig';
 import { Business } from '@/types';
 
-export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://orderone.in';
+const configuredSiteUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+const isLocalSiteUrl = configuredSiteUrl ? /(?:localhost|127\.0\.0\.1)(?::|\/|$)/i.test(configuredSiteUrl) : true;
+export const SITE_URL = (configuredSiteUrl && !isLocalSiteUrl ? configuredSiteUrl : 'https://orderone.in').replace(/\/$/, '');
 
 export const DEFAULT_SEO = {
-  title: 'OrderOne.in | Digital Store, Dining Menu & Order Token Platform — InfraBlue Materials Technology Private Limited',
+  title: 'POS, Billing & Online Ordering Software for Indian Businesses',
   titleTemplate: '%s | OrderOne.in',
   description:
-    'OrderOne.in is operated by InfraBlue Materials Technology Private Limited. A unified digital commerce, storefront, and order-queue platform for Indian retail, hardware, grocery, and dining merchants.',
+    'Manage billing, products, inventory, QR ordering, and customer orders with OrderOne.in. Tools for Indian retail shops, grocery stores, hardware businesses, and restaurants.',
   siteName: 'OrderOne.in',
-  canonical: SITE_URL,
   keywords: [
     'OrderOne',
     'OrderOne.in',
@@ -17,40 +18,32 @@ export const DEFAULT_SEO = {
     'online storefront SaaS',
     'QR code restaurant menu',
     'order token management system',
-    'InfraBlue Materials Technology Private Limited',
     'retail billing software',
-    'hardware store online catalog',
-    'grocery store digital orders',
-    'UPI dynamic QR payment',
-    'GST invoice generator India',
-    'kitchen order ticket KOT',
-    'restaurant token display screen'
+    'restaurant POS software',
+    'grocery store billing software',
+    'hardware shop billing software',
+    'inventory management software',
+    'online ordering software',
+    'shop management software',
+    'QR code ordering',
+    'manual billing calculator'
   ],
   openGraph: {
     type: 'website',
     locale: 'en_IN',
     url: SITE_URL,
     siteName: 'OrderOne.in',
-    title: 'OrderOne.in — Unified Digital Store, Menu & Order Token Platform',
+    title: 'OrderOne.in business billing and ordering software',
     description:
-      'Transform Indian retail shops, hardware stores, grocery counters, and restaurants with digital storefronts, QR menus, live tokens, UPI payments, and GST invoicing.',
-    images: [
-      {
-        url: `${SITE_URL}/og-image.png`,
-        width: 1200,
-        height: 630,
-        alt: 'OrderOne.in - Digital Store & Token Platform',
-      },
-    ],
+      'Browser-based billing, product catalogs, inventory, digital storefronts, QR menus and order management for Indian retail and food businesses.',
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'OrderOne.in business billing and ordering software' }],
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@OrderOneIn',
-    creator: '@OrderOneIn',
-    title: 'OrderOne.in — Digital Store, Menu & Token Platform',
+    title: 'OrderOne.in | Billing, inventory and online ordering',
     description:
-      'Empowering Indian retail, grocery, and dining businesses with zero-commission digital catalogs and live token displays.',
-    images: [`${SITE_URL}/og-image.png`],
+      'Billing, catalogs, QR ordering and order management tools for retail shops, grocery stores, hardware businesses and restaurants.',
+    images: [`${SITE_URL}/opengraph-image`],
   },
   robots: {
     index: true,
@@ -80,7 +73,7 @@ export function generatePlatformSchema() {
         url: SITE_URL,
         logo: {
           '@type': 'ImageObject',
-          url: `${SITE_URL}/favicon.ico`,
+          url: `${SITE_URL}/logo.png`,
           caption: 'OrderOne.in Logo',
         },
         contactPoint: [
@@ -92,11 +85,6 @@ export function generatePlatformSchema() {
             availableLanguage: ['English', 'Hindi'],
           },
         ],
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: PLATFORM_CONFIG.registeredOffice,
-          addressCountry: 'IN',
-        },
       },
       {
         '@type': 'WebSite',
@@ -111,17 +99,14 @@ export function generatePlatformSchema() {
       },
       {
         '@type': 'SoftwareApplication',
-        name: 'OrderOne.in SaaS Platform',
+        '@id': `${SITE_URL}/#software`,
+        name: 'OrderOne.in',
+        url: SITE_URL,
         applicationCategory: 'BusinessApplication',
-        operatingSystem: 'All web browsers (Desktop, Tablet, Mobile)',
-        offers: {
-          '@type': 'Offer',
-          price: '49.00',
-          priceCurrency: 'INR',
-          description: 'Basic plan starting at ₹49 for 30 days',
-        },
+        operatingSystem: 'Web browser',
         description:
-          'Unified digital storefront, dining menu QR, order token queuing, and UPI/GST management for Indian businesses.',
+          'Web-based billing, product catalog, inventory, storefront, QR ordering, and order management tools for Indian businesses.',
+        publisher: { '@id': `${SITE_URL}/#organization` },
       },
     ],
   };
@@ -155,23 +140,14 @@ export function generateStoreSchema(business: Business) {
     '@type': 'Store',
     '@id': storeUrl,
     name: business.name,
-    description: business.description || `Digital store and product catalog for ${business.name}`,
+    description: business.description || undefined,
     url: storeUrl,
     telephone: business.phone || undefined,
-    priceRange: '₹',
-    currenciesAccepted: 'INR',
-    paymentAccepted: 'Cash, UPI, Online',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: business.address || 'India',
-      addressCountry: 'IN',
-    },
+    address: business.address && !/^india$|registered office|\[.*\]/i.test(business.address.trim())
+      ? { '@type': 'PostalAddress', streetAddress: business.address, addressCountry: 'IN' }
+      : undefined,
     image: business.logoUrl ? [business.logoUrl] : undefined,
-    parentOrganization: {
-      '@type': 'Organization',
-      name: PLATFORM_CONFIG.legalCompanyName,
-      url: SITE_URL,
-    },
+    currenciesAccepted: business.settings?.orderSettings?.currencyCode || undefined,
   };
 }
 
@@ -185,19 +161,14 @@ export function generateRestaurantSchema(business: Business) {
     '@type': 'Restaurant',
     '@id': menuUrl,
     name: business.name,
-    description: business.description || `Digital dining menu and food ordering for ${business.name}`,
+    description: business.description || undefined,
     url: menuUrl,
-    hasMenu: menuUrl,
+    hasMenu: { '@type': 'Menu', url: menuUrl },
     telephone: business.phone || undefined,
-    servesCuisine: business.type || 'Indian',
-    priceRange: '₹',
-    currenciesAccepted: 'INR',
-    paymentAccepted: 'Cash, UPI, Online',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: business.address || 'India',
-      addressCountry: 'IN',
-    },
+    currenciesAccepted: business.settings?.orderSettings?.currencyCode || undefined,
+    address: business.address && !/^india$|registered office|\[.*\]/i.test(business.address.trim())
+      ? { '@type': 'PostalAddress', streetAddress: business.address, addressCountry: 'IN' }
+      : undefined,
     image: business.logoUrl ? [business.logoUrl] : undefined,
   };
 }

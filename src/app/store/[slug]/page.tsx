@@ -271,8 +271,8 @@ export default function PublicStorePage({ params }: { params: { slug: string } }
         throw new Error(data.error || 'Failed to place store order');
       }
 
-      // Track purchase conversion for Google Analytics & marketing attribution
-      trackConversion('purchase', {
+      // An order request is not necessarily paid. Keep it separate from verified purchase conversions.
+      trackConversion('place_order', {
         transaction_id: data.order?.id || data.order?.tokenNumber,
         value: cartTotal,
         currency: 'INR',

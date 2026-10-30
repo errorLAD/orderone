@@ -111,7 +111,7 @@ export default function PrivacyPolicyPage() {
             <section className="pt-6 space-y-3">
               <h2 className="text-base font-black text-slate-900">5. Cookies and Browser Storage</h2>
               <p>
-                OrderOne.in uses essential session cookies and browser local storage solely to keep you signed in, remember your active business selection in the dashboard, and store shopping cart items on customer storefronts. We do not deploy third-party advertising tracking cookies.
+                OrderOne.in uses essential session cookies and browser local storage to keep you signed in, remember your active business selection, and store storefront cart items. Optional Google Analytics, Google Ads and Meta Pixel tags are disabled unless the platform operator configures their measurement IDs in the deployment environment. When enabled, these providers may receive page-view and conversion events such as account registration, trial start, and verified subscription purchase. OrderOne does not send passwords, payment credentials, customer contact details, or order contents in these events. See the providers’ privacy notices for their processing details.
               </p>
             </section>
 
