@@ -12,6 +12,7 @@ class OrderSoundEngine {
   private ringInterval: NodeJS.Timeout | null = null;
   private waiterRingInterval: NodeJS.Timeout | null = null;
   private waiterAlertEnabled = true;
+  private waiterVolume = 0.85;
   private isRingingActive: boolean = false;
   private volume: number = 0.8;
   private soundEnabled: boolean = true;
@@ -90,6 +91,10 @@ class OrderSoundEngine {
   public isAutoplayBlocked(): boolean {
     if (!this.audioCtx) return false;
     return this.audioCtx.state === 'suspended';
+  }
+
+  public isAudioUnlocked(): boolean {
+    return this.audioCtx?.state === 'running';
   }
 
   public setSoundEnabled(enabled: boolean) {
@@ -225,7 +230,7 @@ class OrderSoundEngine {
   }
 
   private playWaiterCallChime() {
-    if (!this.waiterAlertEnabled || this.volume <= 0) return;
+    if (!this.waiterAlertEnabled || this.waiterVolume <= 0) return;
     try {
       const ctx = this.getAudioContext();
       if (!ctx) return;
@@ -234,7 +239,7 @@ class OrderSoundEngine {
       }
       const now = ctx.currentTime;
       const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(this.volume, now);
+      masterGain.gain.setValueAtTime(this.waiterVolume, now);
       masterGain.connect(ctx.destination);
       // Short double call-bell: intentionally distinct from store/menu order chimes.
       this.synthesizeTone(ctx, masterGain, 1046.5, now, 0.22, 'square');

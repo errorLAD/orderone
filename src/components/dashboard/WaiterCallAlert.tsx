@@ -24,6 +24,7 @@ export function WaiterCallAlert() {
   const { autoplayBlocked, enableAudio } = useOrderAlert();
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [muted, setMuted] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const isRestaurant = currentBusiness?.type === 'restaurant' || currentBusiness?.category === 'restaurant';
@@ -82,6 +83,10 @@ export function WaiterCallAlert() {
     return () => orderSound.stopWaiterRinging();
   }, [enabled, muted, requests, alertInterval]);
 
+  useEffect(() => {
+    setAudioReady(orderSound.isAudioUnlocked());
+  }, [autoplayBlocked, enabled, requests.length]);
+
   const updateRequest = async (requestId: string, status: 'acknowledged' | 'completed') => {
     if (!businessId) return;
     setUpdating(requestId);
@@ -107,6 +112,7 @@ export function WaiterCallAlert() {
       orderSound.stopWaiterRinging();
       orderSound.startWaiterRinging(alertInterval);
     }
+    setAudioReady(orderSound.isAudioUnlocked());
   };
 
   if (!enabled || requests.length === 0) return null;
@@ -126,7 +132,7 @@ export function WaiterCallAlert() {
             </button>
           )}
         </div>
-        {autoplayBlocked && pendingCount > 0 && (
+        {!audioReady && pendingCount > 0 && (
           <div className="flex items-center justify-between gap-2 bg-amber-50 px-3.5 py-2 text-xs text-amber-900">
             <span>Tap to enable the waiter alert sound.</span>
             <button type="button" onClick={() => void enableWaiterSound()} className="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1.5 font-bold text-white hover:bg-amber-700">Enable Sound</button>
