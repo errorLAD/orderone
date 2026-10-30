@@ -124,7 +124,6 @@ async function createWaiterStream(req: NextRequest, businessId: string | null) {
           for (const row of result.rows) {
             const updatedAt = new Date(row.updated_at).toISOString();
             if (knownUpdates.get(row.id) !== updatedAt) {
-              knownUpdates.set(row.id, updatedAt);
               send(row);
             }
           }
