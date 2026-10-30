@@ -77,7 +77,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       label: 'Chat on WhatsApp',
       url: social.whatsapp.trim(),
       icon: <MessageCircle className="w-3 h-3 shrink-0" />,
-      colorClasses: 'hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 hover:border-emerald-300',
+      colorClasses: 'bg-emerald-50/70 border-emerald-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 hover:border-emerald-300',
     });
   }
 
@@ -91,7 +91,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       label: 'Rate on Google',
       url: social.googleBusiness.trim(),
       icon: <GoogleIcon className="w-3 h-3 shrink-0" />,
-      colorClasses: 'hover:bg-blue-50 text-slate-800 hover:text-blue-700 hover:border-blue-300',
+      colorClasses: 'bg-blue-50/70 border-blue-100 hover:bg-blue-50 text-slate-800 hover:text-blue-700 hover:border-blue-300',
       extra: <span className="text-amber-500 font-black text-[9px] tracking-tight">★★★★★</span>,
     });
   }
@@ -106,7 +106,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       label: 'Follow on Instagram',
       url: social.instagram.trim(),
       icon: <InstagramIcon className="w-3 h-3 shrink-0" />,
-      colorClasses: 'hover:bg-pink-50 text-slate-800 hover:text-pink-600 hover:border-pink-300',
+      colorClasses: 'bg-pink-50/70 border-pink-100 hover:bg-pink-50 text-slate-800 hover:text-pink-600 hover:border-pink-300',
     });
   }
 
@@ -120,7 +120,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       label: 'Watch on YouTube',
       url: social.youtube.trim(),
       icon: <YouTubeIcon className="w-3 h-3 shrink-0" />,
-      colorClasses: 'hover:bg-red-50 text-slate-800 hover:text-red-600 hover:border-red-300',
+      colorClasses: 'bg-red-50/70 border-red-100 hover:bg-red-50 text-slate-800 hover:text-red-600 hover:border-red-300',
     });
   }
 
@@ -134,7 +134,7 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
       label: 'Follow on Facebook',
       url: social.facebook.trim(),
       icon: <FacebookIcon className="w-3 h-3 shrink-0" />,
-      colorClasses: 'hover:bg-sky-50 text-slate-800 hover:text-[#1877F2] hover:border-sky-300',
+      colorClasses: 'bg-sky-50/70 border-sky-100 hover:bg-sky-50 text-slate-800 hover:text-[#1877F2] hover:border-sky-300',
     });
   }
 
