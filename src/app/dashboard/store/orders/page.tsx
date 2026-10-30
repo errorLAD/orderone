@@ -37,8 +37,10 @@ export default function StoreOrdersPage() {
     if (!currentBusiness) return;
     setLoading(true);
     try {
-      // STRICT REQUIREMENT: sourceType=store is explicitly enforced on the backend!
-      let url = `/api/orders?businessId=${currentBusiness.id}&sourceType=store`;
+      // Restaurant businesses use the same dashboard page for both order channels.
+      // Keep the channel on each order so staff can still distinguish Store and Menu orders.
+      let url = `/api/orders?businessId=${currentBusiness.id}`;
+      if (!isFoodBusiness) url += '&sourceType=store';
       if (selectedStatus !== 'all') {
         url += `&status=${selectedStatus}`;
       }
@@ -48,9 +50,10 @@ export default function StoreOrdersPage() {
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
-        setOrders(data.orders);
+        const nextOrders = Array.isArray(data.orders) ? data.orders : [];
+        setOrders(nextOrders);
         if (selectedOrder) {
-          const fresh = data.orders.find((o: Order) => o.id === selectedOrder.id);
+          const fresh = nextOrders.find((o: Order) => o.id === selectedOrder.id);
           if (fresh) setSelectedOrder(fresh);
         }
       }
@@ -71,7 +74,8 @@ export default function StoreOrdersPage() {
 
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource(`/api/realtime?businessId=${currentBusiness.id}&sourceType=store`);
+      const realtimeUrl = `/api/realtime?businessId=${currentBusiness.id}${isFoodBusiness ? '' : '&sourceType=store'}`;
+      eventSource = new EventSource(realtimeUrl);
       eventSource.onmessage = (event) => {
         try {
           const parsed = JSON.parse(event.data);
@@ -91,7 +95,7 @@ export default function StoreOrdersPage() {
       if (eventSource) eventSource.close();
       clearInterval(interval);
     };
-  }, [currentBusiness?.id]);
+  }, [currentBusiness?.id, isFoodBusiness]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -130,18 +134,18 @@ export default function StoreOrdersPage() {
   };
 
   const statusTabs = [
-    { id: 'all', label: 'All Store Orders' },
+    { id: 'all', label: isFoodBusiness ? 'All Orders' : 'All Store Orders' },
     { id: 'new', label: 'New Orders' },
     { id: 'accepted', label: 'Accepted' },
-    { id: 'preparing', label: 'Packing' },
-    { id: 'ready', label: 'Ready for Dispatch' },
-    { id: 'completed', label: 'Delivered' },
+    { id: 'preparing', label: isFoodBusiness ? 'Preparing / Packing' : 'Packing' },
+    { id: 'ready', label: isFoodBusiness ? 'Ready' : 'Ready for Dispatch' },
+    { id: 'completed', label: isFoodBusiness ? 'Completed' : 'Delivered' },
     { id: 'cancelled', label: 'Cancelled' },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header with Strict Store Isolation Badge */}
+      {/* Restaurant accounts can view both order channels here; each order remains source-labelled. */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-200">
         <div>
           <div className="flex items-center gap-2">
@@ -149,16 +153,18 @@ export default function StoreOrdersPage() {
               <Store className="w-5 h-5" />
             </span>
             <h1 className="text-xl font-black text-slate-900 tracking-tight">
-              Retail Store Orders
+              {isFoodBusiness ? 'Restaurant & Store Orders' : 'Retail Store Orders'}
             </h1>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
-              Source: Store Only (S-Prefix)
+              {isFoodBusiness ? 'Dining Menu + Store' : 'Store Only (S-Prefix)'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Orders placed via the digital Store storefront.
+            {isFoodBusiness
+              ? 'Dining Menu and Store orders are shown together here and marked by source.'
+              : 'Orders placed via the digital Store storefront.'}
             {isFoodBusiness && (
-              <> Restaurant Dining Menu orders appear under{' '}
+              <> For kitchen tickets and table service, open{' '}
                 <Link href="/dashboard/menu/orders" className="font-semibold text-indigo-600 hover:underline">Kitchen Orders &amp; KOT</Link>.
               </>
             )}
@@ -220,7 +226,7 @@ export default function StoreOrdersPage() {
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by S-token, customer or phone..."
+            placeholder={isFoodBusiness ? 'Search by token, customer or phone...' : 'Search by S-token, customer or phone...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
@@ -235,21 +241,25 @@ export default function StoreOrdersPage() {
           {loading && orders.length === 0 ? (
             <div className="py-16 text-center text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-sky-500" />
-              Loading Store orders...
+              Loading orders...
             </div>
           ) : orders.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-6">
               <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <h3 className="text-sm font-bold text-slate-700">No Store Orders Found</h3>
+              <h3 className="text-sm font-bold text-slate-700">
+                {isFoodBusiness ? 'No Restaurant or Store Orders Found' : 'No Store Orders Found'}
+              </h3>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                No orders match your filter. Customers ordering from the public Store storefront will generate tokens here.
+                {isFoodBusiness
+                  ? 'No orders match the selected filters. New Store and Dining Menu orders will appear here.'
+                  : 'No orders match your filter. Customers ordering from the public Store storefront will generate tokens here.'}
               </p>
               {isFoodBusiness && (
                 <Link
                   href="/dashboard/menu/orders"
                   className="inline-flex min-h-10 items-center justify-center mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
                 >
-                  View Restaurant Orders
+                  Open Kitchen Orders &amp; KOT
                 </Link>
               )}
             </div>
@@ -273,6 +283,14 @@ export default function StoreOrdersPage() {
                       <div className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 font-black text-sky-700 text-sm tracking-wide">
                         {order.tokenNumber}
                       </div>
+                      {isFoodBusiness && (
+                        <span className={cn(
+                          'px-2 py-1 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap',
+                          order.sourceType === 'menu' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-sky-50 text-sky-700 border border-sky-200'
+                        )}>
+                          {order.sourceType === 'menu' ? 'Dining Menu' : 'Store'}
+                        </span>
+                      )}
                       <div>
                         <div className="flex items-center gap-2">
                           <div className="text-xs font-bold text-slate-900">
@@ -341,7 +359,7 @@ export default function StoreOrdersPage() {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
                   <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">
-                    Store Order Details
+                    {selectedOrder.sourceType === 'menu' ? 'Dining Menu Order Details' : 'Store Order Details'}
                   </span>
                   <div className="text-xl font-black text-slate-900">
                     {selectedOrder.tokenNumber}
@@ -486,7 +504,7 @@ export default function StoreOrdersPage() {
                       onClick={() => handleUpdateStatus(selectedOrder.id, 'preparing')}
                       className="px-3 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 col-span-2"
                     >
-                      Mark as Packing / Preparing
+                      {selectedOrder.sourceType === 'menu' ? 'Start Preparing' : 'Mark as Packing / Preparing'}
                     </button>
                   )}
 
@@ -495,7 +513,7 @@ export default function StoreOrdersPage() {
                       onClick={() => handleUpdateStatus(selectedOrder.id, 'ready')}
                       className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 col-span-2"
                     >
-                      Ready for Pickup / Dispatch
+                      {selectedOrder.sourceType === 'menu' ? 'Mark as Ready' : 'Ready for Pickup / Dispatch'}
                     </button>
                   )}
 
@@ -504,7 +522,7 @@ export default function StoreOrdersPage() {
                       onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
                       className="px-3 py-2 bg-emerald-700 text-white rounded-lg text-xs font-bold hover:bg-emerald-800 col-span-2"
                     >
-                      Mark as Completed / Delivered
+                      {selectedOrder.sourceType === 'menu' ? 'Mark as Completed / Served' : 'Mark as Completed / Delivered'}
                     </button>
                   )}
 
@@ -534,7 +552,7 @@ export default function StoreOrdersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">
-                  Store Order Details
+                  {selectedOrder.sourceType === 'menu' ? 'Dining Menu Order Details' : 'Store Order Details'}
                 </span>
                 <div className="text-xl font-black text-slate-900">
                   {selectedOrder.tokenNumber}
@@ -679,7 +697,7 @@ export default function StoreOrdersPage() {
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'preparing')}
                     className="px-3 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 col-span-2 shadow-xs"
                   >
-                    Mark as Packing / Preparing
+                    {selectedOrder.sourceType === 'menu' ? 'Start Preparing' : 'Mark as Packing / Preparing'}
                   </button>
                 )}
 
@@ -688,7 +706,7 @@ export default function StoreOrdersPage() {
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'ready')}
                     className="px-3 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 col-span-2 shadow-xs"
                   >
-                    Ready for Pickup / Dispatch
+                    {selectedOrder.sourceType === 'menu' ? 'Mark as Ready' : 'Ready for Pickup / Dispatch'}
                   </button>
                 )}
 
@@ -697,7 +715,7 @@ export default function StoreOrdersPage() {
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'completed')}
                     className="px-3 py-2.5 bg-emerald-700 text-white rounded-xl text-xs font-bold hover:bg-emerald-800 col-span-2 shadow-xs"
                   >
-                    Mark as Completed / Delivered
+                    {selectedOrder.sourceType === 'menu' ? 'Mark as Completed / Served' : 'Mark as Completed / Delivered'}
                   </button>
                 )}
 
