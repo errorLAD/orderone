@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BellRing, Check, CheckCircle2, Clock3, HandHelping, VolumeX } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { waiterAlertSound } from '@/lib/waiterAlertSound';
+import { useOrderAlert } from '@/context/OrderAlertContext';
+import { orderSound } from '@/lib/orderSound';
 
 type WaiterRequest = {
   id: string;
@@ -20,6 +21,7 @@ function statusLabel(status: WaiterRequest['status']) {
 
 export function WaiterCallAlert() {
   const { currentBusiness } = useApp();
+  const { autoplayBlocked, enableAudio } = useOrderAlert();
   const [requests, setRequests] = useState<WaiterRequest[]>([]);
   const [muted, setMuted] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -67,17 +69,17 @@ export function WaiterCallAlert() {
       cancelled = true;
       source.close();
       if (eventSourceRef.current === source) eventSourceRef.current = null;
-      waiterAlertSound.stop();
+      orderSound.stopWaiterRinging();
     };
   }, [businessId, enabled, mergeRequest]);
 
   useEffect(() => {
     if (enabled && !muted && requests.some((request) => request.status === 'pending')) {
-      waiterAlertSound.start(alertInterval);
+      orderSound.startWaiterRinging(alertInterval);
     } else {
-      waiterAlertSound.stop();
+      orderSound.stopWaiterRinging();
     }
-    return () => waiterAlertSound.stop();
+    return () => orderSound.stopWaiterRinging();
   }, [enabled, muted, requests, alertInterval]);
 
   const updateRequest = async (requestId: string, status: 'acknowledged' | 'completed') => {
@@ -99,6 +101,14 @@ export function WaiterCallAlert() {
     }
   };
 
+  const enableWaiterSound = async () => {
+    const unlocked = await enableAudio();
+    if (unlocked && requests.some((request) => request.status === 'pending')) {
+      orderSound.stopWaiterRinging();
+      orderSound.startWaiterRinging(alertInterval);
+    }
+  };
+
   if (!enabled || requests.length === 0) return null;
   const pendingCount = requests.filter((request) => request.status === 'pending').length;
 
@@ -111,11 +121,17 @@ export function WaiterCallAlert() {
             <p className="truncate text-sm font-black">Waiter calls{pendingCount ? ` · ${pendingCount} pending` : ''}</p>
           </div>
           {pendingCount > 0 && (
-            <button type="button" onClick={() => { waiterAlertSound.stop(); setMuted(true); }} className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/20 px-2 py-1.5 text-xs font-bold hover:bg-white/30" title="Stop waiter alert sound">
+            <button type="button" onClick={() => { orderSound.stopWaiterRinging(); setMuted(true); }} className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/20 px-2 py-1.5 text-xs font-bold hover:bg-white/30" title="Stop waiter alert sound">
               <VolumeX className="h-3.5 w-3.5" /> Stop Alert
             </button>
           )}
         </div>
+        {autoplayBlocked && pendingCount > 0 && (
+          <div className="flex items-center justify-between gap-2 bg-amber-50 px-3.5 py-2 text-xs text-amber-900">
+            <span>Tap to enable the waiter alert sound.</span>
+            <button type="button" onClick={() => void enableWaiterSound()} className="shrink-0 rounded-lg bg-amber-600 px-2.5 py-1.5 font-bold text-white hover:bg-amber-700">Enable Sound</button>
+          </div>
+        )}
         {muted && pendingCount > 0 && <p className="bg-amber-50 px-4 py-1.5 text-[11px] font-medium text-amber-800">Sound stopped · pending request remains</p>}
         <div className="max-h-[55vh] divide-y divide-slate-100 overflow-y-auto">
           {requests.slice(0, 12).map((request) => (

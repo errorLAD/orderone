@@ -86,21 +86,22 @@ export function StorefrontRenderer({
 
   const [isSearchOpen, setIsSearchOpen] = React.useState<boolean>(Boolean(search?.trim()));
   const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const isWaiterCallEligible = !isPreview &&
-    (business.type === 'restaurant' || business.category === 'restaurant') &&
-    Boolean(business.settings?.orderSettings?.enableDineIn) &&
-    business.settings?.waiterCalls?.enabled !== false;
   const [waiterDialogOpen, setWaiterDialogOpen] = React.useState(false);
   const [waiterTable, setWaiterTable] = React.useState('');
   const [waiterRequest, setWaiterRequest] = React.useState<{ id: string; tableNumber: string; status: 'pending' | 'acknowledged' | 'completed'; createdAt: string } | null>(null);
   const [waiterAccessToken, setWaiterAccessToken] = React.useState('');
   const [waiterSending, setWaiterSending] = React.useState(false);
   const [waiterError, setWaiterError] = React.useState('');
+  const isWaiterCallEligible = !isPreview &&
+    (business.type === 'restaurant' || business.category === 'restaurant') &&
+    Boolean(business.settings?.orderSettings?.enableDineIn) &&
+    business.settings?.waiterCalls?.enabled !== false &&
+    Boolean(waiterTable.trim());
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qrTable = params.get('table') || params.get('tableNumber');
-    if (qrTable) setWaiterTable(qrTable.replace(/^(table\s*(no\.?|#)?\s*)/i, '').trim());
+    setWaiterTable(qrTable ? qrTable.replace(/^(table\s*(no\.?|#)?\s*)/i, '').trim() : '');
   }, [business.slug]);
 
   React.useEffect(() => {
@@ -119,9 +120,8 @@ export function StorefrontRenderer({
     return () => window.clearInterval(timer);
   }, [waiterRequest?.id, waiterRequest?.status, waiterAccessToken]);
 
-  const callWaiter = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!waiterTable.trim() || waiterSending) return;
+  const callWaiter = async () => {
+    if (!waiterTable.trim() || waiterSending || !isWaiterCallEligible) return;
     setWaiterSending(true);
     setWaiterError('');
     try {
@@ -139,6 +139,15 @@ export function StorefrontRenderer({
     } finally {
       setWaiterSending(false);
     }
+  };
+
+  const handleWaiterCallClick = () => {
+    setWaiterDialogOpen(true);
+    setWaiterError('');
+    if (waiterRequest && waiterRequest.status !== 'completed') return;
+    setWaiterRequest(null);
+    setWaiterAccessToken('');
+    void callWaiter();
   };
 
   const renderCategoryTabIcon = (name: string) => {
@@ -570,7 +579,8 @@ export function StorefrontRenderer({
               {isWaiterCallEligible && (
                 <button
                   type="button"
-                  onClick={() => { setWaiterError(''); setWaiterDialogOpen(true); }}
+                  onClick={handleWaiterCallClick}
+                  disabled={waiterSending}
                   className="relative w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg transition-all hover:bg-white/30 active:scale-95 cursor-pointer"
                   title="Call a waiter"
                   aria-label="Call a waiter"
@@ -692,7 +702,8 @@ export function StorefrontRenderer({
               {isWaiterCallEligible && (
                 <button
                   type="button"
-                  onClick={() => { setWaiterError(''); setWaiterDialogOpen(true); }}
+                  onClick={handleWaiterCallClick}
+                  disabled={waiterSending}
                   className="relative flex items-center justify-center w-9 h-9 rounded-xl border border-white/20 bg-white/20 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/30 active:scale-95 cursor-pointer shrink-0 mb-0.5"
                   title="Call a waiter"
                   aria-label="Call a waiter"
@@ -1259,7 +1270,7 @@ export function StorefrontRenderer({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="waiter-call-title" className="text-lg font-black text-slate-900">Call a waiter</h2>
-                <p className="mt-1 text-sm text-slate-500">Tell our team where you are seated.</p>
+                <p className="mt-1 text-sm text-slate-500">Requesting service for Table {waiterTable}.</p>
               </div>
               <button type="button" onClick={() => setWaiterDialogOpen(false)} aria-label="Close" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
                 <X className="h-5 w-5" />
@@ -1282,36 +1293,23 @@ export function StorefrontRenderer({
                   </button>
                 )}
               </div>
+            ) : waiterSending ? (
+              <div className="mt-5 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm font-semibold text-indigo-800" role="status">
+                Sending a waiter request for Table {waiterTable}…
+              </div>
             ) : (
-              <form onSubmit={callWaiter} className="mt-5 space-y-4">
-                <label className="block text-sm font-bold text-slate-700" htmlFor="waiter-table-select">Choose a table</label>
-                <select
-                  id="waiter-table-select"
-                  value={/^\d+$/.test(waiterTable) && Number(waiterTable) <= 30 ? waiterTable : ''}
-                  onChange={(event) => { if (event.target.value) setWaiterTable(event.target.value); }}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-base text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                >
-                  <option value="">Select a table (or enter below)</option>
-                  {Array.from({ length: 30 }, (_, index) => String(index + 1)).map((number) => <option key={number} value={number}>Table {number}</option>)}
-                </select>
-                <label className="block text-sm font-bold text-slate-700" htmlFor="waiter-table-number">Or enter your table number</label>
-                <input
-                  id="waiter-table-number"
-                  autoFocus
-                  required
-                  maxLength={32}
-                  value={waiterTable}
-                  onChange={(event) => setWaiterTable(event.target.value)}
-                  placeholder="For example, 5"
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-base text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                />
-                {waiterError && <p role="alert" className="text-sm font-medium text-rose-600">{waiterError}</p>}
-                <button type="submit" disabled={waiterSending || !waiterTable.trim()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
-                  <PhoneCall className="h-4 w-4" />
-                  {waiterSending ? 'Sending request…' : 'Call waiter'}
-                </button>
-                <p className="text-center text-xs text-slate-500">Please wait 20 seconds before calling again.</p>
-              </form>
+              <div className="mt-5 space-y-3">
+                {waiterError ? (
+                  <p role="alert" className="text-sm font-medium text-rose-600">{waiterError}</p>
+                ) : (
+                  <p className="text-sm text-slate-600">Table number detected from this table’s QR code.</p>
+                )}
+                {waiterError && (
+                  <button type="button" onClick={() => void callWaiter()} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700">
+                    <PhoneCall className="h-4 w-4" /> Try again for Table {waiterTable}
+                  </button>
+                )}
+              </div>
             )}
           </section>
         </div>

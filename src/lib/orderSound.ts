@@ -10,6 +10,8 @@ export type OrderChimeType = 'store' | 'menu';
 class OrderSoundEngine {
   private audioCtx: AudioContext | null = null;
   private ringInterval: NodeJS.Timeout | null = null;
+  private waiterRingInterval: NodeJS.Timeout | null = null;
+  private waiterAlertEnabled = true;
   private isRingingActive: boolean = false;
   private volume: number = 0.8;
   private soundEnabled: boolean = true;
@@ -196,6 +198,50 @@ class OrderSoundEngine {
     if (this.ringInterval) {
       clearInterval(this.ringInterval);
       this.ringInterval = null;
+    }
+  }
+
+  /** A separate call-bell loop that shares the dashboard's unlocked audio context. */
+  public startWaiterRinging(repeatEverySeconds = 6) {
+    if (!this.waiterAlertEnabled || this.waiterRingInterval) return;
+    this.playWaiterCallChime();
+    this.waiterRingInterval = setInterval(() => {
+      if (!this.waiterAlertEnabled) {
+        this.stopWaiterRinging();
+        return;
+      }
+      this.playWaiterCallChime();
+    }, Math.max(3, repeatEverySeconds) * 1000);
+  }
+
+  public stopWaiterRinging() {
+    if (this.waiterRingInterval) clearInterval(this.waiterRingInterval);
+    this.waiterRingInterval = null;
+  }
+
+  public setWaiterAlertEnabled(enabled: boolean) {
+    this.waiterAlertEnabled = enabled;
+    if (!enabled) this.stopWaiterRinging();
+  }
+
+  private playWaiterCallChime() {
+    if (!this.waiterAlertEnabled || this.volume <= 0) return;
+    try {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => this.onAutoplayBlockedCallback?.(true));
+      }
+      const now = ctx.currentTime;
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(this.volume, now);
+      masterGain.connect(ctx.destination);
+      // Short double call-bell: intentionally distinct from store/menu order chimes.
+      this.synthesizeTone(ctx, masterGain, 1046.5, now, 0.22, 'square');
+      this.synthesizeTone(ctx, masterGain, 784, now + 0.28, 0.28, 'triangle');
+      this.synthesizeTone(ctx, masterGain, 1046.5, now + 0.62, 0.22, 'square');
+    } catch (error) {
+      console.warn('Error playing waiter call alert:', error);
     }
   }
 
