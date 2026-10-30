@@ -285,7 +285,7 @@ export async function getAdminBusinessDetail(businessId: string) {
   const [bizRes, prodsRes, catsRes, ordersRes, paymentsRes, subHistoryRes, roomsRes] = await Promise.all([
     // Business profile
     pgQuery(
-      `SELECT b.*, u.name as owner_name, u.email as owner_email, u.phone as owner_phone, u.id as owner_user_id
+      `SELECT b.*, u.name as owner_name, u.email as owner_email, b.phone as owner_phone, u.id as owner_user_id
        FROM public.businesses b
        LEFT JOIN public.users u ON b.owner_id = u.id
        WHERE b.id = $1 LIMIT 1;`,
