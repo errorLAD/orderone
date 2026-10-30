@@ -544,6 +544,7 @@ export interface PosBill {
   id: string;
   businessId: string;
   billNumber: string;
+  source?: 'pos' | 'calculator';
   customerName?: string;
   customerPhone?: string;
   subtotal: number;

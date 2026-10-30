@@ -57,7 +57,7 @@ export async function downloadPosBillPdf(bill: PosBill, business?: Business | nu
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(15, 23, 42); // Slate-900
-  doc.text('COUNTER BILL / RECEIPT', margin, y);
+  doc.text(bill.source === 'calculator' ? 'MANUAL CALCULATOR BILL' : 'COUNTER BILL / RECEIPT', margin, y);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -132,7 +132,7 @@ export async function downloadPosBillPdf(bill: PosBill, business?: Business | nu
     const truncatedName = doc.splitTextToSize(item.productName, 85);
     doc.text(truncatedName[0], colX.item, y);
     doc.text(`₹${Number(item.unitPrice).toFixed(2)}`, colX.rate, y, { align: 'right' });
-    doc.text(String(item.quantity), colX.qty, y, { align: 'center' });
+    doc.text(`${item.quantity}${item.unit ? ` ${item.unit}` : ''}`, colX.qty, y, { align: 'center' });
     doc.text(`₹${Number(item.totalPrice).toFixed(2)}`, colX.total, y, { align: 'right' });
 
     y += 4;

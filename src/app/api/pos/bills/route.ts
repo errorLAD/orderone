@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       search,
       startDate,
       endDate,
+      source: 'pos',
     });
 
     return NextResponse.json({

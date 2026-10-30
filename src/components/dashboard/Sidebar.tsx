@@ -183,6 +183,13 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
               icon: ReceiptText,
             }]
           : []),
+        ...(currentRole === 'owner'
+          ? [{
+              name: 'Calculator',
+              href: '/dashboard/calculator',
+              icon: Calculator,
+            }]
+          : []),
       ],
     },
 

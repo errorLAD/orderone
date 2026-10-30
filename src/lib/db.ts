@@ -28,6 +28,7 @@ import { generateId, generateTrackingId } from './utils';
 import { resolveBusinessByIdOrSlug, generateUniqueBusinessSlug } from './slug';
 import {
   pgQuery,
+  getPgPool,
   mapRowToBusiness,
   mapRowToCategory,
   mapRowToProduct,
@@ -1776,7 +1777,7 @@ export async function getAnalytics(
   if (scope === 'all') {
     try {
       const posRes = await pgQuery(
-        "SELECT * FROM public.pos_bills WHERE business_id = $1 AND status != 'cancelled'",
+        "SELECT * FROM public.pos_bills WHERE business_id = $1 AND COALESCE(bill_source, 'pos') = 'pos' AND status != 'cancelled'",
         [businessId]
       );
       allPosBills = posRes.rows.map(mapRowToPosBill);
@@ -3255,6 +3256,7 @@ export async function getPosBills(
     search?: string;
     startDate?: string;
     endDate?: string;
+    source?: 'pos' | 'calculator';
   }
 ): Promise<{ bills: PosBill[]; totalCount: number }> {
   const limit = options?.limit || 50;
@@ -3265,6 +3267,14 @@ export async function getPosBills(
   let countQuery = 'SELECT COUNT(*)::int AS count FROM public.pos_bills WHERE business_id = $1';
   const params: any[] = [businessId];
   let paramIdx = 2;
+
+  if (options?.source) {
+    const sourceFilter = ` AND COALESCE(bill_source, 'pos') = $${paramIdx}`;
+    query += sourceFilter;
+    countQuery += sourceFilter;
+    params.push(options.source);
+    paramIdx++;
+  }
 
   if (search) {
     const searchFilter = ` AND (bill_number ILIKE $${paramIdx} OR customer_name ILIKE $${paramIdx} OR customer_phone ILIKE $${paramIdx})`;
@@ -3311,5 +3321,128 @@ export async function getPosBillById(businessId: string, billId: string): Promis
   );
   if (res.rows.length === 0) return null;
   return mapRowToPosBill(res.rows[0]);
+}
+
+export async function createCalculatorBill(input: {
+  businessId: string;
+  requestId: string;
+  items: { productName?: string; quantity: number; unit?: string; unitPrice: number }[];
+  discountType: 'fixed' | 'percentage';
+  discountValue: number;
+  taxRate: number;
+  createdBy: string;
+}): Promise<PosBill> {
+  const business = await getBusinessById(input.businessId);
+  if (!business) throw new Error('Business not found');
+  if (!input.items.length) throw new Error('Add at least one bill item.');
+
+  const billId = generateId('calculator_bill');
+  const now = new Date().toISOString();
+  const items: PosBillItem[] = input.items.map((item, index) => {
+    const unitPrice = Math.round(item.unitPrice * 100) / 100;
+    const quantity = Math.round(item.quantity * 1000) / 1000;
+    const productName = item.productName?.trim() || `Item ${index + 1}`;
+    return {
+      id: generateId('calculator_item'), billId, businessId: input.businessId,
+      productName, unit: item.unit?.trim() || undefined, quantity, unitPrice,
+      totalPrice: Math.round(quantity * unitPrice * 100) / 100, createdAt: now,
+    };
+  });
+  const subtotal = Math.round(items.reduce((sum, item) => sum + item.totalPrice, 0) * 100) / 100;
+  const discountRate = input.discountValue;
+  const discountAmount = Math.min(subtotal, Math.round((input.discountType === 'percentage'
+    ? subtotal * discountRate / 100 : discountRate) * 100) / 100);
+  const taxableAmount = Math.max(0, subtotal - discountAmount);
+  const taxAmount = Math.round(taxableAmount * input.taxRate) / 100;
+  const bill: PosBill = {
+    id: billId, businessId: input.businessId, billNumber: '', source: 'calculator',
+    subtotal, discountType: input.discountType, discountRate, discountAmount,
+    taxRate: input.taxRate, taxAmount,
+    totalAmount: Math.round((taxableAmount + taxAmount) * 100) / 100,
+    paymentMethod: 'cash', paymentStatus: 'paid', status: 'completed',
+    createdBy: input.createdBy, items, createdAt: now, updatedAt: now,
+  };
+
+  const client = await getPgPool().connect();
+  try {
+    await client.query('BEGIN');
+    const duplicate = await client.query(
+      `SELECT * FROM public.pos_bills WHERE business_id = $1 AND request_id = $2`,
+      [input.businessId, input.requestId]
+    );
+    if (duplicate.rows[0]) {
+      await client.query('COMMIT');
+      return mapRowToPosBill(duplicate.rows[0]);
+    }
+    const token = await client.query(
+      'SELECT public.generate_next_order_token($1, $2) AS bill_num',
+      [input.businessId, 'pos']
+    );
+    bill.billNumber = token.rows[0]?.bill_num;
+    if (!bill.billNumber) throw new Error('Could not generate a bill number.');
+    await client.query(
+      `INSERT INTO public.pos_bills (
+        id, business_id, bill_number, bill_source, request_id, subtotal, discount_type,
+        discount_rate, discount_amount, tax_rate, tax_amount, total_amount, payment_method,
+        payment_status, status, created_by, items, created_at, updated_at
+      ) VALUES ($1,$2,$3,'calculator',$4,$5,$6,$7,$8,$9,$10,$11,'cash','paid','completed',$12,$13::jsonb,$14,$14)`,
+      [bill.id, bill.businessId, bill.billNumber, input.requestId, bill.subtotal,
+        bill.discountType, bill.discountRate, bill.discountAmount, bill.taxRate,
+        bill.taxAmount, bill.totalAmount, bill.createdBy, JSON.stringify(items), now]
+    );
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO public.pos_bill_items (
+          id, bill_id, business_id, product_name, unit, unit_price, quantity, total_price, created_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [item.id, bill.id, bill.businessId, item.productName, item.unit || null,
+          item.unitPrice, item.quantity, item.totalPrice, now]
+      );
+    }
+    await client.query('COMMIT');
+    return bill;
+  } catch (error: any) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (error?.code === '23505') {
+      const duplicate = await client.query(
+        `SELECT * FROM public.pos_bills WHERE business_id = $1 AND request_id = $2`,
+        [input.businessId, input.requestId]
+      );
+      if (duplicate.rows[0]) return mapRowToPosBill(duplicate.rows[0]);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getCalculatorSalesReport(businessId: string, startDate: string, endDate: string, timeZone = 'Asia/Kolkata') {
+  const orders = await pgQuery(
+    `SELECT source_type, COUNT(*)::int AS count, COALESCE(SUM(total), 0)::numeric AS revenue
+     FROM public.orders WHERE business_id = $1 AND created_at >= ($2::date::timestamp AT TIME ZONE $4)
+       AND created_at < (($3::date + INTERVAL '1 day')::timestamp AT TIME ZONE $4)
+       AND order_status NOT IN ('cancelled', 'rejected')
+     GROUP BY source_type`, [businessId, startDate, endDate, timeZone]
+  );
+  const bills = await pgQuery(
+    `SELECT COALESCE(bill_source, 'pos') AS source, COUNT(*)::int AS count,
+       COALESCE(SUM(total_amount), 0)::numeric AS revenue
+     FROM public.pos_bills WHERE business_id = $1 AND created_at >= ($2::date::timestamp AT TIME ZONE $4)
+       AND created_at < (($3::date + INTERVAL '1 day')::timestamp AT TIME ZONE $4) AND status <> 'cancelled'
+     GROUP BY COALESCE(bill_source, 'pos')`, [businessId, startDate, endDate, timeZone]
+  );
+  const channels: Record<string, { count: number; revenue: number }> = {
+    pos: { count: 0, revenue: 0 }, calculator: { count: 0, revenue: 0 },
+    store: { count: 0, revenue: 0 }, menu: { count: 0, revenue: 0 },
+  };
+  for (const row of orders.rows) {
+    if (channels[row.source_type]) channels[row.source_type] = { count: Number(row.count), revenue: Number(row.revenue) };
+  }
+  for (const row of bills.rows) {
+    if (channels[row.source]) channels[row.source] = { count: Number(row.count), revenue: Number(row.revenue) };
+  }
+  const totalCount = Object.values(channels).reduce((sum, channel) => sum + channel.count, 0);
+  const totalRevenue = Math.round(Object.values(channels).reduce((sum, channel) => sum + channel.revenue, 0) * 100) / 100;
+  return { channels, totalCount, totalRevenue, startDate, endDate };
 }
 

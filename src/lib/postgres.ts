@@ -346,7 +346,7 @@ export function mapRowToPosBillItem(r: any): PosBillItem {
     size: r.size || undefined,
     unit: r.unit || undefined,
     unitPrice: parseFloat(r.unit_price || '0'),
-    quantity: parseInt(r.quantity || '1', 10),
+    quantity: parseFloat(r.quantity || '1'),
     totalPrice: parseFloat(r.total_price || '0'),
     createdAt: r.created_at?.toISOString ? r.created_at.toISOString() : r.created_at,
   };
@@ -361,6 +361,7 @@ export function mapRowToPosBill(r: any): PosBill {
     id: r.id,
     businessId: r.business_id,
     billNumber: r.bill_number,
+    source: r.bill_source === 'calculator' ? 'calculator' : 'pos',
     customerName: r.customer_name || undefined,
     customerPhone: r.customer_phone || undefined,
     subtotal: parseFloat(r.subtotal || '0'),
