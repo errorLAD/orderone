@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
           showHeaderLogo: row.show_header_logo === true,
           headerLogoUrl: row.header_logo_url || business.settings?.qrCustomization?.headerLogoUrl || undefined,
           headerLogoScale: business.settings?.qrCustomization?.headerLogoScale ?? 100,
+          showHeaderLogoBackground: business.settings?.qrCustomization?.showHeaderLogoBackground === true,
           updatedAt: row.updated_at,
         };
       } else if (business.settings?.qrCustomization) {
@@ -122,6 +123,7 @@ export async function POST(req: NextRequest) {
       showHeaderLogo,
       headerLogoUrl,
       headerLogoScale,
+      showHeaderLogoBackground,
     } = body;
 
     if (!businessId) {
@@ -251,6 +253,7 @@ export async function POST(req: NextRequest) {
       showHeaderLogo: cleanShowHeaderLogo,
       headerLogoUrl: cleanHeaderLogoUrl,
       headerLogoScale: cleanHeaderLogoScale,
+      showHeaderLogoBackground: showHeaderLogoBackground === true,
       updatedAt: now,
     };
 

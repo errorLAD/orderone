@@ -271,7 +271,9 @@ export function CustomQrCanvas({
           const hLogoX = Math.round((canvasW - hLogoW) / 2);
 
           ctx.save();
-          drawRoundRect(hLogoX - 4, currentHeaderY - 2, hLogoW + 8, hLogoH + 4, 6, '#FFFFFF', undefined, 0);
+          if (customization.showHeaderLogoBackground === true) {
+            drawRoundRect(hLogoX - 4, currentHeaderY - 2, hLogoW + 8, hLogoH + 4, 6, '#FFFFFF', undefined, 0);
+          }
           ctx.drawImage(headerLogoImg, hLogoX, currentHeaderY, hLogoW, hLogoH);
           ctx.restore();
 

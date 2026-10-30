@@ -24,6 +24,7 @@ export const DEFAULT_QR_CUSTOMIZATION: QrCustomizationSettings = {
   showHeaderTitle: true,
   showHeaderLogo: false,
   headerLogoScale: 100,
+  showHeaderLogoBackground: false,
   headerSubtitle: 'DIGITAL STOREFRONT & MENU',
 };
 

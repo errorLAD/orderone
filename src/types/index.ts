@@ -91,6 +91,7 @@ export interface QrCustomizationSettings {
   showHeaderLogo?: boolean;
   headerLogoUrl?: string;
   headerLogoScale?: number;
+  showHeaderLogoBackground?: boolean;
   updatedAt?: string;
 }
 

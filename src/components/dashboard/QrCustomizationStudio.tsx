@@ -856,6 +856,19 @@ export function QrCustomizationStudio({
                               <span>Larger</span>
                             </div>
                           </div>
+                          <label className="flex items-center gap-2 pt-2 text-[11px] font-medium text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={customization.showHeaderLogoBackground === true}
+                              onChange={(e) => setCustomization({
+                                ...customization,
+                                showHeaderLogoBackground: e.target.checked,
+                                templateId: 'custom',
+                              })}
+                              className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            Add white background behind logo
+                          </label>
                         </div>
                       )}
                     </div>
