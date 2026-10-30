@@ -1210,6 +1210,12 @@ export function StorefrontRenderer({
             {/* Social Links */}
             {business.settings?.socialLinks && (
               <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                {business.settings.socialLinks.whatsappEnabled && business.settings.socialLinks.whatsapp && (
+                  <a href={business.settings.socialLinks.whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-emerald-700 font-bold hover:bg-emerald-50 text-[9px] sm:text-[10px] transition-colors">
+                    <span>WhatsApp</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                  </a>
+                )}
                 {business.settings.socialLinks.googleBusinessEnabled &&
                   business.settings.socialLinks.googleBusiness && (
                     <a

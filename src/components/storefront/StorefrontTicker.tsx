@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { MessageCircle } from 'lucide-react';
 import { Business } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +70,16 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
 
   // Collect ONLY genuine social media links that the business has actually configured and enabled
   const activeItems: SocialItem[] = [];
+
+  if (social?.whatsapp && social.whatsapp.trim() !== '' && social.whatsappEnabled) {
+    activeItems.push({
+      key: 'whatsapp',
+      label: 'Chat on WhatsApp',
+      url: social.whatsapp.trim(),
+      icon: <MessageCircle className="w-3.5 h-3.5 shrink-0" />,
+      colorClasses: 'hover:bg-emerald-50 text-slate-800 hover:text-emerald-700 hover:border-emerald-300',
+    });
+  }
 
   if (
     social?.googleBusiness &&

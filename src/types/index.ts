@@ -37,10 +37,12 @@ export interface BusinessSocialLinks {
   facebook?: string;
   instagram?: string;
   youtube?: string;
+  whatsapp?: string;
   googleBusinessEnabled?: boolean;
   facebookEnabled?: boolean;
   instagramEnabled?: boolean;
   youtubeEnabled?: boolean;
+  whatsappEnabled?: boolean;
 }
 
 export type StorefrontTemplateId = 'classic' | 'modern';

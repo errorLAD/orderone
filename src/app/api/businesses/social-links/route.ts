@@ -47,10 +47,12 @@ export async function GET(req: NextRequest) {
       facebook: '',
       instagram: '',
       youtube: '',
+      whatsapp: '',
       googleBusinessEnabled: false,
       facebookEnabled: false,
       instagramEnabled: false,
       youtubeEnabled: false,
+      whatsappEnabled: false,
     };
 
     return NextResponse.json({ success: true, socialLinks });
@@ -92,6 +94,7 @@ export async function PUT(req: NextRequest) {
     const normalizedFacebook = normalizeBackendUrl(socialLinks.facebook);
     const normalizedInstagram = normalizeBackendUrl(socialLinks.instagram);
     const normalizedYoutube = normalizeBackendUrl(socialLinks.youtube);
+    const normalizedWhatsapp = normalizeBackendUrl(socialLinks.whatsapp);
 
     // Validate URLs
     if (!validateUrl(normalizedGoogle)) {
@@ -118,16 +121,24 @@ export async function PUT(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (!validateUrl(normalizedWhatsapp) || (normalizedWhatsapp && !/wa\.me|whatsapp\.com/i.test(normalizedWhatsapp))) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid WhatsApp link. Use a wa.me or whatsapp.com URL.' },
+        { status: 400 }
+      );
+    }
 
     const cleanSocialLinks: BusinessSocialLinks = {
       googleBusiness: normalizedGoogle,
       facebook: normalizedFacebook,
       instagram: normalizedInstagram,
       youtube: normalizedYoutube,
+      whatsapp: normalizedWhatsapp,
       googleBusinessEnabled: Boolean(socialLinks.googleBusinessEnabled),
       facebookEnabled: Boolean(socialLinks.facebookEnabled),
       instagramEnabled: Boolean(socialLinks.instagramEnabled),
       youtubeEnabled: Boolean(socialLinks.youtubeEnabled),
+      whatsappEnabled: Boolean(socialLinks.whatsappEnabled),
     };
 
     const updatedSettings = {
