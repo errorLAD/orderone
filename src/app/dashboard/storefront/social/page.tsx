@@ -139,15 +139,21 @@ const PLATFORMS: PlatformConfig[] = [
     id: 'whatsapp',
     toggleId: 'whatsappEnabled',
     name: 'WhatsApp',
-    placeholder: 'https://wa.me/919876543210',
-    example: 'https://wa.me/919876543210',
+    placeholder: '9876543210 (India) or +919876543210',
+    example: '9876543210',
     brandColor: '#25D366',
     bgLight: 'bg-emerald-50/60',
     borderLight: 'border-emerald-200',
     iconBg: 'bg-[#25D366]',
     iconColor: 'text-[#25D366]',
-    domainHint: 'Use a wa.me or whatsapp.com link with country code and number',
-    validateDomain: (url: string) => /wa\.me|whatsapp\.com/i.test(url),
+    domainHint: 'Enter a valid WhatsApp number (10-digit Indian numbers use +91 automatically)',
+    validateDomain: (url: string) => {
+      try {
+        const parsed = new URL(url);
+        const digits = parsed.pathname.replace(/\D/g, '');
+        return /(^|\.)wa\.me$|(^|\.)whatsapp\.com$/i.test(parsed.hostname) && digits.length >= 8 && digits.length <= 15;
+      } catch { return false; }
+    },
     icon: WhatsAppIcon,
   },
 ];
@@ -172,6 +178,12 @@ export default function SocialMediaSettingsPage() {
     whatsappEnabled: false,
   });
 
+  const whatsappNumberForInput = (value: string) => {
+    if (!value) return '';
+    const match = value.match(/wa\.me\/(\d+)/i);
+    return match ? `+${match[1]}` : value;
+  };
+
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
@@ -182,7 +194,7 @@ export default function SocialMediaSettingsPage() {
         const res = await fetch(`/api/businesses/social-links?businessId=${currentBusiness.id}`);
         const data = await res.json();
         if (data.success && data.socialLinks) {
-          setLinks(data.socialLinks);
+          setLinks({ ...data.socialLinks, whatsapp: whatsappNumberForInput(data.socialLinks.whatsapp || '') });
         }
       } catch (err) {
         console.error('Error fetching social links:', err);
@@ -196,6 +208,12 @@ export default function SocialMediaSettingsPage() {
   const normalizeUrl = (platformId: keyof BusinessSocialLinks, val: string): string => {
     if (!val || val.trim() === '') return '';
     let trimmed = val.trim();
+    if (platformId === 'whatsapp') {
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+      let digits = trimmed.replace(/\D/g, '');
+      if (digits.length === 10) digits = `91${digits}`;
+      return digits ? `https://wa.me/${digits}` : '';
+    }
     if (platformId === 'instagram' && trimmed.startsWith('@')) {
       return `https://instagram.com/${trimmed.slice(1)}`;
     }
@@ -417,11 +435,12 @@ export default function SocialMediaSettingsPage() {
                     <div className="space-y-1">
                       <div className="relative">
                         <input
-                          type="url"
+                          type={platform.id === 'whatsapp' ? 'tel' : 'url'}
                           value={urlVal}
                           onChange={(e) => handleChangeUrl(platform, e.target.value)}
                           onBlur={() => {
                             if (urlVal.trim()) {
+                              if (platform.id === 'whatsapp') return;
                               const norm = normalizeUrl(platform.id, urlVal);
                               if (norm !== urlVal) {
                                 setLinks((prev) => ({ ...prev, [platform.id]: norm }));
@@ -531,7 +550,7 @@ export default function SocialMediaSettingsPage() {
                       return (
                         <a
                           key={p.id}
-                          href={urlVal}
+                          href={p.id === 'whatsapp' ? normalizeUrl(p.id, urlVal) : urlVal}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 hover:border-slate-300 text-slate-800 shadow-2xs hover:shadow-xs transition-all"

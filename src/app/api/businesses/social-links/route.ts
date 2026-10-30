@@ -28,6 +28,15 @@ function normalizeBackendUrl(url: string | undefined): string {
   return trimmed;
 }
 
+function normalizeWhatsappNumber(value: string | undefined): string {
+  if (!value?.trim()) return '';
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  let digits = trimmed.replace(/\D/g, '');
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits ? `https://wa.me/${digits}` : '';
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -94,7 +103,7 @@ export async function PUT(req: NextRequest) {
     const normalizedFacebook = normalizeBackendUrl(socialLinks.facebook);
     const normalizedInstagram = normalizeBackendUrl(socialLinks.instagram);
     const normalizedYoutube = normalizeBackendUrl(socialLinks.youtube);
-    const normalizedWhatsapp = normalizeBackendUrl(socialLinks.whatsapp);
+    const normalizedWhatsapp = normalizeWhatsappNumber(socialLinks.whatsapp);
 
     // Validate URLs
     if (!validateUrl(normalizedGoogle)) {
@@ -121,9 +130,17 @@ export async function PUT(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!validateUrl(normalizedWhatsapp) || (normalizedWhatsapp && !/wa\.me|whatsapp\.com/i.test(normalizedWhatsapp))) {
+    let validWhatsapp = true;
+    if (normalizedWhatsapp) {
+      try {
+        const parsed = new URL(normalizedWhatsapp);
+        const digits = parsed.pathname.replace(/\D/g, '');
+        validWhatsapp = validateUrl(normalizedWhatsapp) && /(^|\.)wa\.me$|(^|\.)whatsapp\.com$/i.test(parsed.hostname) && digits.length >= 8 && digits.length <= 15;
+      } catch { validWhatsapp = false; }
+    }
+    if (!validWhatsapp) {
       return NextResponse.json(
-        { success: false, error: 'Invalid WhatsApp link. Use a wa.me or whatsapp.com URL.' },
+        { success: false, error: 'Enter a valid WhatsApp number with country code.' },
         { status: 400 }
       );
     }
