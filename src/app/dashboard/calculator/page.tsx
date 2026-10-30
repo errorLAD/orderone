@@ -22,6 +22,7 @@ export default function CalculatorPage() {
   const isBusinessOwner = (currentUser?.role || currentRole) === 'owner';
   const [tab, setTab] = useState<'billing' | 'history' | 'sales'>('billing');
   const [items, setItems] = useState<DraftItem[]>([]);
+  const [billExpanded, setBillExpanded] = useState(false);
   const [display, setDisplay] = useState('0');
   const [expression, setExpression] = useState('');
   const [storedValue, setStoredValue] = useState<number | null>(null);
@@ -255,8 +256,19 @@ export default function CalculatorPage() {
             </div>
           </section>
         </div>
-        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-3"><div className="min-w-0"><div className="flex items-center gap-2"><h2 className="font-bold text-slate-900">Current bill</h2><span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700">{items.length}</span></div><p className="mt-0.5 text-xs text-slate-500">Items and totals update automatically</p></div>{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:text-sm">Clear all</button>}</div>
+        <section className="min-w-0 rounded-2xl border border-indigo-100 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-600">Bill total</p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1"><strong className="text-2xl font-bold tracking-tight text-slate-900">{formatINR(totals.total)}</strong><span className="text-xs font-medium text-slate-500">{items.length} item{items.length === 1 ? '' : 's'}</span></div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={() => setBillExpanded(value => !value)} aria-expanded={billExpanded} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 sm:text-sm">{billExpanded ? 'Hide items' : 'View items'}</button>
+              <button onClick={saveBill} disabled={saving || totals.total <= 0} className="hidden min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 xl:inline-flex"><Save size={17} />{saving ? 'Saving...' : 'Save bill'}</button>
+            </div>
+          </div>
+          {billExpanded && <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-bold text-slate-900">Bill items</h2><p className="mt-0.5 text-xs text-slate-500">Edit item details, discount, or tax.</p></div>{items.length > 0 && <button type="button" onClick={() => setItems([])} className="min-h-10 shrink-0 rounded-xl px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 sm:text-sm">Clear all</button>}</div>
             {items.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center"><span className="mx-auto grid h-10 w-10 place-items-center rounded-xl bg-white text-slate-400 shadow-sm"><FileText size={19} /></span><p className="mt-3 text-sm font-semibold text-slate-700">Your bill is empty</p><p className="mt-1 text-xs text-slate-500">Use the keypad, then tap Add to bill.</p></div> : <div className="space-y-2.5">{items.map((item, index) => <div key={index} className="grid grid-cols-2 gap-2.5 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:grid-cols-[minmax(0,1fr)_76px_90px_110px_40px] sm:items-end sm:gap-2.5">
               <label className="col-span-2 min-w-0 text-[11px] font-semibold text-slate-500 sm:col-span-1 sm:text-xs">Item name <input value={item.productName} onChange={e => updateItem(index, 'productName', e.target.value)} placeholder={`Item ${index + 1}`} className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
               <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Qty <input type="number" inputMode="decimal" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} className="mt-1 min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-indigo-400" /></label>
@@ -269,10 +281,7 @@ export default function CalculatorPage() {
               <label className="text-sm font-semibold text-slate-700">Discount <div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-lg border border-slate-200 bg-slate-50 px-2 text-sm"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-lg border border-l-0 border-slate-200 px-3 text-sm" /></div></label>
               <label className="text-sm font-semibold text-slate-700">Tax rate (%) <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm" /></label>
             </div>
-            <div className="mt-5 hidden items-center justify-between gap-4 border-t border-slate-100 pt-4 xl:flex">
-              <div><p className="text-xs font-medium uppercase text-slate-500">Grand total</p><p className="mt-1 text-2xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
-              <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[190px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill...' : 'Save full bill'}</button>
-            </div>
+          </div>}
         </section>
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur xl:hidden">
           <div><p className="text-[11px] font-medium uppercase text-slate-500">Bill total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
