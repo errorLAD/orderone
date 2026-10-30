@@ -218,9 +218,9 @@ export default function CalculatorPage() {
         <button onClick={() => { void loadBills(); if (tab === 'sales') void loadReport(); }} aria-label="Refresh calculator data" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 sm:px-4"><RefreshCw size={16} /><span className="hidden sm:inline">Refresh</span></button>
       </header>
 
-      <nav className="grid grid-cols-3 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:gap-2 sm:p-2" aria-label="Calculator sections">
+      <nav className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:gap-2 sm:p-2" aria-label="Calculator sections">
         {([['billing', 'Manual Billing', Calculator], ['history', 'Bill History', FileText], ['sales', 'Daily Sales', CalendarDays]] as const).map(([id, label, Icon]) => (
-          <button key={id} onClick={() => { setTab(id); setError(''); }} className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-1.5 text-[11px] font-semibold transition sm:min-h-12 sm:gap-2 sm:px-3 sm:text-sm ${tab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={15} className="shrink-0 sm:h-4 sm:w-4" /><span className="truncate">{label}</span></button>
+          <button key={id} onClick={() => { setTab(id); setError(''); }} className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition sm:min-h-12 sm:gap-2 sm:px-4 sm:text-sm ${tab === id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon size={15} className="shrink-0 sm:h-4 sm:w-4" /><span className="truncate">{label}</span></button>
         ))}
       </nav>
 
