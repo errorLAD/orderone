@@ -25,6 +25,8 @@ import { StoreLockedPrompt } from '@/components/dashboard/StoreLockedPrompt';
 
 export default function StoreOrdersPage() {
   const { currentBusiness, currentRole } = useApp();
+  const businessType = (currentBusiness?.category || currentBusiness?.type || '').toLowerCase();
+  const isFoodBusiness = ['restaurant', 'cafe', 'bakery', 'cloud_kitchen', 'food_truck', 'icecream', 'juice_bar', 'juice_chaat', 'hotel'].includes(businessType);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -154,7 +156,12 @@ export default function StoreOrdersPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Orders placed via the digital retail storefront. Menu restaurant orders will never appear here.
+            Orders placed via the digital Store storefront.
+            {isFoodBusiness && (
+              <> Restaurant Dining Menu orders appear under{' '}
+                <Link href="/dashboard/menu/orders" className="font-semibold text-indigo-600 hover:underline">Kitchen Orders &amp; KOT</Link>.
+              </>
+            )}
           </p>
         </div>
 
@@ -237,6 +244,14 @@ export default function StoreOrdersPage() {
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                 No orders match your filter. Customers ordering from the public Store storefront will generate tokens here.
               </p>
+              {isFoodBusiness && (
+                <Link
+                  href="/dashboard/menu/orders"
+                  className="inline-flex min-h-10 items-center justify-center mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700"
+                >
+                  View Restaurant Orders
+                </Link>
+              )}
             </div>
           ) : (
             orders.map((order) => {
