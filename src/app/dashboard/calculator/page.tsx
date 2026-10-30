@@ -31,6 +31,7 @@ export default function CalculatorPage() {
   const [lineQuantity, setLineQuantity] = useState('1');
   const [lineUnit, setLineUnit] = useState('');
   const [itemDetailsOpen, setItemDetailsOpen] = useState(false);
+  const [taxSettingsOpen, setTaxSettingsOpen] = useState(false);
   const [discountType, setDiscountType] = useState<'fixed' | 'percentage'>('fixed');
   const [discountValue, setDiscountValue] = useState('0');
   const [taxRate, setTaxRate] = useState(String(currentBusiness?.settings?.orderSettings?.taxRatePercentage || 0));
@@ -263,9 +264,15 @@ export default function CalculatorPage() {
                 <label className="min-w-0 text-[11px] font-semibold text-slate-500 sm:text-xs">Unit <input value={lineUnit} onChange={e => setLineUnit(e.target.value)} placeholder="pcs / kg" className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" /></label>
               </div>}
             </div>
-            <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2">
-              <label className="text-xs font-semibold text-slate-600">Discount<div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 cursor-pointer rounded-l-xl border border-slate-200 bg-slate-50 px-2.5 text-sm font-medium outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-slate-200 bg-white px-3 text-sm text-slate-900" /></div></label>
-              <label className="text-xs font-semibold text-slate-600">Tax rate (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900" /></label>
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:p-4">
+              <button type="button" aria-expanded={taxSettingsOpen} aria-controls="calculator-tax-settings" onClick={() => setTaxSettingsOpen(open => !open)} className="flex min-h-10 w-full items-center justify-between gap-3 text-left">
+                <span><span className="block text-sm font-bold text-slate-900">Discount &amp; tax</span><span className="mt-0.5 block text-xs text-slate-500">Discount: {discountType === 'fixed' ? formatINR(Number(discountValue) || 0) : `${Number(discountValue) || 0}%`} · Tax: {Number(taxRate) || 0}%</span></span>
+                <ChevronDown size={18} className={`shrink-0 text-slate-500 transition-transform ${taxSettingsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {taxSettingsOpen && <div id="calculator-tax-settings" className="mt-3 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2">
+                <label className="text-xs font-semibold text-slate-600">Discount<div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 cursor-pointer rounded-l-xl border border-slate-200 bg-white px-2.5 text-sm font-medium outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-xl border border-l-0 border-slate-200 bg-white px-3 text-sm text-slate-900" /></div></label>
+                <label className="text-xs font-semibold text-slate-600">Tax rate (%)<input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900" /></label>
+              </div>}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{currentDraftItems.length} item{currentDraftItems.length === 1 ? '' : 's'} · Grand total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
