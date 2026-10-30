@@ -184,9 +184,197 @@
   animation: storefront-social-chip-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
 }
 
+.storefront-social-notification-bar {
+  min-height: 4rem;
+}
+
+.storefront-social-cart-scene {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  padding: 0.15rem 0.65rem 0.35rem 0.25rem;
+}
+
+.storefront-cart-puller {
+  display: block;
+  width: 2.75rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.storefront-puller-bob {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: storefront-puller-bob 480ms ease-in-out infinite alternate;
+}
+
+.storefront-puller-lead-arm,
+.storefront-puller-free-arm,
+.storefront-puller-leg > path:first-child {
+  fill: none;
+  stroke: #263247;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.storefront-puller-lead-arm {
+  transform-box: fill-box;
+  transform-origin: 10% 50%;
+  animation: storefront-puller-tug 480ms ease-in-out infinite alternate;
+}
+
+.storefront-puller-free-arm {
+  animation: storefront-puller-swing 480ms ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: 90% 10%;
+}
+
+.storefront-puller-leg {
+  transform-box: fill-box;
+  transform-origin: 50% 5%;
+}
+
+.storefront-puller-leg-a {
+  animation: storefront-puller-step-a 480ms ease-in-out infinite alternate;
+}
+
+.storefront-puller-leg-b {
+  animation: storefront-puller-step-b 480ms ease-in-out infinite alternate;
+}
+
+.storefront-puller-shoe {
+  fill: none;
+  stroke: #263247;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+
+.storefront-social-cart {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0 0.55rem 0.36rem -0.05rem;
+  padding: 0.27rem 0.35rem 0.33rem 0.55rem;
+  border: 2px solid #b96e25;
+  border-radius: 0.45rem 0.45rem 0.3rem 0.3rem;
+  background: linear-gradient(180deg, #fff8df 0%, #ffe8b2 100%);
+  box-shadow: 0 2px 0 #8b4c1e;
+}
+
+.storefront-social-cart::before {
+  position: absolute;
+  top: 0.42rem;
+  left: -0.82rem;
+  width: 0.9rem;
+  height: 0.18rem;
+  border-radius: 999px;
+  background: #b96e25;
+  content: '';
+}
+
+.storefront-social-cart-canopy {
+  position: absolute;
+  top: -0.57rem;
+  right: 0.18rem;
+  left: 0.18rem;
+  display: flex;
+  height: 0.58rem;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #a73327;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: repeating-linear-gradient(90deg, #c33c2f 0 0.55rem, #f7c54b 0.55rem 1.1rem);
+  transform-origin: center bottom;
+  animation: storefront-cart-canopy-sway 1.1s ease-in-out infinite alternate;
+}
+
+.storefront-social-cart-canopy span {
+  width: 0.32rem;
+  height: 0.32rem;
+  margin-bottom: -0.16rem;
+  border-radius: 0 0 0.3rem 0.3rem;
+  background: #fff1bd;
+}
+
+.storefront-social-cart-cargo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.storefront-social-cart .storefront-social-chip-enter {
+  animation: none;
+  box-shadow: 0 1px 2px rgb(90 60 30 / 12%);
+}
+
+.storefront-social-cart-hub {
+  position: absolute;
+  bottom: -0.72rem;
+  z-index: 2;
+  width: 0.68rem;
+  height: 0.68rem;
+  border: 2px solid #70412d;
+  border-radius: 50%;
+  background: repeating-conic-gradient(#70412d 0 12deg, #f7d27a 12deg 24deg);
+  animation: storefront-cart-wheel-turn 720ms linear infinite;
+}
+
+.storefront-social-cart-hub-a { left: 0.65rem; }
+.storefront-social-cart-hub-b { right: 0.65rem; }
+
+@keyframes storefront-puller-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-1.5px); }
+}
+
+@keyframes storefront-puller-tug {
+  from { transform: rotate(-2deg); }
+  to { transform: rotate(3deg); }
+}
+
+@keyframes storefront-puller-swing {
+  from { transform: rotate(-12deg); }
+  to { transform: rotate(10deg); }
+}
+
+@keyframes storefront-puller-step-a {
+  from { transform: rotate(-17deg); }
+  to { transform: rotate(17deg); }
+}
+
+@keyframes storefront-puller-step-b {
+  from { transform: rotate(17deg); }
+  to { transform: rotate(-17deg); }
+}
+
+@keyframes storefront-cart-wheel-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes storefront-cart-canopy-sway {
+  from { transform: rotate(-1.5deg); }
+  to { transform: rotate(1.5deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .storefront-social-chip-enter {
     animation: none;
+  }
+
+  .animate-marquee-infinite,
+  .storefront-puller-bob,
+  .storefront-puller-lead-arm,
+  .storefront-puller-free-arm,
+  .storefront-puller-leg-a,
+  .storefront-puller-leg-b,
+  .storefront-social-cart-hub,
+  .storefront-social-cart-canopy {
+    animation: none !important;
   }
 }
 

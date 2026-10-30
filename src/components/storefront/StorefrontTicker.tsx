@@ -65,6 +65,35 @@ interface SocialItem {
   extra?: React.ReactNode;
 }
 
+function WalkingCartPuller() {
+  return (
+    <svg
+      viewBox="0 0 44 56"
+      className="storefront-cart-puller"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g className="storefront-puller-bob">
+        <path d="M31 29 42 33" className="storefront-puller-lead-arm" />
+        <circle cx="19" cy="10" r="7" fill="#b86d42" />
+        <path d="M12 10c0-5 3-8 8-8 4 0 7 3 7 7-2-1-4-2-6-4-2 3-5 4-9 5Z" fill="#263247" />
+        <path d="m13 10-3 1 3 2" fill="#b86d42" />
+        <path d="M17 18c-4 1-7 5-7 10l2 12h18l1-14c0-5-3-8-8-9Z" fill="#c9512b" />
+        <path d="m16 20 6 5 5-6" fill="none" stroke="#ffd27a" strokeWidth="2" />
+        <path d="M13 24 8 31 3 30" className="storefront-puller-free-arm" />
+        <g className="storefront-puller-leg storefront-puller-leg-a">
+          <path d="m15 39-2 9 5 5" />
+          <path d="m18 53 4 1" className="storefront-puller-shoe" />
+        </g>
+        <g className="storefront-puller-leg storefront-puller-leg-b">
+          <path d="m25 39 3 8-2 6" />
+          <path d="m25 53 4 1" className="storefront-puller-shoe" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 export function StorefrontTicker({ business }: StorefrontTickerProps) {
   const social = business?.settings?.socialLinks;
 
@@ -162,30 +191,34 @@ export function StorefrontTicker({ business }: StorefrontTickerProps) {
     </a>
   );
 
-  // If only 1 social link is configured, render it cleanly with NO background box/strip
-  if (activeItems.length === 1) {
-    const item = activeItems[0];
-    return (
-      <div className="flex items-center py-0.5">
-        {renderItem(item)}
-      </div>
-    );
-  }
-
-  // If 2 or more social links are configured, glide seamlessly with NO yellow background strip
+  // Keep the puller, cart, and the owner's configured links together as one scrolling unit.
   const renderPills = () => (
-    <div className="flex items-center gap-2 pr-2 shrink-0">
-      {activeItems.map((item) => renderItem(item))}
+    <div className="storefront-social-cart-scene">
+      <WalkingCartPuller />
+      <div className="storefront-social-cart" role="group" aria-label="Store social media links">
+        <div className="storefront-social-cart-canopy" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="storefront-social-cart-cargo">
+          {activeItems.map((item) => renderItem(item))}
+        </div>
+        <span className="storefront-social-cart-hub storefront-social-cart-hub-a" aria-hidden="true" />
+        <span className="storefront-social-cart-hub storefront-social-cart-hub-b" aria-hidden="true" />
+      </div>
     </div>
   );
 
   return (
-    <div className="relative overflow-hidden py-0.5 flex items-center group">
+    <div className="storefront-social-notification-bar relative overflow-hidden py-1 flex items-center group">
       {/* Left/Right Fade Masks matching page background */}
       <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-slate-50 to-transparent z-10" />
       <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-slate-50 to-transparent z-10" />
 
-      {/* Moving Marquee Track */}
+      {/* Person and traditional social-link cart loop across the notification bar */}
       <div className="flex overflow-hidden relative w-full select-none cursor-pointer">
         <div className="animate-marquee-infinite">
           {renderPills()}
