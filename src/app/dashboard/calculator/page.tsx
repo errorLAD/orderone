@@ -230,7 +230,7 @@ export default function CalculatorPage() {
       {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
       {notice && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>}
 
-      {tab === 'billing' && <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      {tab === 'billing' && <section className="grid gap-5">
         <div className="min-w-0 space-y-4">
           <section className="mx-auto w-full max-w-[460px] rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Calculator keypad">
             <div className="flex min-h-32 flex-col justify-end overflow-hidden rounded-2xl bg-slate-950 px-5 py-4 text-right text-white sm:min-h-36">
@@ -268,14 +268,12 @@ export default function CalculatorPage() {
               <label className="text-sm font-semibold text-slate-700">Discount <div className="mt-1 flex"><select value={discountType} onChange={e => setDiscountType(e.target.value as 'fixed' | 'percentage')} className="min-h-11 rounded-l-lg border border-slate-200 bg-slate-50 px-2 text-sm"><option value="fixed">Amount</option><option value="percentage">Percent</option></select><input type="number" inputMode="decimal" min="0" max={discountType === 'percentage' ? 100 : undefined} value={discountValue} onChange={e => setDiscountValue(e.target.value)} className="min-h-11 min-w-0 flex-1 rounded-r-lg border border-l-0 border-slate-200 px-3 text-sm" /></div></label>
               <label className="text-sm font-semibold text-slate-700">Tax rate (%) <input type="number" inputMode="decimal" min="0" max="100" step="0.01" value={taxRate} onChange={e => setTaxRate(e.target.value)} className="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 text-sm" /></label>
             </div>
+            <div className="mt-5 hidden items-center justify-between gap-4 border-t border-slate-100 pt-4 xl:flex">
+              <div><p className="text-xs font-medium uppercase text-slate-500">Grand total</p><p className="mt-1 text-2xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
+              <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[190px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill...' : 'Save full bill'}</button>
+            </div>
           </section>
         </div>
-        <aside className="hidden h-fit rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 shadow-sm xl:sticky xl:top-5 xl:block">
-          <h2 className="text-lg font-bold text-slate-900">Bill summary</h2>
-          <dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-3 text-slate-600"><dt>Subtotal</dt><dd className="font-semibold text-slate-900">{formatINR(totals.subtotal)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Discount</dt><dd className="font-semibold text-emerald-700">- {formatINR(totals.discount)}</dd></div><div className="flex justify-between gap-3 text-slate-600"><dt>Tax ({Number(taxRate) || 0}%)</dt><dd className="font-semibold text-slate-900">{formatINR(totals.tax)}</dd></div><div className="border-t border-indigo-100 pt-3"><div className="flex justify-between gap-3 text-base font-bold text-slate-900"><dt>Grand total</dt><dd>{formatINR(totals.total)}</dd></div></div></dl>
-          <button onClick={saveBill} disabled={saving || totals.total <= 0} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"><Save size={18} /> {saving ? 'Saving bill...' : 'Save full bill'}</button>
-          <p className="mt-3 text-xs leading-5 text-slate-500">Saves item names, quantities, units, prices, discount, tax, total, and timestamp.</p>
-        </aside>
         <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur xl:hidden">
           <div><p className="text-[11px] font-medium uppercase text-slate-500">Bill total</p><p className="text-xl font-bold text-slate-900">{formatINR(totals.total)}</p></div>
           <button onClick={saveBill} disabled={saving || totals.total <= 0} className="inline-flex min-h-12 min-w-[155px] items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 font-bold text-white disabled:opacity-50"><Save size={17} /> {saving ? 'Saving...' : 'Save bill'}</button>
