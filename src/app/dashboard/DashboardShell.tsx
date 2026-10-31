@@ -30,7 +30,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   return (
     <OrderAlertProvider>
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans relative">
+      <div className="dashboard-app min-h-screen bg-[#F6F8F5] flex flex-col font-sans relative">
         <OrderAlertOverlay />
         <WaiterCallAlert />
         <Sidebar isOpen={sidebarOpen} isDesktopHidden={sidebarCollapsed} onClose={() => setSidebarOpen(false)} />
@@ -39,7 +39,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             if (window.matchMedia('(min-width: 1024px)').matches) setSidebarCollapsed((hidden) => !hidden);
             else setSidebarOpen((open) => !open);
           }} />
-          <main className="flex-1 min-w-0 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
+          <main className="dashboard-main flex-1 min-w-0 p-3 sm:p-5 md:p-7 lg:p-8 max-w-[1440px] w-full mx-auto">{children}</main>
         </div>
       </div>
     </OrderAlertProvider>

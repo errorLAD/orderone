@@ -364,7 +364,7 @@ export function Sidebar({ isOpen, isDesktopHidden = false, onClose }: SidebarPro
 
       <aside
         className={cn(
-          'fixed top-0 bottom-0 left-0 z-40 flex flex-col w-64 max-w-[85vw] bg-white border-r border-slate-200/80 transition-transform duration-200 ease-in-out pt-safe pb-safe',
+          'dashboard-sidebar fixed top-0 bottom-0 left-0 z-40 flex flex-col w-64 max-w-[85vw] bg-white border-r border-slate-200/80 transition-transform duration-200 ease-in-out pt-safe pb-safe',
           isDesktopHidden ? 'lg:-translate-x-full' : 'lg:translate-x-0',
           isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         )}

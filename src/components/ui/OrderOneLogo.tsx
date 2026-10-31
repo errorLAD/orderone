@@ -10,6 +10,7 @@ interface OrderOneLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showSubtitle?: boolean;
   subtitle?: string;
+  subtitleClassName?: string;
   href?: string;
   onClick?: () => void;
   darkBg?: boolean;
@@ -30,6 +31,7 @@ export function OrderOneLogo({
   size = 'md',
   showSubtitle = false,
   subtitle,
+  subtitleClassName,
   href,
   onClick,
   darkBg = false,
@@ -76,6 +78,7 @@ export function OrderOneLogo({
         <span
           className={cn(
             'text-[9px] font-semibold tracking-tight leading-none mt-1 truncate',
+            subtitleClassName,
             darkBg ? 'text-slate-400' : 'text-slate-500'
           )}
         >
